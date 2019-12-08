@@ -1,0 +1,23 @@
+{
+  "api_id": null,
+  "api_hash": null,
+  "channels": [
+    {
+      "handle": "deergifs",
+      "queue": true
+    },
+    {
+      "handle": "cowgifs",
+      "queue": false
+    },
+    {
+      "handle": "horsegifs",
+      "queue": false
+    },
+    {
+      "handle": "tigergifs",
+      "queue": false
+    }
+  ],
+  "workshop_group": 379270695
+}
