@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 import ffmpy
 
@@ -24,7 +25,8 @@ if os.path.getsize(output_filename) > limit:
         global_options=["-v error"],
         inputs={output_filename: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
     )
-    duration = ffprobe.run()[0]
+    ffprobe_out = ffprobe.run(stdout=subprocess.PIPE)
+    duration = float(ffprobe_out[0].decode('utf-8').strip())
     # 2 pass run
     bitrate = targetsize / duration * 1000000 * 8
     ff1 = ffmpy.FFmpeg(
