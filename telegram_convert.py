@@ -8,7 +8,7 @@ crf = 18
 limit = 8000000
 targetsize = 8
 
-input_filename = "video_gif"
+input_filename = "video.gif"
 output_filename = "video_compat.mp4"
 
 null_output = "/dev/null"
