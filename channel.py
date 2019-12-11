@@ -1,3 +1,4 @@
+import glob
 import json
 import logging
 import os
@@ -10,7 +11,9 @@ class Channel:
         self.handle = handle
         self.queue = queue
         self.channel_directory = f"store/channels/{self.handle}/"
-        self.videos = []
+        self.messages = {}
+        self.create_directory()
+        self.initialise_directory()
 
     @staticmethod
     def from_json(json_dict):
@@ -19,11 +22,43 @@ class Channel:
     def create_directory(self):
         os.makedirs(self.channel_directory, exist_ok=True)
 
+    def initialise_directory(self):
+        # List subdirectories in directory and populate messages list
+        subdirectories = [
+            f"{self.channel_directory}{message_dir}"
+            for message_dir
+            in os.listdir(self.channel_directory)
+            if os.path.isdir(message_dir)
+        ]
+        for subdirectory in subdirectories:
+            message = Message.from_directory(self, subdirectory)
+            self.messages[message.message_id] = message
+
     async def initialise_videos(self, client: TelegramClient):
         for message in await client.iter_channel_messages(self.handle):
             if message.file is None:
                 continue
             self.videos.append(Video.from_message(message, client, self.channel_directory))
+
+
+class Message:
+    def __init__(self, channel: Channel, message_id: str):
+        self.channel = channel
+        self.message_id = message_id
+        self.directory = f"{channel.channel_directory}{message_id}"
+        self.video = None
+
+    @staticmethod
+    def from_directory(channel, directory):
+        message_id = directory.strip("/").split("/")[-1]
+        message = Message(channel, message_id)
+        # Find video, if applicable
+        message.video = Video.from_directory(directory)
+        return message
+
+    @staticmethod
+    def from_telegram_message():
+        pass
 
 
 class VideoMetaData:
@@ -57,9 +92,14 @@ class Video:
 
     @staticmethod
     def from_directory(video_directory: str):
-        metadata_path = f"{video_directory}/metadata.json"
-        metadata = VideoMetaData.load_from_json(metadata_path)
-        return Video(metadata)
+        video_files = glob.glob(f"{video_directory}/video.*")
+        video_metadata_files = glob.glob(f"{video_directory}/video_metadata.json")
+        if video_files and video_metadata_files:
+            metadata_path = f"{video_directory}/video_metadata.json"
+            metadata = VideoMetaData.load_from_json(metadata_path)
+            return Video(metadata)
+        else:
+            return None
 
     @staticmethod
     def from_message(message, client: TelegramClient, channel_directory: str):
