@@ -20,7 +20,9 @@ ff = ffmpy.FFmpeg(
 )
 ff.run()
 
+# If it's over the size limit, do a 2 pass encoding
 if os.path.getsize(output_filename) > limit:
+    # Get video duration from ffprobe
     ffprobe = ffmpy.FFprobe(
         global_options=["-v error"],
         inputs={output_filename: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
