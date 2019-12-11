@@ -15,14 +15,14 @@ null_output = "/dev/null"
 # Turn file into mp4
 ff = ffmpy.FFmpeg(
     inputs={input_filename: None},
-    outputs={output_filename: ffmpegoptions + " -crf" + str(crf)}
+    outputs={output_filename: ffmpegoptions + " -crf " + str(crf)}
 )
 ff.run()
 
 if os.path.getsize(output_filename) > limit:
     ffprobe = ffmpy.FFprobe(
         global_options=["-v error"],
-        inputs={output_filename: "-show_entries format^=duration -of default^=noprint_wrappers^=1:nokey^=1"}
+        inputs={output_filename: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
     )
     duration = ffprobe.run()[0]
     # 2 pass run
