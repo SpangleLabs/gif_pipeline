@@ -18,9 +18,7 @@ class Pipeline:
         logging.info("Initialising channels")
         # Scrape channels
         for channel in self.channels:
-            logging.info(f"Initialising channel: {channel.handle}")
-            channel.create_directory()
-            channel.initialise_videos(self.client)
+            channel.initialise_channel(self.client)
         logging.info("Initialised channels")
 
     def initialise_helpers(self):
@@ -42,6 +40,7 @@ class Pipeline:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(filename='example.log', level=logging.INFO)
     with open("config.json", "r") as c:
         conf = json.load(c)
     pipeline = Pipeline(conf)
