@@ -209,7 +209,7 @@ class Video:
         file_ext = message.file_mime_type.split("/")[-1]
         video_path = f"{message_directory}/{Video.FILE_NAME}.{file_ext}"
         if not os.path.exists(video_path):
-            logging.info("Downloading message: {}".format(message))
+            logging.info("Downloading video from message: {}".format(message))
             client.download_media(message.chat_id, message.message_id, video_path)
             video_metadata = VideoMetaData(message_directory)
             video_metadata.save_to_json()
