@@ -41,7 +41,7 @@ class Channel:
             f"{self.channel_directory}{message_dir}"
             for message_dir
             in os.listdir(self.channel_directory)
-            if os.path.isdir(message_dir)
+            if os.path.isdir(f"{self.channel_directory}{message_dir}")
         ]
         for subdirectory in subdirectories:
             message = Message.from_directory(self, subdirectory)
