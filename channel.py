@@ -1,8 +1,9 @@
+import datetime
 import glob
 import json
 import logging
 import os
-from typing import Dict
+from typing import Dict, Optional
 
 from telegram_client import TelegramClient
 
@@ -56,34 +57,100 @@ class Channel:
 
 
 class Message:
+    FILE_NAME = "message.json"
+
     def __init__(self, channel: Channel, message_id: int):
+        # Basic parameters
         self.channel = channel
         self.message_id = message_id
+        # Internal stuff
         self.directory = f"{channel.channel_directory}{message_id:06}"
-        self.message_data = None
         self.video = None
+        # Telegram message data
+        self.chat_id = None  # type: int
+        self.chat_username = None  # type: str
+        self.chat_title = None  # type: str
+        self.datetime = None  # type: datetime.datetime
+        self.is_forward = False  # type: bool
+        self.has_file = False  # type: bool
+        self.file_mime_type = None  # type: Optional[str]
+        self.file_size = None  # type: Optional[int]
+        self.is_reply = False  # type: bool
+        self.reply_to_msg_id = None  # type: Optional[int]
 
     @staticmethod
     def from_directory(channel: Channel, directory: str) -> 'Message':
         message_id = int(directory.strip("/").split("/")[-1])
         message = Message(channel, message_id)
+        with open(f"{directory}/{Message.FILE_NAME}", "r") as f:
+            message_data = json.load(f)
+        message.chat_id = message_data["chat"]["id"]
+        message.chat_username = message_data["chat"]["username"]
+        message.chat_title = message_data["chat"]["title"]
+        message.datetime = datetime.datetime.fromisoformat(message_data["datetime"])
+        message.is_forward = message_data["is_forward"]
+        message.has_file = message_data["file"] is not None
+        if message.has_file:
+            message.file_mime_type = message_data["file"]["mime_type"]
+            message.file_size = message_data["file"]["size"]
+        message.is_reply = message_data["reply_to"]
+        if message.is_reply:
+            message.reply_to_msg_id = message_data["reply_to"]["message_id"]
         return message
 
     @staticmethod
     def from_telegram_message(channel: Channel, message_data) -> 'Message':
         message_id = message_data.id
         message = Message(channel, message_id)
-        message.message_data = message_data
+        message.chat_id = message_data.chat_id
+        message.chat_username = message_data.chat.username
+        message.chat_title = message_data.chat.title
+        message.datetime = message_data.date
+        if message_data.forward is not None:
+            message.is_forward = True
+        if message_data.file is not None:
+            message.has_file = True
+            message.file_mime_type = message_data.file.mime_type
+            message.file_size = message_data.file.size
+        # TODO: posted by
+        if message_data.is_reply:
+            message.is_reply = True
+            message.reply_to_msg_id = message_data.reply_to_msg_id
         return message
 
     def initialise_directory(self, client):
         os.makedirs(self.directory, exist_ok=True)
-        if self.message_data and self.message_data.file:
+        if self.has_file:
             # Find video, if applicable
-            self.video = Video.from_message(self.message_data, client, self.directory)
+            self.video = Video.from_message(self, client, self.directory)
         else:
             # Find video, if applicable
             self.video = Video.from_directory(self.directory)
+        # Save message data
+        message_data = {
+            "message_id": self.message_id,
+            "chat": {
+                "id": self.chat_id,
+                "username": self.chat_username,
+                "title": self.chat_title
+            },
+            "datetime": self.datetime.isoformat(),
+            "is_forward": self.is_forward,
+            "file": None,
+            "reply_to": None
+        }
+        if self.has_file:
+            message_data["file"] = {
+                "mime_type": self.file_mime_type,
+                "size": self.file_size
+            }
+        if self.is_reply:
+            message_data["reply_to"] = {
+                "message_id": self.reply_to_msg_id
+            }
+        file_path = f"{self.directory}/{Message.FILE_NAME}"
+        with open(file_path, "w+") as f:
+            json.dump(message_data, f, indent=2)
 
     def delete_directory(self):
         os.removedirs(self.directory)
@@ -108,7 +175,7 @@ class VideoMetaData:
                 "video_directory": self.video_directory,
                 "message_link": self.message_link,
                 "message_posted": self.message_posted
-            }, f)
+            }, f, indent=2)
 
     @staticmethod
     def load_from_json(file_path: str):
@@ -135,12 +202,12 @@ class Video:
             return None
 
     @staticmethod
-    def from_message(message, client: TelegramClient, message_directory: str):
-        file_ext = message.file.mime_type.split("/")[-1]
+    def from_message(message: Message, client: TelegramClient, message_directory: str):
+        file_ext = message.file_mime_type.split("/")[-1]
         video_path = f"{message_directory}/{Video.FILE_NAME}.{file_ext}"
         if not os.path.exists(video_path):
             logging.info("Downloading message: {}".format(message))
-            client.download_media(message, video_path)
+            client.download_media(message.chat_id, message.message_id, video_path)
             video_metadata = VideoMetaData(message_directory)
             video_metadata.save_to_json()
             return Video(video_metadata)
