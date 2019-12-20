@@ -100,7 +100,7 @@ class VideoMetaData:
         self.history = []
 
     def save_to_json(self):
-        file_path = f"{self.video_directory}/metadata.json"
+        file_path = f"{self.video_directory}/video_metadata.json"
         with open(file_path, "w+") as f:
             json.dump({
                 "video_directory": self.video_directory,
