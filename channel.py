@@ -196,9 +196,8 @@ class Video:
     @staticmethod
     def from_directory(message_directory: str):
         video_files = glob.glob(f"{message_directory}/{Video.FILE_NAME}.*")
-        video_metadata_files = glob.glob(f"{message_directory}/{VideoMetaData.FILE_NAME}")
-        if video_files and video_metadata_files:
-            metadata_path = f"{message_directory}/{VideoMetaData.FILE_NAME}"
+        metadata_path = f"{message_directory}/{VideoMetaData.FILE_NAME}"
+        if video_files and os.path.exists(metadata_path):
             metadata = VideoMetaData.load_from_json(metadata_path)
             return Video(metadata)
         else:
