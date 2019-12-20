@@ -3,3 +3,4 @@ ImageHash
 telethon
 tqdm
 pillow
+cryptg
