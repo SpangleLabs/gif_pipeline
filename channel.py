@@ -24,10 +24,12 @@ class Channel:
         os.makedirs(self.channel_directory, exist_ok=True)
 
     def initialise_channel(self, client: TelegramClient):
+        logging.info(f"Initialising channel: {self}")
         directory_messages = self.read_messages_from_directory()
         channel_messages = self.read_messages_from_channel(client)
         new_messages = [msg_id for msg_id in channel_messages.keys() if msg_id not in directory_messages]
         removed_messages = [msg_id for msg_id in directory_messages.keys() if msg_id not in channel_messages]
+        logging.info(f"Channel: {self} has {len(new_messages)} new and {len(removed_messages)} removed messages")
         for msg_id in new_messages:
             channel_messages[msg_id].initialise_directory(client)
         for msg_id in removed_messages:
@@ -54,6 +56,9 @@ class Channel:
             message = Message.from_telegram_message(self, message_data)
             new_messages[message.message_id] = message
         return new_messages
+
+    def __repr__(self):
+        return f"Channel({self.handle})"
 
 
 class Message:
