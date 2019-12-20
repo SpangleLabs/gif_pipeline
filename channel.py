@@ -91,6 +91,8 @@ class Message:
 
 
 class VideoMetaData:
+    FILE_NAME = "video_metadata.json"
+
     def __init__(self, video_directory: str):
         self.video_directory = video_directory
         self.message_link = None
@@ -100,7 +102,7 @@ class VideoMetaData:
         self.history = []
 
     def save_to_json(self):
-        file_path = f"{self.video_directory}/video_metadata.json"
+        file_path = f"{self.video_directory}/{VideoMetaData.FILE_NAME}"
         with open(file_path, "w+") as f:
             json.dump({
                 "video_directory": self.video_directory,
@@ -116,15 +118,17 @@ class VideoMetaData:
 
 
 class Video:
+    FILE_NAME = "video"
+
     def __init__(self, metadata: VideoMetaData):
         self.metadata = metadata
 
     @staticmethod
     def from_directory(message_directory: str):
-        video_files = glob.glob(f"{message_directory}/video.*")
-        video_metadata_files = glob.glob(f"{message_directory}/video_metadata.json")
+        video_files = glob.glob(f"{message_directory}/{Video.FILE_NAME}.*")
+        video_metadata_files = glob.glob(f"{message_directory}/{VideoMetaData.FILE_NAME}")
         if video_files and video_metadata_files:
-            metadata_path = f"{message_directory}/video_metadata.json"
+            metadata_path = f"{message_directory}/{VideoMetaData.FILE_NAME}"
             metadata = VideoMetaData.load_from_json(metadata_path)
             return Video(metadata)
         else:
@@ -133,7 +137,7 @@ class Video:
     @staticmethod
     def from_message(message, client: TelegramClient, message_directory: str):
         file_ext = message.file.mime_type.split("/")[-1]
-        video_path = f"{message_directory}/video.{file_ext}"
+        video_path = f"{message_directory}/{Video.FILE_NAME}.{file_ext}"
         if not os.path.exists(video_path):
             logging.info("Downloading message: {}".format(message))
             client.download_media(message, video_path)
