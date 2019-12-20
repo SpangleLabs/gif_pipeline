@@ -39,8 +39,22 @@ class Pipeline:
         pass
 
 
+def setup_logging():
+    formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
+    file_handler = logging.FileHandler("pipeline.log")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+
 if __name__ == "__main__":
-    logging.basicConfig(filename='example.log', level=logging.INFO)
+    setup_logging()
     with open("config.json", "r") as c:
         conf = json.load(c)
     pipeline = Pipeline(conf)
