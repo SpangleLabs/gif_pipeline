@@ -156,6 +156,9 @@ class Message:
         os.removedirs(self.directory)
         pass
 
+    def __repr__(self):
+        return f"Message(chat_id={self.chat_username or self.chat_id}, message_id={self.message_id})"
+
 
 class VideoMetaData:
     FILE_NAME = "video_metadata.json"
