@@ -72,14 +72,14 @@ class Message:
         # Basic parameters
         self.channel = channel
         self.message_id = message_id
+        self.datetime = posted  # type: datetime.datetime
         # Internal stuff
         self.directory = f"{channel.channel_directory}{message_id:06}"
         self.video = None  # type: Optional[Video]
         # Telegram message data
         self.chat_id = None  # type: int
-        self.chat_username = None  # type: str
+        self.chat_username = None  # type: Optional[str]
         self.chat_title = None  # type: str
-        self.datetime = posted  # type: datetime.datetime
         self.text = None  # type: Optional[str]
         self.is_forward = False  # type: bool
         self.has_file = False  # type: bool
