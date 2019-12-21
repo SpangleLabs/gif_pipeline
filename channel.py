@@ -193,7 +193,10 @@ class VideoMetaData:
     def load_from_json(file_path: str):
         with open(file_path, "r") as f:
             json_dict = json.load(f)
-        return VideoMetaData(json_dict['video_directory'])
+        metadata = VideoMetaData(json_dict['video_directory'])
+        metadata.message_link = json_dict["message_link"]
+        metadata.message_posted = json_dict["message_posted"]
+        return metadata
 
 
 class Video:
