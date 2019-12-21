@@ -68,18 +68,18 @@ class Channel:
 class Message:
     FILE_NAME = "message.json"
 
-    def __init__(self, channel: Channel, message_id: int):
+    def __init__(self, channel: Channel, message_id: int, posted: datetime):
         # Basic parameters
         self.channel = channel
         self.message_id = message_id
         # Internal stuff
         self.directory = f"{channel.channel_directory}{message_id:06}"
-        self.video = None
+        self.video = None  # type: Optional[Video]
         # Telegram message data
         self.chat_id = None  # type: int
         self.chat_username = None  # type: str
         self.chat_title = None  # type: str
-        self.datetime = None  # type: datetime.datetime
+        self.datetime = posted  # type: datetime.datetime
         self.text = None  # type: Optional[str]
         self.is_forward = False  # type: bool
         self.has_file = False  # type: bool
@@ -95,13 +95,14 @@ class Message:
     @staticmethod
     def from_directory(channel: Channel, directory: str) -> Optional['Message']:
         message_id = int(directory.strip("/").split("/")[-1])
-        message = Message(channel, message_id)
         with open(f"{directory}/{Message.FILE_NAME}", "r") as f:
             message_data = json.load(f)
+        posted = datetime.datetime.fromisoformat(message_data["datetime"])
+        message = Message(channel, message_id, posted)
+        # Set all the optional parameters
         message.chat_id = message_data["chat"]["id"]
         message.chat_username = message_data["chat"]["username"]
         message.chat_title = message_data["chat"]["title"]
-        message.datetime = datetime.datetime.fromisoformat(message_data["datetime"])
         message.text = message_data["text"]
         message.is_forward = message_data["is_forward"]
         message.has_file = message_data["file"] is not None
@@ -121,11 +122,12 @@ class Message:
     @staticmethod
     def from_telegram_message(channel: Channel, message_data) -> 'Message':
         message_id = message_data.id
-        message = Message(channel, message_id)
+        posted = message_data.date
+        message = Message(channel, message_id, posted)
+        # Set all the optional parameters
         message.chat_id = message_data.chat_id
         message.chat_username = message_data.chat.username
         message.chat_title = message_data.chat.title
-        message.datetime = message_data.date
         message.text = message_data.text
         if message_data.forward is not None:
             message.is_forward = True
