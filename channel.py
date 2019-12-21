@@ -76,6 +76,7 @@ class Message:
         self.chat_username = None  # type: str
         self.chat_title = None  # type: str
         self.datetime = None  # type: datetime.datetime
+        self.text = None  # type: Optional[str]
         self.is_forward = False  # type: bool
         self.has_file = False  # type: bool
         self.file_mime_type = None  # type: Optional[str]
@@ -93,6 +94,7 @@ class Message:
         message.chat_username = message_data["chat"]["username"]
         message.chat_title = message_data["chat"]["title"]
         message.datetime = datetime.datetime.fromisoformat(message_data["datetime"])
+        message.text = message_data["text"]
         message.is_forward = message_data["is_forward"]
         message.has_file = message_data["file"] is not None
         if message.has_file:
@@ -111,6 +113,7 @@ class Message:
         message.chat_username = message_data.chat.username
         message.chat_title = message_data.chat.title
         message.datetime = message_data.date
+        message.text = message_data.text
         if message_data.forward is not None:
             message.is_forward = True
         if message_data.file is not None:
@@ -140,6 +143,7 @@ class Message:
                 "title": self.chat_title
             },
             "datetime": self.datetime.isoformat(),
+            "text": self.text,
             "is_forward": self.is_forward,
             "file": None,
             "reply_to": None
