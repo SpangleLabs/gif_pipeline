@@ -22,12 +22,14 @@ class Pipeline:
         logging.info("Initialised channels")
 
     def initialise_helpers(self):
+        logging.info("Initialising helpers")
         helpers = [
             DuplicateHelper(),
             TelegramGifHelper()
         ]
         for helper in helpers:
             self.helpers[helper.name] = helper
+        logging.info(f"Initialised {len(self.helpers)} helpers")
 
     def initialise_duplicate_detector(self):
         pass
@@ -36,6 +38,10 @@ class Pipeline:
         pass
 
     def watch_workshop(self):
+        logging.info("Initialising workshop")
+        workshop = Channel(self.workshop)
+        workshop.initialise_channel(self.client)
+        logging.info("Watching workshop")
         pass
 
 

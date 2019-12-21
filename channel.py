@@ -126,7 +126,8 @@ class Message:
         message = Message(channel, message_id, posted)
         # Set all the optional parameters
         message.chat_id = message_data.chat_id
-        message.chat_username = message_data.chat.username
+        if hasattr(message_data.chat, "username"):
+            message.chat_username = message_data.chat.username
         message.chat_title = message_data.chat.title
         message.text = message_data.text
         if message_data.forward is not None:
