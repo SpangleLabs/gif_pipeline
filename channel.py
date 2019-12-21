@@ -88,6 +88,10 @@ class Message:
         self.is_reply = False  # type: bool
         self.reply_to_msg_id = None  # type: Optional[int]
 
+    @property
+    def has_video(self) -> bool:
+        return self.has_file and (self.file_mime_type.startswith("video") or self.file_mime_type == "image/gif")
+
     @staticmethod
     def from_directory(channel: Channel, directory: str) -> Optional['Message']:
         message_id = int(directory.strip("/").split("/")[-1])
@@ -104,10 +108,11 @@ class Message:
         if message.has_file:
             message.file_mime_type = message_data["file"]["mime_type"]
             message.file_size = message_data["file"]["size"]
-            video = Video.from_directory(directory)
-            if video is None:
-                return None
-            message.video = video
+            if message.has_video:
+                video = Video.from_directory(directory)
+                if video is None:
+                    return None
+                message.video = video
         message.is_reply = message_data["reply_to"]
         if message.is_reply:
             message.reply_to_msg_id = message_data["reply_to"]["message_id"]
@@ -136,7 +141,7 @@ class Message:
 
     def initialise_directory(self, client):
         os.makedirs(self.directory, exist_ok=True)
-        if self.has_file:
+        if self.has_video:
             # Find video, if applicable
             self.video = Video.from_directory(self.directory)
             if self.video is None:
