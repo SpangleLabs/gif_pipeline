@@ -46,8 +46,12 @@ class Channel:
             if os.path.isdir(f"{self.channel_directory}{message_dir}")
         ]
         for subdirectory in subdirectories:
-            message = Message.from_directory(self, subdirectory)
-            messages[message.message_id] = message
+            try:
+                message = Message.from_directory(self, subdirectory)
+                if message is not None:
+                    messages[message.message_id] = message
+            except Exception as e:
+                logging.warning(f"Failed to read message from directory: {subdirectory}. Exception: ", exc_info=e)
         return messages
 
     def read_messages_from_channel(self, client: TelegramClient) -> Dict[int, 'Message']:
@@ -85,7 +89,7 @@ class Message:
         self.reply_to_msg_id = None  # type: Optional[int]
 
     @staticmethod
-    def from_directory(channel: Channel, directory: str) -> 'Message':
+    def from_directory(channel: Channel, directory: str) -> Optional['Message']:
         message_id = int(directory.strip("/").split("/")[-1])
         message = Message(channel, message_id)
         with open(f"{directory}/{Message.FILE_NAME}", "r") as f:
@@ -100,6 +104,10 @@ class Message:
         if message.has_file:
             message.file_mime_type = message_data["file"]["mime_type"]
             message.file_size = message_data["file"]["size"]
+            video = Video.from_directory(directory)
+            if video is None:
+                return None
+            message.video = video
         message.is_reply = message_data["reply_to"]
         if message.is_reply:
             message.reply_to_msg_id = message_data["reply_to"]["message_id"]
@@ -130,10 +138,9 @@ class Message:
         os.makedirs(self.directory, exist_ok=True)
         if self.has_file:
             # Find video, if applicable
-            self.video = Video.from_message(self, client, self.directory)
-        else:
-            # Find video, if applicable
             self.video = Video.from_directory(self.directory)
+            if self.video is None:
+                self.video = Video.from_message(self, client, self.directory)
         # Save message data
         message_data = {
             "message_id": self.message_id,
