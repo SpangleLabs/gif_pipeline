@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Dict
 
-from channel import Channel
+from channel import Channel, WorkshopGroup
 from helpers import DuplicateHelper, TelegramGifHelper
 from telegram_client import TelegramClient
 
@@ -39,7 +39,7 @@ class Pipeline:
 
     def watch_workshop(self):
         logging.info("Initialising workshop")
-        workshop = Channel(self.workshop)
+        workshop = WorkshopGroup(self.workshop)
         workshop.initialise_channel(self.client)
         logging.info("Watching workshop")
         pass

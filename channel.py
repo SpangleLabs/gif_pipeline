@@ -3,28 +3,29 @@ import glob
 import json
 import logging
 import os
+from abc import ABC, abstractmethod
 from typing import Dict, Optional
 
 from telegram_client import TelegramClient
 
 
-class Channel:
+class Group(ABC):
     def __init__(self, handle: str, queue: bool = False):
         self.handle = handle
         self.queue = queue
-        self.channel_directory = f"store/channels/{self.handle}/"
         self.messages = {}
-        self.create_directory()
 
-    @staticmethod
-    def from_json(json_dict) -> 'Channel':
-        return Channel(json_dict['handle'], json_dict['queue'])
+    @property
+    @abstractmethod
+    def directory(self) -> str:
+        pass
 
     def create_directory(self):
-        os.makedirs(self.channel_directory, exist_ok=True)
+        os.makedirs(self.directory, exist_ok=True)
 
     def initialise_channel(self, client: TelegramClient):
         logging.info(f"Initialising channel: {self}")
+        self.create_directory()
         directory_messages = self.read_messages_from_directory()
         channel_messages = self.read_messages_from_channel(client)
         new_messages = [msg_id for msg_id in channel_messages.keys() if msg_id not in directory_messages]
@@ -40,10 +41,10 @@ class Channel:
         messages = {}
         # List subdirectories in directory and populate messages list
         subdirectories = [
-            f"{self.channel_directory}{message_dir}"
+            f"{self.directory}{message_dir}"
             for message_dir
-            in os.listdir(self.channel_directory)
-            if os.path.isdir(f"{self.channel_directory}{message_dir}")
+            in os.listdir(self.directory)
+            if os.path.isdir(f"{self.directory}{message_dir}")
         ]
         for subdirectory in subdirectories:
             try:
@@ -65,16 +66,40 @@ class Channel:
         return f"Channel({self.handle})"
 
 
+class Channel(Group):
+
+    def __init__(self, handle: str, queue: bool = False):
+        super().__init__(handle, queue)
+
+    @property
+    def directory(self) -> str:
+        return f"store/channels/{self.handle}/"
+
+    @staticmethod
+    def from_json(json_dict) -> 'Channel':
+        return Channel(json_dict['handle'], json_dict['queue'])
+
+
+class WorkshopGroup(Group):
+
+    def __init__(self, handle: str):
+        super().__init__(handle)
+
+    @property
+    def directory(self) -> str:
+        return f"store/workshop/{self.handle}/"
+
+
 class Message:
     FILE_NAME = "message.json"
 
-    def __init__(self, channel: Channel, message_id: int, posted: datetime):
+    def __init__(self, channel: Group, message_id: int, posted: datetime):
         # Basic parameters
         self.channel = channel
         self.message_id = message_id
         self.datetime = posted  # type: datetime.datetime
         # Internal stuff
-        self.directory = f"{channel.channel_directory}{message_id:06}"
+        self.directory = f"{channel.directory}{message_id:06}"
         self.video = None  # type: Optional[Video]
         # Telegram message data
         self.chat_id = None  # type: int
@@ -93,7 +118,7 @@ class Message:
         return self.has_file and (self.file_mime_type.startswith("video") or self.file_mime_type == "image/gif")
 
     @staticmethod
-    def from_directory(channel: Channel, directory: str) -> Optional['Message']:
+    def from_directory(channel: Group, directory: str) -> Optional['Message']:
         message_id = int(directory.strip("/").split("/")[-1])
         with open(f"{directory}/{Message.FILE_NAME}", "r") as f:
             message_data = json.load(f)
@@ -120,7 +145,7 @@ class Message:
         return message
 
     @staticmethod
-    def from_telegram_message(channel: Channel, message_data) -> 'Message':
+    def from_telegram_message(channel: Group, message_data) -> 'Message':
         message_id = message_data.id
         posted = message_data.date
         message = Message(channel, message_id, posted)
