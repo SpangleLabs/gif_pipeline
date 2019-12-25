@@ -64,6 +64,7 @@ class Pipeline:
             return
         # Convert to our custom Message object
         new_message = Message.from_telegram_message(chat, message)
+        new_message.initialise_directory(self.client)
         # Pass to helpers
         for helper in self.helpers:
             try:
