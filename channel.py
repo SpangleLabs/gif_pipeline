@@ -14,6 +14,7 @@ class Group(ABC):
         self.handle = handle
         self.queue = queue
         self.messages = {}
+        self.chat_id = None  # Optional[int]
 
     @property
     @abstractmethod
@@ -58,6 +59,7 @@ class Group(ABC):
     def read_messages_from_channel(self, client: TelegramClient) -> Dict[int, 'Message']:
         new_messages = {}
         for message_data in client.iter_channel_messages(self.handle):
+            self.chat_id = message_data.chat_id
             message = Message.from_telegram_message(self, message_data)
             new_messages[message.message_id] = message
         return new_messages
