@@ -15,6 +15,12 @@ class Pipeline:
         self.client = TelegramClient(config['api_id'], config['api_hash'])
         self.helpers = {}
 
+    @property
+    def all_channels(self) -> List[Group]:
+        channels = [x for x in self.channels]  # type: List[Group]
+        channels.append(self.workshop)
+        return channels
+
     def initialise_channels(self):
         logging.info("Initialising channels")
         # Scrape channels
@@ -40,8 +46,7 @@ class Pipeline:
 
     def watch_workshop(self):
         logging.info("Initialising workshop")
-        workshop = WorkshopGroup(self.workshop)
-        workshop.initialise_channel(self.client)
+        self.workshop.initialise_channel(self.client)
         logging.info("Watching workshop")
         self.client.add_message_handler(self.on_new_message)
 
