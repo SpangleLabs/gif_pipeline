@@ -1,8 +1,10 @@
 import json
 import logging
-from typing import Dict
+from typing import Dict, List
 
-from channel import Channel, WorkshopGroup
+from telethon import events
+
+from channel import Channel, WorkshopGroup, Message, Group
 from helpers import DuplicateHelper, TelegramGifHelper
 from telegram_client import TelegramClient
 

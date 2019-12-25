@@ -1,4 +1,7 @@
+from typing import Callable
+
 import telethon.sync
+from telethon import events
 
 
 class TelegramClient:
@@ -28,3 +31,9 @@ class TelegramClient:
     def download_media(self, chat_id: int, message_id: int, path: str):
         message = self._get_message(chat_id, message_id)
         return self.client.download_media(message=message, file=path)
+
+    def add_message_handler(self, function: Callable):
+        def function_wrapper(event: events.NewMessage.Event):
+            self._save_message(event)
+            function(event)
+        self.client.add_event_handler(function_wrapper, events.NewMessage())
