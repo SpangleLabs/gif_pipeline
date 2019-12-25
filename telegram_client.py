@@ -33,7 +33,7 @@ class TelegramClient:
         return self.client.download_media(message=message, file=path)
 
     def add_message_handler(self, function: Callable):
-        def function_wrapper(event: events.NewMessage.Event):
+        async def function_wrapper(event: events.NewMessage.Event):
             self._save_message(event)
             function(event)
         self.client.add_event_handler(function_wrapper, events.NewMessage())
