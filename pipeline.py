@@ -51,6 +51,7 @@ class Pipeline:
         self.workshop.initialise_channel(self.client)
         logging.info("Watching workshop")
         self.client.add_message_handler(self.on_new_message)
+        self.client.client.run_until_disconnected()
 
     def on_new_message(self, message: events.NewMessage.Event):
         # Get chat, check it's one we know
