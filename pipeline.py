@@ -67,7 +67,7 @@ class Pipeline:
         new_message = Message.from_telegram_message(chat, message)
         new_message.initialise_directory(self.client)
         # Pass to helpers
-        for helper in self.helpers:
+        for helper in self.helpers.values():
             try:
                 helper.on_new_message(new_message)
             except Exception as e:
