@@ -10,7 +10,8 @@ from telegram_client import TelegramClient
 class Pipeline:
     def __init__(self, config: Dict):
         self.channels = [Channel.from_json(x) for x in config['channels']]
-        self.workshop = config['workshop_group']
+        self.workshop_handle = config['workshop_group']
+        self.workshop = WorkshopGroup(self.workshop_handle)
         self.client = TelegramClient(config['api_id'], config['api_hash'])
         self.helpers = {}
 
@@ -42,7 +43,26 @@ class Pipeline:
         workshop = WorkshopGroup(self.workshop)
         workshop.initialise_channel(self.client)
         logging.info("Watching workshop")
-        pass
+        self.client.add_message_handler(self.on_new_message)
+
+    def on_new_message(self, message: events.NewMessage.Event):
+        # Get chat, check it's one we know
+        chat_id = message.chat_id
+        chat = None
+        for group in self.all_channels:
+            if group.chat_id == chat_id:
+                chat = group
+                break
+        if chat is None:
+            return
+        # Convert to our custom Message object
+        new_message = Message.from_telegram_message(chat, message)
+        # Pass to helpers
+        for helper in self.helpers:
+            try:
+                helper.on_new_message(new_message)
+            except Exception as e:
+                logging.error(f"Helper {helper} threw an exception trying to handle message {new_message}.", exc_info=e)
 
 
 def setup_logging():
