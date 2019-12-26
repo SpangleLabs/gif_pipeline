@@ -34,6 +34,6 @@ class TelegramClient:
 
     def add_message_handler(self, function: Callable):
         async def function_wrapper(event: events.NewMessage.Event):
-            self._save_message(event)
+            self._save_message(event.message)
             function(event)
         self.client.add_event_handler(function_wrapper, events.NewMessage())
