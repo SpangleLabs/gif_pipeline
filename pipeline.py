@@ -26,7 +26,7 @@ class Pipeline:
     def initialise_channels(self):
         logging.info("Initialising channels")
         # Scrape channels
-        for channel in self.channels:
+        for channel in self.all_channels:
             channel.initialise_channel(self.client)
         logging.info("Initialised channels")
 
@@ -47,8 +47,6 @@ class Pipeline:
         pass
 
     def watch_workshop(self):
-        logging.info("Initialising workshop")
-        self.workshop.initialise_channel(self.client)
         logging.info("Watching workshop")
         self.client.add_message_handler(self.on_new_message)
         self.client.client.run_until_disconnected()
