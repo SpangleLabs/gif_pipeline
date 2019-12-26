@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from typing import Dict, List
@@ -26,8 +27,8 @@ class Pipeline:
     def initialise_channels(self):
         logging.info("Initialising channels")
         # Scrape channels
-        for channel in self.all_channels:
-            channel.initialise_channel(self.client)
+        channel_init_awaitables = [chan.initialise_channel(self.client) for chan in self.all_channels]
+        self.client.client.loop.run_until_complete(asyncio.wait(channel_init_awaitables))
         logging.info("Initialised channels")
 
     def initialise_helpers(self):
@@ -51,7 +52,7 @@ class Pipeline:
         self.client.add_message_handler(self.on_new_message)
         self.client.client.run_until_disconnected()
 
-    def on_new_message(self, message: events.NewMessage.Event):
+    async def on_new_message(self, message: events.NewMessage.Event):
         # Get chat, check it's one we know
         chat_id = message.chat_id
         chat = None
@@ -63,7 +64,7 @@ class Pipeline:
             return
         # Convert to our custom Message object
         new_message = Message.from_telegram_message(chat, message)
-        new_message.initialise_directory(self.client)
+        await new_message.initialise_directory(self.client)
         # Pass to helpers
         for helper in self.helpers.values():
             try:

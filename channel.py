@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import glob
 import json
@@ -24,16 +25,17 @@ class Group(ABC):
     def create_directory(self):
         os.makedirs(self.directory, exist_ok=True)
 
-    def initialise_channel(self, client: TelegramClient):
+    async def initialise_channel(self, client: TelegramClient):
         logging.info(f"Initialising channel: {self}")
         self.create_directory()
         directory_messages = self.read_messages_from_directory()
-        channel_messages = self.read_messages_from_channel(client)
+        channel_messages = await self.read_messages_from_channel(client)
         new_messages = [msg_id for msg_id in channel_messages.keys() if msg_id not in directory_messages]
         removed_messages = [msg_id for msg_id in directory_messages.keys() if msg_id not in channel_messages]
         logging.info(f"Channel: {self} has {len(new_messages)} new and {len(removed_messages)} removed messages")
-        for msg_id in new_messages:
-            channel_messages[msg_id].initialise_directory(client)
+        channel_init_tasks = [channel_messages[msg_id].initialise_directory(client) for msg_id in new_messages]
+        if len(channel_init_tasks) > 0:
+            await asyncio.wait(channel_init_tasks)
         for msg_id in removed_messages:
             directory_messages[msg_id].delete_directory()
         self.messages = channel_messages
@@ -56,9 +58,9 @@ class Group(ABC):
                 logging.warning(f"Failed to read message from directory: {subdirectory}. Exception: ", exc_info=e)
         return messages
 
-    def read_messages_from_channel(self, client: TelegramClient) -> Dict[int, 'Message']:
+    async def read_messages_from_channel(self, client: TelegramClient) -> Dict[int, 'Message']:
         new_messages = {}
-        for message_data in client.iter_channel_messages(self.handle):
+        async for message_data in client.iter_channel_messages(self.handle):
             self.chat_id = message_data.chat_id
             message = Message.from_telegram_message(self, message_data)
             new_messages[message.message_id] = message
@@ -169,13 +171,13 @@ class Message:
             message.reply_to_msg_id = message_data.reply_to_msg_id
         return message
 
-    def initialise_directory(self, client):
+    async def initialise_directory(self, client):
         os.makedirs(self.directory, exist_ok=True)
         if self.has_video:
             # Find video, if applicable
             self.video = Video.from_directory(self.directory)
             if self.video is None:
-                self.video = Video.from_message(self, client, self.directory)
+                self.video = await Video.from_message(self, client, self.directory)
         # Save message data
         message_data = {
             "message_id": self.message_id,
@@ -258,12 +260,12 @@ class Video:
             return None
 
     @staticmethod
-    def from_message(message: Message, client: TelegramClient, message_directory: str):
+    async def from_message(message: Message, client: TelegramClient, message_directory: str):
         file_ext = message.file_mime_type.split("/")[-1]
         video_path = f"{message_directory}/{Video.FILE_NAME}.{file_ext}"
         if not os.path.exists(video_path):
             logging.info("Downloading video from message: {}".format(message))
-            client.download_media(message.chat_id, message.message_id, video_path)
+            await client.download_media(message.chat_id, message.message_id, video_path)
             video_metadata = VideoMetaData(message_directory)
             video_metadata.save_to_json()
             return Video(video_metadata)

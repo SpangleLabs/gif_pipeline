@@ -1,12 +1,12 @@
 from typing import Callable
 
-import telethon.sync
+import telethon
 from telethon import events
 
 
 class TelegramClient:
     def __init__(self, api_id, api_hash):
-        self.client = telethon.sync.TelegramClient('duplicate_checker', api_id, api_hash)
+        self.client = telethon.TelegramClient('duplicate_checker', api_id, api_hash)
         self.client.start()
         self.message_cache = {}
 
@@ -22,18 +22,18 @@ class TelegramClient:
             return None
         return self.message_cache[chat_id].get(message_id)
 
-    def iter_channel_messages(self, channel_handle: str):
-        channel_entity = self.client.get_entity(channel_handle)
-        for message in self.client.iter_messages(channel_entity):
+    async def iter_channel_messages(self, channel_handle: str):
+        channel_entity = await self.client.get_entity(channel_handle)
+        async for message in self.client.iter_messages(channel_entity):
             self._save_message(message)
             yield message
 
-    def download_media(self, chat_id: int, message_id: int, path: str):
+    async def download_media(self, chat_id: int, message_id: int, path: str):
         message = self._get_message(chat_id, message_id)
-        return self.client.download_media(message=message, file=path)
+        return await self.client.download_media(message=message, file=path)
 
     def add_message_handler(self, function: Callable):
         async def function_wrapper(event: events.NewMessage.Event):
             self._save_message(event.message)
-            function(event)
+            await function(event)
         self.client.add_event_handler(function_wrapper, events.NewMessage())
