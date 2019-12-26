@@ -61,11 +61,13 @@ class Pipeline:
                 chat = group
                 break
         if chat is None:
+            logging.debug("Ignoring new message in other chat")
             return
         # Convert to our custom Message object
         logging.info(f"New message in chat: {chat}")
         new_message = await Message.from_telegram_message(chat, message)
         await new_message.initialise_directory(self.client)
+        logging.info(f"New message initialised: {new_message}")
         # Pass to helpers
         for helper in self.helpers.values():
             try:
