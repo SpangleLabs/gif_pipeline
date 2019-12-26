@@ -63,7 +63,8 @@ class Pipeline:
         if chat is None:
             return
         # Convert to our custom Message object
-        new_message = Message.from_telegram_message(chat, message)
+        logging.info(f"New message in chat: {chat}")
+        new_message = await Message.from_telegram_message(chat, message)
         await new_message.initialise_directory(self.client)
         # Pass to helpers
         for helper in self.helpers.values():

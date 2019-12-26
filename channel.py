@@ -62,7 +62,7 @@ class Group(ABC):
         new_messages = {}
         async for message_data in client.iter_channel_messages(self.handle):
             self.chat_id = message_data.chat_id
-            message = Message.from_telegram_message(self, message_data)
+            message = await Message.from_telegram_message(self, message_data)
             new_messages[message.message_id] = message
         return new_messages
 
@@ -149,15 +149,16 @@ class Message:
         return message
 
     @staticmethod
-    def from_telegram_message(channel: Group, message_data) -> 'Message':
+    async def from_telegram_message(channel: Group, message_data) -> 'Message':
         message_id = message_data.id
         posted = message_data.date
         message = Message(channel, message_id, posted)
         # Set all the optional parameters
         message.chat_id = message_data.chat_id
-        if hasattr(message_data.chat, "username"):
-            message.chat_username = message_data.chat.username
-        message.chat_title = message_data.chat.title
+        chat = await message_data.get_chat()
+        if hasattr(chat, "username"):
+            message.chat_username = chat.username
+        message.chat_title = chat.title
         message.text = message_data.text
         if message_data.forward is not None:
             message.is_forward = True
