@@ -68,6 +68,7 @@ class Pipeline:
         # Convert to our custom Message object. This will update message data, but not the video, for edited messages
         logging.info(f"New message in chat: {chat}")
         new_message = await Message.from_telegram_message(chat, message)
+        chat.messages[new_message.message_id] = new_message
         await new_message.initialise_directory(self.client)
         logging.info(f"New message initialised: {new_message}")
         # Pass to helpers
