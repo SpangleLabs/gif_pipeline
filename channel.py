@@ -4,6 +4,7 @@ import glob
 import json
 import logging
 import os
+import shutil
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
 
@@ -207,7 +208,7 @@ class Message:
             json.dump(message_data, f, indent=2)
 
     def delete_directory(self):
-        os.removedirs(self.directory)
+        shutil.rmtree(self.directory)
         pass
 
     def __repr__(self):
