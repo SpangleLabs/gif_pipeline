@@ -15,7 +15,7 @@ class Group(ABC):
     def __init__(self, handle: str, queue: bool = False):
         self.handle = handle
         self.queue = queue
-        self.messages = {}
+        self.messages = {}  # type: Dict[int, Message]
         self.chat_id = None  # Optional[int]
 
     @property
