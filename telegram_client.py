@@ -38,3 +38,9 @@ class TelegramClient:
             await function(event)
         self.client.add_event_handler(function_wrapper, events.NewMessage())
         self.client.add_event_handler(function_wrapper, events.MessageEdited())
+
+    def add_delete_handler(self, function: Callable):
+        async def function_wrapper(event: events.MessageDeleted.Event):
+            await function(event)
+            # We don't need to delete from cache, and trying to do so is tough without chat id
+        self.client.add_event_handler(function_wrapper, events.MessageDeleted())

@@ -50,6 +50,7 @@ class Pipeline:
     def watch_workshop(self):
         logging.info("Watching workshop")
         self.client.add_message_handler(self.on_new_message)
+        self.client.add_delete_handler(self.on_deleted_message)
         self.client.client.run_until_disconnected()
 
     async def on_new_message(self, message: Union[events.NewMessage.Event, events.MessageEdited.Event]):
@@ -75,6 +76,11 @@ class Pipeline:
                 helper.on_new_message(new_message)
             except Exception as e:
                 logging.error(f"Helper {helper} threw an exception trying to handle message {new_message}.", exc_info=e)
+
+    def on_deleted_message(self, message: events.MessageDeleted.Event):
+        logging.info("Oopsy whoopsy my insides are outsides")
+        # TODO
+        pass
 
 
 def setup_logging():
