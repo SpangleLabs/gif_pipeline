@@ -78,10 +78,25 @@ class Pipeline:
             except Exception as e:
                 logging.error(f"Helper {helper} threw an exception trying to handle message {new_message}.", exc_info=e)
 
-    def on_deleted_message(self, message: events.MessageDeleted.Event):
-        logging.info("Oopsy whoopsy my insides are outsides")
-        # TODO
-        pass
+    async def on_deleted_message(self, event: events.MessageDeleted.Event):
+        deleted_ids = event.deleted_ids
+        channel_id = event.chat_id
+        if channel_id is None:
+            for deleted_id in deleted_ids:
+                message = self.workshop.messages.get(deleted_id)
+                logging.info(f"Deleting message {message} from workshop group: {self.workshop}")
+                if message is not None:
+                    message.delete_directory()
+                    self.workshop.messages.pop(deleted_id, None)
+        else:
+            for channel in self.channels:
+                if channel.chat_id == channel_id:
+                    for deleted_id in deleted_ids:
+                        message = channel.messages.get(deleted_id)
+                        logging.info(f"Deleting message {message} from channel: {channel}")
+                        if message is not None:
+                            message.delete_directory()
+                            channel.messages.pop(deleted_id, None)
 
 
 def setup_logging():
