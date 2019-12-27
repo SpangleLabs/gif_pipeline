@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from telethon import events
 
@@ -52,7 +52,8 @@ class Pipeline:
         self.client.add_message_handler(self.on_new_message)
         self.client.client.run_until_disconnected()
 
-    async def on_new_message(self, message: events.NewMessage.Event):
+    async def on_new_message(self, message: Union[events.NewMessage.Event, events.MessageEdited.Event]):
+        # This is called for both new messages, and edited messages
         # Get chat, check it's one we know
         chat_id = message.chat_id
         chat = None
@@ -63,7 +64,7 @@ class Pipeline:
         if chat is None:
             logging.debug("Ignoring new message in other chat")
             return
-        # Convert to our custom Message object
+        # Convert to our custom Message object. This will update message data, but not the video, for edited messages
         logging.info(f"New message in chat: {chat}")
         new_message = await Message.from_telegram_message(chat, message)
         await new_message.initialise_directory(self.client)

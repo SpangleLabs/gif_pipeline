@@ -37,3 +37,4 @@ class TelegramClient:
             self._save_message(event.message)
             await function(event)
         self.client.add_event_handler(function_wrapper, events.NewMessage())
+        self.client.add_event_handler(function_wrapper, events.MessageEdited())
