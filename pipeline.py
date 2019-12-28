@@ -72,11 +72,17 @@ class Pipeline:
         await new_message.initialise_directory(self.client)
         logging.info(f"New message initialised: {new_message}")
         # Pass to helpers
-        for helper in self.helpers.values():
-            try:
-                helper.on_new_message(new_message)
-            except Exception as e:
-                logging.error(f"Helper {helper} threw an exception trying to handle message {new_message}.", exc_info=e)
+        helper_results = asyncio.gather(
+            [helper.on_new_message(new_message) for helper in self.helpers.values()],
+            return_exceptions=True
+        )
+        results_dict = dict(zip(self.helpers.keys(), helper_results))
+        for helper, result in results_dict.items():
+            if isinstance(result, Exception):
+                logging.error(
+                    f"Helper {helper} threw an exception trying to handle message {new_message}.",
+                    exc_info=result
+                )
 
     async def on_deleted_message(self, event: events.MessageDeleted.Event):
         deleted_ids = event.deleted_ids
