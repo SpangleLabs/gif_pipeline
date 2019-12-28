@@ -34,8 +34,8 @@ class Pipeline:
     def initialise_helpers(self):
         logging.info("Initialising helpers")
         helpers = [
-            DuplicateHelper(),
-            TelegramGifHelper()
+            DuplicateHelper(self.client),
+            TelegramGifHelper(self.client)
         ]
         for helper in helpers:
             self.helpers[helper.name] = helper
