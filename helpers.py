@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from channel import Message, Video
+from telegram_client import TelegramClient
 
 
 def find_video_for_message(message: Message) -> Optional[Video]:
@@ -22,6 +23,16 @@ def find_video_for_message(message: Message) -> Optional[Video]:
 
 class Helper(ABC):
 
+    def __init__(self, client: TelegramClient):
+        self.client = client
+
+    async def send_text_reply(self, message: Message, text: str) -> Message:
+        msg = await self.client.send_text_message(message.chat_id, text, reply_to_msg_id=message.message_id)
+        new_message = await Message.from_telegram_message(message.channel, msg)
+        message.channel[new_message.message_id] = new_message
+        await new_message.initialise_directory(self.client)
+        return new_message
+
     @abstractmethod
     def on_new_message(self, message: Message):
         pass
@@ -33,9 +44,9 @@ class Helper(ABC):
 
 class DuplicateHelper(Helper):
 
-    def __init__(self):
+    def __init__(self, client: TelegramClient):
         # Initialise, get all channels, get all videos, decompose all, add to the master hash
-        pass
+        super().__init__(client)
 
     def on_new_message(self, message: Message):
         # If message has a video, decompose it if necessary, then check images against master hash
@@ -44,8 +55,8 @@ class DuplicateHelper(Helper):
 
 class TelegramGifHelper(Helper):
 
-    def __init__(self):
-        pass
+    def __init__(self, client: TelegramClient):
+        super().__init__(client)
 
     def on_new_message(self, message: Message):
         # If message has text which is a link to a gif, download it, then convert it
@@ -55,8 +66,8 @@ class TelegramGifHelper(Helper):
 
 class TwitterDownloadHelper(Helper):
 
-    def __init__(self):
-        pass
+    def __init__(self, client: TelegramClient):
+        super().__init__(client)
 
     def on_new_message(self, message: Message):
         # If a message has a twitter link, and the twitter link has a video, download it
@@ -65,8 +76,8 @@ class TwitterDownloadHelper(Helper):
 
 class YoutubeDownloadHelper(Helper):
 
-    def __init__(self):
-        pass
+    def __init__(self, client: TelegramClient):
+        super().__init__(client)
 
     def on_new_message(self, message: Message):
         # If a message has a youtube link, download it
@@ -75,8 +86,8 @@ class YoutubeDownloadHelper(Helper):
 
 class RedditDownloadHelper(Helper):
 
-    def __init__(self):
-        pass
+    def __init__(self, client: TelegramClient):
+        super().__init__(client)
 
     def on_new_message(self, message: Message):
         # If a message has text with a reddit link, and the reddit post has a video, download it
@@ -85,8 +96,8 @@ class RedditDownloadHelper(Helper):
 
 class GfycatDownloadHelper(Helper):
 
-    def __init__(self):
-        pass
+    def __init__(self, client: TelegramClient):
+        super().__init__(client)
 
     def on_new_message(self, message: Message):
         # If a message has text with a gfycat link, download it
@@ -95,8 +106,8 @@ class GfycatDownloadHelper(Helper):
 
 class VideoCutHelper(Helper):
 
-    def __init__(self):
-        pass
+    def __init__(self, client: TelegramClient):
+        super().__init__(client)
 
     def on_new_message(self, message: Message):
         # If a message has text saying to cut, with times?
@@ -106,8 +117,8 @@ class VideoCutHelper(Helper):
 
 class VideoRotateHelper(Helper):
 
-    def __init__(self):
-        pass
+    def __init__(self, client: TelegramClient):
+        super().__init__(client)
 
     def on_new_message(self, message: Message):
         # If a message has text saying to rotate, and is a reply to a video, then cut it
@@ -116,8 +127,8 @@ class VideoRotateHelper(Helper):
 
 
 class VideoCropHelper(Helper):
-    def __init__(self):
-        pass
+    def __init__(self, client: TelegramClient):
+        super().__init__(client)
 
     def on_new_message(self, message: Message):
         # If a message has text saying to crop, some percentages maybe?
@@ -127,8 +138,8 @@ class VideoCropHelper(Helper):
 
 class GifSendHelper(Helper):
 
-    def __init__(self):
-        pass
+    def __init__(self, client: TelegramClient):
+        super().__init__(client)
 
     def on_new_message(self, message: Message):
         # If a message says to send to a channel, and replies to a gif, then forward to that channel
@@ -139,8 +150,8 @@ class GifSendHelper(Helper):
 
 class ArchiveHelper(Helper):
 
-    def __init__(self):
-        pass
+    def __init__(self, client: TelegramClient):
+        super().__init__(client)
 
     def on_new_message(self, message: Message):
         # If a message says to archive, move to archive channel
@@ -149,8 +160,8 @@ class ArchiveHelper(Helper):
 
 class DeleteHelper(Helper):
 
-    def __init__(self):
-        pass
+    def __init__(self, client: TelegramClient):
+        super().__init__(client)
 
     def on_new_message(self, message: Message):
         # If a message says to delete, delete it and delete local files

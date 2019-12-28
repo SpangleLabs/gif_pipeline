@@ -1,7 +1,9 @@
-from typing import Callable
+from asyncio import Future
+from typing import Callable, Coroutine
 
 import telethon
 from telethon import events
+from telethon.tl.custom import message
 
 
 class TelegramClient:
@@ -44,3 +46,6 @@ class TelegramClient:
             await function(event)
             # We don't need to delete from cache, and trying to do so is tough without chat id
         self.client.add_event_handler(function_wrapper, events.MessageDeleted())
+
+    async def send_text_message(self, chat_id: int, text: str, *, reply_to_msg_id: int = None) -> message.Message:
+        return await self.client.send_message(chat_id, text, reply_to=reply_to_msg_id)
