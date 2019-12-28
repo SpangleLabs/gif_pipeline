@@ -1,6 +1,23 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
-from channel import Message
+from channel import Message, Video
+
+
+def find_video_for_message(message: Message) -> Optional[Video]:
+    # If given message has a video, return that
+    if message.has_video:
+        return message.video
+    # If it's a reply, return the video in that message
+    if message.is_reply:
+        reply_to = message.reply_to_msg_id
+        reply_to_msg = message.channel.messages[reply_to]
+        return reply_to_msg.video
+    # Otherwise, get the video from the message above it?
+    messages_above = [k for k, v in message.channel.messages.items() if k < message.message_id and v.has_video]
+    if messages_above:
+        return message.channel.messages[max(messages_above)].video
+    return None
 
 
 class Helper(ABC):
