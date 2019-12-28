@@ -28,7 +28,7 @@ class Pipeline:
         logging.info("Initialising channels")
         # Scrape channels
         channel_init_awaitables = [chan.initialise_channel(self.client) for chan in self.all_channels]
-        self.client.client.loop.run_until_complete(asyncio.wait(channel_init_awaitables))
+        self.client.synchronise_async(asyncio.wait(channel_init_awaitables))
         logging.info("Initialised channels")
 
     def initialise_helpers(self):

@@ -49,3 +49,6 @@ class TelegramClient:
 
     async def send_text_message(self, chat_id: int, text: str, *, reply_to_msg_id: int = None) -> message.Message:
         return await self.client.send_message(chat_id, text, reply_to=reply_to_msg_id)
+
+    def synchronise_async(self, future: Future):
+        return self.client.loop.run_until_complete(future)
