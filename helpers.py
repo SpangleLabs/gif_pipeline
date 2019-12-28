@@ -1,5 +1,6 @@
 import os
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from typing import Optional
 
 from channel import Message, Video
@@ -46,6 +47,14 @@ class Helper(ABC):
         os.rename(video_path, new_path)
         await new_message.initialise_directory(self.client)
         return new_message
+
+    @contextmanager
+    def progress_message(self, message: Message, text: str = None):
+        if text is None:
+            text = f"In progress. {self.name} is working on this."
+        msg = self.client.synchronise_async(self.send_text_reply(message, text))
+        yield
+        self.client.synchronise_async(self.client.delete_message(message.chat_id, msg.message_id))
 
     @abstractmethod
     async def on_new_message(self, message: Message):

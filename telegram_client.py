@@ -1,5 +1,5 @@
 from asyncio import Future
-from typing import Callable
+from typing import Callable, Coroutine, Union
 
 import telethon
 from telethon import events
@@ -55,5 +55,8 @@ class TelegramClient:
     ) -> message.Message:
         return await self.client.send_file(chat_id, video_path, caption=text, reply_to=reply_to_msg_id)
 
-    def synchronise_async(self, future: Future):
+    async def delete_message(self, chat_id: int, message_id: int):
+        await self.client.delete_messages(chat_id, message_id)
+
+    def synchronise_async(self, future: Union[Future, Coroutine]):
         return self.client.loop.run_until_complete(future)
