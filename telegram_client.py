@@ -1,5 +1,5 @@
 from asyncio import Future
-from typing import Callable, Coroutine
+from typing import Callable
 
 import telethon
 from telethon import events
@@ -49,6 +49,11 @@ class TelegramClient:
 
     async def send_text_message(self, chat_id: int, text: str, *, reply_to_msg_id: int = None) -> message.Message:
         return await self.client.send_message(chat_id, text, reply_to=reply_to_msg_id)
+
+    async def send_video_message(
+            self, chat_id: int, video_path: str, text: str = None, *, reply_to_msg_id: int = None
+    ) -> message.Message:
+        return await self.client.send_file(chat_id, video_path, caption=text, reply_to=reply_to_msg_id)
 
     def synchronise_async(self, future: Future):
         return self.client.loop.run_until_complete(future)

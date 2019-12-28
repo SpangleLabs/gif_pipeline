@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -30,6 +31,19 @@ class Helper(ABC):
         msg = await self.client.send_text_message(message.chat_id, text, reply_to_msg_id=message.message_id)
         new_message = await Message.from_telegram_message(message.channel, msg)
         message.channel[new_message.message_id] = new_message
+        await new_message.initialise_directory(self.client)
+        return new_message
+
+    async def send_video_reply(self, message: Message, video_path: str, text: str = None) -> Message:
+        msg = await self.client.send_video_message(
+            message.chat_id, video_path, text,
+            reply_to_msg_id=message.message_id
+        )
+        new_message = await Message.from_telegram_message(message.channel, msg)
+        message.channel[new_message.message_id] = new_message
+        file_ext = video_path.split(".")[-1]
+        new_path = f"{message.directory}/{Video.FILE_NAME}.{file_ext}"
+        os.rename(video_path, new_path)
         await new_message.initialise_directory(self.client)
         return new_message
 
