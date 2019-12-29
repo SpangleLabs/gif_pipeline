@@ -3,12 +3,12 @@ import os
 import re
 import subprocess
 from abc import ABC, abstractmethod
-from contextlib import asynccontextmanager
 from typing import Optional
 import uuid
 
 import ffmpy3
 import requests
+from async_generator import asynccontextmanager
 
 from channel import Message, Video
 from telegram_client import TelegramClient

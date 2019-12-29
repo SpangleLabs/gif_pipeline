@@ -5,3 +5,4 @@ pillow
 cryptg
 ffmpy3
 requests
+async_generator
