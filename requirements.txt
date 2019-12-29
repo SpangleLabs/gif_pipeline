@@ -6,3 +6,4 @@ cryptg
 ffmpy3
 requests
 async_generator
+python-dateutil

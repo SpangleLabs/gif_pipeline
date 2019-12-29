@@ -8,6 +8,8 @@ import shutil
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
 
+import dateutil
+
 from telegram_client import TelegramClient
 
 
@@ -133,7 +135,7 @@ class Message:
         message_id = int(directory.strip("/").split("/")[-1])
         with open(f"{directory}/{Message.FILE_NAME}", "r") as f:
             message_data = json.load(f)
-        posted = datetime.datetime.fromisoformat(message_data["datetime"])
+        posted = dateutil.parser.parse(message_data["datetime"])
         message = Message(channel, message_id, posted)
         # Set all the optional parameters
         message.chat_id = message_data["chat"]["id"]
