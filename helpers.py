@@ -1,7 +1,12 @@
 import os
+import re
+import subprocess
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
-from typing import Optional
+from typing import Optional, List
+import uuid
+
+import ffmpy3
 
 from channel import Message, Video
 from telegram_client import TelegramClient
@@ -21,6 +26,11 @@ def find_video_for_message(message: Message) -> Optional[Video]:
     if messages_above:
         return message.channel.messages[max(messages_above)].video
     return None
+
+
+def random_sandbox_video_path(file_ext: str = "mp4"):
+    os.makedirs("sandbox", exist_ok=True)
+    return f"sandbox/{uuid.uuid4()}.{file_ext}"
 
 
 class Helper(ABC):
