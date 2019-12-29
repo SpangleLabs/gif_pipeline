@@ -1,6 +1,6 @@
-ffmpy
 ImageHash
 telethon
 tqdm
 pillow
 cryptg
+ffmpy3
