@@ -8,7 +8,7 @@ import shutil
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
 
-import dateutil
+import dateutil.parser
 
 from telegram_client import TelegramClient
 
