@@ -87,14 +87,72 @@ class DuplicateHelper(Helper):
 
 
 class TelegramGifHelper(Helper):
+    FFMPEG_OPTIONS = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
+                     "-vf \"scale='min(1280,iw)':'min(720,ih)':force_original_aspect_" \
+                     "ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2\" -profile:v baseline -level 3.0 -vsync vfr"
+    CRF_OPTION = " -crf 18"
+    TARGET_SIZE_MB = 8
 
     def __init__(self, client: TelegramClient):
         super().__init__(client)
 
     async def on_new_message(self, message: Message):
         # If message has text which is a link to a gif, download it, then convert it
+        gif_links = re.findall(r"[^\s]+\.gif", message.text, re.IGNORECASE)
+        if gif_links:
+            return self.convert_gif_links(message, gif_links)
         # If a message has text saying gif, and is a reply to a video, convert that video
+        if "gif" in message.text.lower():
+            video = find_video_for_message(message)
+            new_path = await self.convert_video_to_telegram_gif(video.path)
+            await self.send_video_reply(message, new_path)
+        # Otherwise, ignore
+
+    def convert_gif_links(self, message: Message, links: List[str]):
+        # TODO
         pass
+
+    @staticmethod
+    async def convert_video_to_telegram_gif(video_path: str) -> str:
+        first_pass_filename = random_sandbox_video_path()
+        # first pass
+        ff = ffmpy3.FFmpeg(
+            inputs={video_path: None},
+            outputs={first_pass_filename: TelegramGifHelper.FFMPEG_OPTIONS + TelegramGifHelper.CRF_OPTION}
+        )
+        await ff.run_async()
+        await ff.wait()
+        # Check file size
+        if os.path.getsize(first_pass_filename) < TelegramGifHelper.TARGET_SIZE_MB * 1000_000:
+            return first_pass_filename
+        # If it's too big, do a 2 pass run
+        two_pass_filename = random_sandbox_video_path()
+        # Get video duration from ffprobe
+        ffprobe = ffmpy3.FFprobe(
+            global_options=["-v error"],
+            inputs={first_pass_filename: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
+        )
+        ffprobe_process = await ffprobe.run_async(stdout=subprocess.PIPE)
+        ffprobe_out = await ffprobe_process.communicate()
+        await ffprobe.wait()
+        duration = float(ffprobe_out[0].decode('utf-8').strip())
+        # 2 pass run
+        bitrate = TelegramGifHelper.TARGET_SIZE_MB / duration * 1000000 * 8
+        ff1 = ffmpy3.FFmpeg(
+            global_options=["-y"],
+            inputs={video_path: None},
+            outputs={os.devnull: TelegramGifHelper.FFMPEG_OPTIONS + " -b:v " + str(bitrate) + " -pass 1 -f mp4"}
+        )
+        await ff1.run_async()
+        await ff1.wait()
+        ff2 = ffmpy3.FFmpeg(
+            global_options=["-y"],
+            inputs={video_path: None},
+            outputs={two_pass_filename: TelegramGifHelper.FFMPEG_OPTIONS + " -b:v " + str(bitrate) + " -pass 2"}
+        )
+        await ff2.run_async()
+        await ff2.wait()
+        return two_pass_filename
 
 
 class TwitterDownloadHelper(Helper):
