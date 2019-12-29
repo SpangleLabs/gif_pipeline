@@ -3,7 +3,7 @@ import os
 import re
 import subprocess
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 from typing import Optional
 import uuid
 
@@ -60,13 +60,13 @@ class Helper(ABC):
         await new_message.initialise_directory(self.client)
         return new_message
 
-    @contextmanager
-    def progress_message(self, message: Message, text: str = None):
+    @asynccontextmanager
+    async def progress_message(self, message: Message, text: str = None):
         if text is None:
             text = f"In progress. {self.name} is working on this."
-        msg = self.client.synchronise_async(self.send_text_reply(message, text))
+        msg = await self.send_text_reply(message, text)
         yield
-        self.client.synchronise_async(self.client.delete_message(message.chat_id, msg.message_id))
+        await self.client.delete_message(message.chat_id, msg.message_id)
 
     @abstractmethod
     async def on_new_message(self, message: Message):
@@ -102,14 +102,14 @@ class TelegramGifHelper(Helper):
         # If message has text which is a link to a gif, download it, then convert it
         gif_links = re.findall(r"[^\s]+\.gif", message.text, re.IGNORECASE)
         if gif_links:
-            with self.progress_message(message, "Processing gif links in message"):
+            async with self.progress_message(message, "Processing gif links in message"):
                 await asyncio.gather(self.convert_gif_link(message, gif_link) for gif_link in gif_links)
                 return
         # If a message has text saying gif, and is a reply to a video, convert that video
         if "gif" in message.text.lower():
             video = find_video_for_message(message)
             if video is not None:
-                with self.progress_message(message, "Converting video to telegram gif"):
+                async with self.progress_message(message, "Converting video to telegram gif"):
                     new_path = await self.convert_video_to_telegram_gif(video.full_path)
                     await self.send_video_reply(message, new_path)
                 return
