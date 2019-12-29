@@ -4,3 +4,4 @@ tqdm
 pillow
 cryptg
 ffmpy3
+requests

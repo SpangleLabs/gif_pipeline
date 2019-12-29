@@ -1,12 +1,14 @@
+import asyncio
 import os
 import re
 import subprocess
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
-from typing import Optional, List
+from typing import Optional
 import uuid
 
 import ffmpy3
+import requests
 
 from channel import Message, Video
 from telegram_client import TelegramClient
@@ -100,17 +102,24 @@ class TelegramGifHelper(Helper):
         # If message has text which is a link to a gif, download it, then convert it
         gif_links = re.findall(r"[^\s]+\.gif", message.text, re.IGNORECASE)
         if gif_links:
-            return self.convert_gif_links(message, gif_links)
+            await asyncio.gather(self.convert_gif_link(message, gif_link) for gif_link in gif_links)
+            return
         # If a message has text saying gif, and is a reply to a video, convert that video
         if "gif" in message.text.lower():
             video = find_video_for_message(message)
             new_path = await self.convert_video_to_telegram_gif(video.path)
             await self.send_video_reply(message, new_path)
+            return
         # Otherwise, ignore
+        return
 
-    def convert_gif_links(self, message: Message, links: List[str]):
-        # TODO
-        pass
+    async def convert_gif_link(self, message: Message, gif_link: str):
+        resp = requests.get(gif_link)
+        gif_path = random_sandbox_video_path("gif")
+        with open(gif_path, "wb") as f:
+            f.write(resp.content)
+        new_path = await self.convert_video_to_telegram_gif(gif_path)
+        await self.send_video_reply(message, new_path)
 
     @staticmethod
     async def convert_video_to_telegram_gif(video_path: str) -> str:
