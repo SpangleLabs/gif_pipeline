@@ -72,8 +72,8 @@ class Pipeline:
         await new_message.initialise_directory(self.client)
         logging.info(f"New message initialised: {new_message}")
         # Pass to helpers
-        helper_results = asyncio.gather(
-            [helper.on_new_message(new_message) for helper in self.helpers.values()],
+        helper_results = await asyncio.gather(
+            *(helper.on_new_message(new_message) for helper in self.helpers.values()),
             return_exceptions=True
         )
         results_dict = dict(zip(self.helpers.keys(), helper_results))
