@@ -248,8 +248,9 @@ class VideoMetaData:
 class Video:
     FILE_NAME = "video"
 
-    def __init__(self, metadata: VideoMetaData):
+    def __init__(self, metadata: VideoMetaData, full_path: str):
         self.metadata = metadata
+        self.full_path = full_path
 
     @staticmethod
     def from_directory(message_directory: str):
@@ -257,7 +258,7 @@ class Video:
         metadata_path = f"{message_directory}/{VideoMetaData.FILE_NAME}"
         if video_files and os.path.exists(metadata_path):
             metadata = VideoMetaData.load_from_json(metadata_path)
-            return Video(metadata)
+            return Video(metadata, video_files[0])
         else:
             return None
 
@@ -270,6 +271,6 @@ class Video:
             await client.download_media(message.chat_id, message.message_id, video_path)
             video_metadata = VideoMetaData(message_directory)
             video_metadata.save_to_json()
-            return Video(video_metadata)
+            return Video(video_metadata, video_path)
         else:
             return Video.from_directory(message_directory)

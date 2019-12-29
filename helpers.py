@@ -110,7 +110,7 @@ class TelegramGifHelper(Helper):
             video = find_video_for_message(message)
             if video is not None:
                 with self.progress_message(message, "Converting video to telegram gif"):
-                    new_path = await self.convert_video_to_telegram_gif(video.path)
+                    new_path = await self.convert_video_to_telegram_gif(video.full_path)
                     await self.send_video_reply(message, new_path)
                 return
             await self.send_text_reply(
