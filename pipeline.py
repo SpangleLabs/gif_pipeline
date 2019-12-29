@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import sys
 from typing import Dict, List, Union
 
 from telethon import events
@@ -119,7 +120,14 @@ def setup_logging():
     logger.addHandler(console_handler)
 
 
+def setup_loop():
+    if sys.platform == 'win32':
+        loop = asyncio.ProactorEventLoop()
+        asyncio.set_event_loop(loop)
+
+
 if __name__ == "__main__":
+    setup_loop()
     setup_logging()
     with open("config.json", "r") as c:
         conf = json.load(c)
