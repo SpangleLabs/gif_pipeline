@@ -34,16 +34,21 @@ class Pipeline:
 
     def initialise_helpers(self):
         logging.info("Initialising helpers")
+        duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
         helpers = [
-            DuplicateHelper(self.client),
+            duplicate_helper,
             TelegramGifHelper(self.client)
         ]
         for helper in helpers:
             self.helpers[helper.name] = helper
         logging.info(f"Initialised {len(self.helpers)} helpers")
 
-    def initialise_duplicate_detector(self):
-        pass
+    async def initialise_duplicate_detector(self) -> DuplicateHelper:
+        helper = DuplicateHelper(self.client)
+        logging.info("Initialising DuplicateHelper")
+        await helper.initialise_hashes(self.channels, self.workshop)
+        logging.info("Initialised DuplicateHelper")
+        return helper
 
     def initialise_gif_creator(self):
         pass

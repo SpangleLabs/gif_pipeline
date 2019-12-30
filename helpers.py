@@ -85,10 +85,12 @@ class DuplicateHelper(Helper):
     DECOMPOSE_DIRECTORY = "video_decompose"
     DECOMPOSE_JSON = "video_hashes.json"
 
-    def __init__(self, client: TelegramClient, channels: List[Channel], workshop: WorkshopGroup):
+    def __init__(self, client: TelegramClient):
         # Initialise, get all channels, get all videos, decompose all, add to the master hash
         super().__init__(client)
         self.hashes = {}
+
+    async def initialise_hashes(self, channels: List[Channel], workshop: WorkshopGroup):
         await asyncio.wait([self.add_channel_hashes_to_store(channel) for channel in channels])
         for message in workshop.messages.values():
             hashes = await self.get_message_hashes(message)
