@@ -25,6 +25,9 @@ class Group(ABC):
     def directory(self) -> str:
         pass
 
+    def telegram_link_for_message(self, message: 'Message') -> str:
+        return f"tg://openmessage?chat_id={self.handle}&message_id={message.message_id}"
+
     def create_directory(self):
         os.makedirs(self.directory, exist_ok=True)
 
@@ -92,6 +95,9 @@ class Channel(Group):
     def from_json(json_dict) -> 'Channel':
         return Channel(json_dict['handle'], json_dict['queue'])
 
+    def telegram_link_for_message(self, message: 'Message') -> str:
+        return f"https://t.me/{self.handle}/{message.message_id}"
+
 
 class WorkshopGroup(Group):
 
@@ -129,6 +135,10 @@ class Message:
     @property
     def has_video(self) -> bool:
         return self.has_file and (self.file_mime_type.startswith("video") or self.file_mime_type == "image/gif")
+
+    @property
+    def telegram_link(self) -> str:
+        return self.channel.telegram_link_for_message(self)
 
     @staticmethod
     def from_directory(channel: Group, directory: str) -> Optional['Message']:
