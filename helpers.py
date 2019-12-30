@@ -1,16 +1,20 @@
 import asyncio
+import glob
+import json
 import os
 import re
 import subprocess
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, List
 import uuid
 
 import ffmpy3
+import imagehash
 import requests
+from PIL import Image
 from async_generator import asynccontextmanager
 
-from channel import Message, Video
+from channel import Message, Video, Channel, WorkshopGroup
 from telegram_client import TelegramClient
 
 
@@ -78,14 +82,90 @@ class Helper(ABC):
 
 
 class DuplicateHelper(Helper):
+    DECOMPOSE_DIRECTORY = "video_decompose"
+    DECOMPOSE_JSON = "video_hashes.json"
 
-    def __init__(self, client: TelegramClient):
+    def __init__(self, client: TelegramClient, channels: List[Channel], workshop: WorkshopGroup):
         # Initialise, get all channels, get all videos, decompose all, add to the master hash
         super().__init__(client)
+        self.hashes = {}
+        await asyncio.wait([self.add_channel_hashes_to_store(channel) for channel in channels])
+        for message in workshop.messages.values():
+            hashes = await self.get_message_hashes(message)
+            await self.check_hash_in_store(hashes, message)
+
+    async def add_channel_hashes_to_store(self, channel: Channel):
+        for message in channel.messages.values():
+            hashes = await self.get_message_hashes(message)
+            for image_hash in hashes:
+                self.add_hash_to_store(image_hash, message)
+
+    @staticmethod
+    async def get_message_hashes(message: Message) -> List[str]:
+        try:
+            with open(f"{message.directory}/{DuplicateHelper.DECOMPOSE_JSON}", "r") as f:
+                message_hashes = json.load(f)
+            return message_hashes
+        except FileNotFoundError:
+            if message.video is not None:
+                # Decompose video into images
+                message_decompose_path = f"{message.directory}/{DuplicateHelper.DECOMPOSE_DIRECTORY}"
+                if not os.path.exists(message_decompose_path):
+                    os.mkdir(message_decompose_path)
+                    await DuplicateHelper.decompose_video(message.video.full_path, message_decompose_path)
+                # Hash the images
+                hashes = []
+                for image_file in glob.glob(f"{message_decompose_path}/*.png"):
+                    image = Image.open(image_file)
+                    image_hash = str(imagehash.average_hash(image))
+                    hashes.append(image_hash)
+                # Save hashes
+                with open(f"{message.directory}/{DuplicateHelper.DECOMPOSE_JSON}", "w") as f:
+                    json.dump(hashes, f)
+                # Return hashes
+                return hashes
+
+    def add_hash_to_store(self, image_hash: str, message: Message):
+        if image_hash not in self.hashes:
+            self.hashes[image_hash] = []
+        self.hashes[image_hash].append(message)
+
+    def check_hash_in_store(self, image_hashes: List[str], message: Message):
+        for image_hash in image_hashes:
+            if image_hash in self.hashes:
+                return await self.post_duplicate_warning(message, self.hashes[image_hash])
+            self.add_hash_to_store(image_hash, message)
+
+    def post_duplicate_warning(self, new_message: Message, potential_matches: List[Message]):
+        message_links = [message.telegram_link for message in potential_matches]
+        warning_message = "This video might be a duplicate of:\n" + "\n".join(message_links)
+        self.send_text_reply(new_message, warning_message)
+
+    @staticmethod
+    def get_image_hashes(decompose_directory: str):
+        hashes = []
+        for image_file in glob.glob(f"{decompose_directory}/*.png"):
+            image = Image.open(image_file)
+            image_hash = str(imagehash.average_hash(image))
+            hashes.append(image_hash)
+        return hashes
+
+    @staticmethod
+    async def decompose_video(video_path: str, decompose_dir_path: str):
+        ff = ffmpy3.FFmpeg(
+            inputs={video_path: None},
+            outputs={f"{decompose_dir_path}/out%d.png": "-vf fps=5 -vsync 0"}
+        )
+        await ff.run_async()
+        await ff.wait()
 
     async def on_new_message(self, message: Message):
         # If message has a video, decompose it if necessary, then check images against master hash
-        pass
+        hashes = await self.get_message_hashes(message)
+        if isinstance(message.channel, Channel):
+            for image_hash in hashes:
+                self.add_hash_to_store(image_hash, message)
+        await self.check_hash_in_store(hashes, message)
 
 
 class TelegramGifHelper(Helper):
