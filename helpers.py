@@ -91,12 +91,13 @@ class DuplicateHelper(Helper):
         super().__init__(client)
         self.hashes = {}
 
-    async def initialise_hashes(self, channels: List[Channel], workshop: WorkshopGroup):
+    async def initialise_hashes(self, channels: List[Channel], workshops: List[WorkshopGroup]):
         await asyncio.wait([self.add_channel_hashes_to_store(channel) for channel in channels])
-        workshop_messages = list(workshop.messages.values())
-        for message in workshop_messages:
-            hashes = await self.get_message_hashes(message)
-            await self.check_hash_in_store(hashes, message)
+        for workshop in workshops:
+            workshop_messages = list(workshop.messages.values())
+            for message in workshop_messages:
+                hashes = await self.get_message_hashes(message)
+                await self.check_hash_in_store(hashes, message)
 
     async def add_channel_hashes_to_store(self, channel: Channel):
         for message in channel.messages.values():

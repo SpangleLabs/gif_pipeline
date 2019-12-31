@@ -14,15 +14,15 @@ from telegram_client import TelegramClient
 class Pipeline:
     def __init__(self, config: Dict):
         self.channels = [Channel.from_json(x) for x in config['channels']]
-        self.workshop_handle = config['workshop_group']
-        self.workshop = WorkshopGroup(self.workshop_handle)
+        self.workshops = [WorkshopGroup(x["handle"]) for x in config["workshop_groups"]]
         self.client = TelegramClient(config['api_id'], config['api_hash'])
         self.helpers = {}
 
     @property
     def all_channels(self) -> List[Group]:
         channels = [x for x in self.channels]  # type: List[Group]
-        channels.append(self.workshop)
+        for workshop in self.workshops:
+            channels.append(workshop)
         return channels
 
     def initialise_channels(self):
@@ -46,7 +46,7 @@ class Pipeline:
     async def initialise_duplicate_detector(self) -> DuplicateHelper:
         helper = DuplicateHelper(self.client)
         logging.info("Initialising DuplicateHelper")
-        await helper.initialise_hashes(self.channels, self.workshop)
+        await helper.initialise_hashes(self.channels, self.workshops)
         logging.info("Initialised DuplicateHelper")
         return helper
 
@@ -94,12 +94,13 @@ class Pipeline:
         deleted_ids = event.deleted_ids
         channel_id = event.chat_id
         if channel_id is None:
-            for deleted_id in deleted_ids:
-                message = self.workshop.messages.get(deleted_id)
-                logging.info(f"Deleting message {message} from workshop group: {self.workshop}")
-                if message is not None:
-                    message.delete_directory()
-                    self.workshop.messages.pop(deleted_id, None)
+            for workshop in self.workshops:
+                for deleted_id in deleted_ids:
+                    message = workshop.messages.get(deleted_id)
+                    logging.info(f"Deleting message {message} from workshop group: {workshop}")
+                    if message is not None:
+                        message.delete_directory()
+                        workshop.messages.pop(deleted_id, None)
         else:
             for channel in self.channels:
                 if channel.chat_id == channel_id:
