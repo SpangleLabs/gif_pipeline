@@ -92,7 +92,8 @@ class DuplicateHelper(Helper):
 
     async def initialise_hashes(self, channels: List[Channel], workshop: WorkshopGroup):
         await asyncio.wait([self.add_channel_hashes_to_store(channel) for channel in channels])
-        for message in workshop.messages.values():
+        workshop_messages = list(workshop.messages.values())
+        for message in workshop_messages:
             hashes = await self.get_message_hashes(message)
             await self.check_hash_in_store(hashes, message)
 
@@ -122,6 +123,8 @@ class DuplicateHelper(Helper):
                 image = Image.open(image_file)
                 image_hash = str(imagehash.average_hash(image))
                 hashes.append(image_hash)
+            # Delete the images
+            # TODO
             # Save hashes
             with open(f"{message.directory}/{DuplicateHelper.DECOMPOSE_JSON}", "w") as f:
                 json.dump(hashes, f)
