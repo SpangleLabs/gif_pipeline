@@ -124,7 +124,7 @@ class DuplicateHelper(Helper):
             hashes = []
             for image_file in glob.glob(f"{message_decompose_path}/*.png"):
                 image = Image.open(image_file)
-                image_hash = str(imagehash.average_hash(image))
+                image_hash = str(imagehash.dhash(image))
                 hashes.append(image_hash)
             # Delete the images
             shutil.rmtree(message_decompose_path)
