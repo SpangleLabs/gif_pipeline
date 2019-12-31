@@ -109,23 +109,24 @@ class DuplicateHelper(Helper):
                 message_hashes = json.load(f)
             return message_hashes
         except FileNotFoundError:
-            if message.video is not None:
-                # Decompose video into images
-                message_decompose_path = f"{message.directory}/{DuplicateHelper.DECOMPOSE_DIRECTORY}"
-                if not os.path.exists(message_decompose_path):
-                    os.mkdir(message_decompose_path)
-                    await DuplicateHelper.decompose_video(message.video.full_path, message_decompose_path)
-                # Hash the images
-                hashes = []
-                for image_file in glob.glob(f"{message_decompose_path}/*.png"):
-                    image = Image.open(image_file)
-                    image_hash = str(imagehash.average_hash(image))
-                    hashes.append(image_hash)
-                # Save hashes
-                with open(f"{message.directory}/{DuplicateHelper.DECOMPOSE_JSON}", "w") as f:
-                    json.dump(hashes, f)
-                # Return hashes
-                return hashes
+            if message.video is None:
+                return []
+            # Decompose video into images
+            message_decompose_path = f"{message.directory}/{DuplicateHelper.DECOMPOSE_DIRECTORY}"
+            if not os.path.exists(message_decompose_path):
+                os.mkdir(message_decompose_path)
+                await DuplicateHelper.decompose_video(message.video.full_path, message_decompose_path)
+            # Hash the images
+            hashes = []
+            for image_file in glob.glob(f"{message_decompose_path}/*.png"):
+                image = Image.open(image_file)
+                image_hash = str(imagehash.average_hash(image))
+                hashes.append(image_hash)
+            # Save hashes
+            with open(f"{message.directory}/{DuplicateHelper.DECOMPOSE_JSON}", "w") as f:
+                json.dump(hashes, f)
+            # Return hashes
+            return hashes
 
     def add_hash_to_store(self, image_hash: str, message: Message):
         if image_hash not in self.hashes:
