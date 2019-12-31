@@ -39,12 +39,11 @@ class Group(ABC):
         new_messages = [msg_id for msg_id in channel_messages.keys() if msg_id not in directory_messages]
         removed_messages = [msg_id for msg_id in directory_messages.keys() if msg_id not in channel_messages]
         logging.info(f"Channel: {self} has {len(new_messages)} new and {len(removed_messages)} removed messages")
-        # Initialise all the new messages in channel, which may mean downloading videos
-        channel_init_tasks = [channel_messages[msg_id].initialise_directory(client) for msg_id in new_messages]
-        if len(channel_init_tasks) > 0:
-            await asyncio.wait(channel_init_tasks)
         # Create a result dictionary from directory messages, with new channel messages, without removed messages
         for msg_id in new_messages:
+            # Initialise all the new messages in channel, which may mean downloading videos
+            # Doing this in serial to prevent requesting hundreds of files at once
+            await channel_messages[msg_id].initialise_directory(client)
             directory_messages[msg_id] = channel_messages[msg_id]
         for msg_id in removed_messages:
             directory_messages[msg_id].delete_directory()
