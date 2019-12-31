@@ -5,7 +5,7 @@ import os
 import re
 import subprocess
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import Optional, List, Set
 import uuid
 
 import ffmpy3
@@ -133,8 +133,8 @@ class DuplicateHelper(Helper):
 
     def add_hash_to_store(self, image_hash: str, message: Message):
         if image_hash not in self.hashes:
-            self.hashes[image_hash] = []
-        self.hashes[image_hash].append(message)
+            self.hashes[image_hash] = set()
+        self.hashes[image_hash].add(message)
 
     async def check_hash_in_store(self, image_hashes: List[str], message: Message):
         for image_hash in image_hashes:
@@ -142,7 +142,7 @@ class DuplicateHelper(Helper):
                 return await self.post_duplicate_warning(message, self.hashes[image_hash])
             self.add_hash_to_store(image_hash, message)
 
-    async def post_duplicate_warning(self, new_message: Message, potential_matches: List[Message]):
+    async def post_duplicate_warning(self, new_message: Message, potential_matches: Set[Message]):
         message_links = [message.telegram_link for message in potential_matches]
         warning_message = "This video might be a duplicate of:\n" + "\n".join(message_links)
         await self.send_text_reply(new_message, warning_message)
