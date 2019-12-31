@@ -231,6 +231,15 @@ class Message:
     def __repr__(self):
         return f"Message(chat_id={self.chat_username or self.chat_id}, message_id={self.message_id})"
 
+    def __eq__(self, other):
+        return isinstance(other, Message) and self.channel == other.channel and self.message_id == other.message_id
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((self.channel.handle, self.message_id))
+
 
 class VideoMetaData:
     FILE_NAME = "video_metadata.json"
