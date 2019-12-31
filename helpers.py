@@ -139,10 +139,10 @@ class DuplicateHelper(Helper):
                 return await self.post_duplicate_warning(message, self.hashes[image_hash])
             self.add_hash_to_store(image_hash, message)
 
-    def post_duplicate_warning(self, new_message: Message, potential_matches: List[Message]):
+    async def post_duplicate_warning(self, new_message: Message, potential_matches: List[Message]):
         message_links = [message.telegram_link for message in potential_matches]
         warning_message = "This video might be a duplicate of:\n" + "\n".join(message_links)
-        self.send_text_reply(new_message, warning_message)
+        await self.send_text_reply(new_message, warning_message)
 
     @staticmethod
     def get_image_hashes(decompose_directory: str):
