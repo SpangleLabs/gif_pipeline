@@ -13,6 +13,7 @@ import imagehash
 import requests
 from PIL import Image
 from async_generator import asynccontextmanager
+import shutil
 
 from channel import Message, Video, Channel, WorkshopGroup
 from telegram_client import TelegramClient
@@ -105,15 +106,17 @@ class DuplicateHelper(Helper):
 
     @staticmethod
     async def get_message_hashes(message: Message) -> List[str]:
+        message_decompose_path = f"{message.directory}/{DuplicateHelper.DECOMPOSE_DIRECTORY}"
         try:
             with open(f"{message.directory}/{DuplicateHelper.DECOMPOSE_JSON}", "r") as f:
                 message_hashes = json.load(f)
+            if os.path.exists(message_decompose_path):
+                shutil.rmtree(message_decompose_path)
             return message_hashes
         except FileNotFoundError:
             if message.video is None:
                 return []
             # Decompose video into images
-            message_decompose_path = f"{message.directory}/{DuplicateHelper.DECOMPOSE_DIRECTORY}"
             if not os.path.exists(message_decompose_path):
                 os.mkdir(message_decompose_path)
                 await DuplicateHelper.decompose_video(message.video.full_path, message_decompose_path)
@@ -124,7 +127,7 @@ class DuplicateHelper(Helper):
                 image_hash = str(imagehash.average_hash(image))
                 hashes.append(image_hash)
             # Delete the images
-            # TODO
+            shutil.rmtree(message_decompose_path)
             # Save hashes
             with open(f"{message.directory}/{DuplicateHelper.DECOMPOSE_JSON}", "w") as f:
                 json.dump(hashes, f)
