@@ -140,9 +140,13 @@ class DuplicateHelper(Helper):
         self.hashes[image_hash].add(message)
 
     async def check_hash_in_store(self, image_hashes: List[str], message: Message):
+        found_match = set()
         for image_hash in image_hashes:
             if image_hash in self.hashes:
-                return await self.post_duplicate_warning(message, self.hashes[image_hash])
+                found_match.union(self.hashes[image_hash])
+        if len(found_match) > 0:
+            await self.post_duplicate_warning(message, found_match)
+        for image_hash in image_hashes:
             self.add_hash_to_store(image_hash, message)
 
     async def post_duplicate_warning(self, new_message: Message, potential_matches: Set[Message]):
