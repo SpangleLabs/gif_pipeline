@@ -6,7 +6,7 @@ import logging
 import os
 import shutil
 from abc import ABC, abstractmethod
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import dateutil.parser
 
@@ -14,7 +14,7 @@ from telegram_client import TelegramClient
 
 
 class Group(ABC):
-    def __init__(self, handle: str, queue: bool = False):
+    def __init__(self, handle: Union[str, int], queue: bool = False):
         self.handle = handle
         self.queue = queue
         self.messages = {}  # type: Dict[int, Message]
@@ -26,7 +26,10 @@ class Group(ABC):
         pass
 
     def telegram_link_for_message(self, message: 'Message') -> str:
-        return f"tg://openmessage?chat_id={self.handle}&message_id={message.message_id}"
+        handle = self.handle
+        if isinstance(self.handle, int):
+            handle = -self.handle
+        return f"tg://openmessage?chat_id={handle}&message_id={message.message_id}"
 
     def create_directory(self):
         os.makedirs(self.directory, exist_ok=True)
