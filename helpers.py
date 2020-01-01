@@ -346,10 +346,9 @@ class VideoCutHelper(Helper):
                 start = None
         if not cut_out:
             new_path = random_sandbox_video_path()
-            in_string = f"-ss {start}" if start is not None else None
-            out_string = (in_string if start is not None else '') + " " + (f"-to {end}" if end is not None else "")
+            out_string = (f"-ss {start}" if start is not None else "") + " " + (f"-to {end}" if end is not None else "")
             ff = ffmpy3.FFmpeg(
-                inputs={video.full_path: in_string},
+                inputs={video.full_path: None},
                 outputs={new_path: out_string}
             )
             await ff.run_async()
@@ -362,14 +361,14 @@ class VideoCutHelper(Helper):
             outputs={first_part_path: f"-to {start}"}
         )
         ff2 = ffmpy3.FFmpeg(
-            inputs={video.full_path: f"-ss {end}"},
+            inputs={video.full_path: None},
             outputs={second_part_path: f"-ss {end}"}
         )
         await asyncio.gather(ff1.run_async(), ff2.run_async())
         await asyncio.gather(ff1.wait(), ff2.wait())
         inputs_file = random_sandbox_video_path("txt")
         with open(inputs_file, "r") as f:
-            f.writelines([first_part_path, second_part_path])
+            f.write(f"file '{first_part_path}'\nfile '{second_part_path}'")
         output_path = random_sandbox_video_path()
         ff_concat = ffmpy3.FFmpeg(
             inputs={inputs_file: "-safe 0 -f concat"},
