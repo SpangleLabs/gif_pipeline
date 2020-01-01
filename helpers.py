@@ -180,7 +180,8 @@ class DuplicateHelper(Helper):
             for image_hash in hashes:
                 self.add_hash_to_store(image_hash, message)
             return
-        await self.check_hash_in_store(hashes, message)
+        with self.progress_message(message, "Checking whether this video has been seen before"):
+            await self.check_hash_in_store(hashes, message)
 
 
 class TelegramGifHelper(Helper):
