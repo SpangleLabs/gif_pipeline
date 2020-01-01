@@ -5,7 +5,7 @@ import os
 import re
 import subprocess
 from abc import ABC, abstractmethod
-from typing import Optional, List, Set
+from typing import Optional, List, Set, Tuple, Match
 import uuid
 
 import ffmpy3
@@ -318,7 +318,90 @@ class VideoCutHelper(Helper):
     async def on_new_message(self, message: Message):
         # If a message has text saying to cut, with times?
         # Maybe `cut start:end`, or `cut out start:end` and is a reply to a video, then cut it
-        pass
+        text_clean = message.text.lower().strip()
+        cut_out = False
+        if text_clean.startswith("cut out"):
+            start, end = VideoCutHelper.get_start_and_end(text_clean[len("cut out"):].strip())
+            cut_out = True
+        elif text_clean.startswith("cut"):
+            start, end = VideoCutHelper.get_start_and_end(text_clean[len("cut"):].strip())
+        else:
+            return None
+        video = find_video_for_message(message)
+        if video is None:
+            return "C"
+        if start is None and end is None:
+            return await self.send_text_reply(
+                message,
+                "Start and end was not understood for this cut. "
+                "Please provide start and end in the format MM:SS or as a number of seconds, with a space between them."
+            )
+        if cut_out and (start is None or end is None):
+            cut_out = False
+            if start is None:
+                start = end
+                end = None
+            else:
+                end = start
+                start = None
+        if not cut_out:
+            new_path = random_sandbox_video_path()
+            in_string = f"-ss {start}" if start is not None else None
+            out_string = (in_string if start is not None else '') + " " + (f"-to {end}" if end is not None else "")
+            ff = ffmpy3.FFmpeg(
+                inputs={video.full_path: in_string},
+                outputs={new_path: out_string}
+            )
+            await ff.run_async()
+            await ff.wait()
+            return await self.send_video_reply(message, new_path)
+        first_part_path = random_sandbox_video_path()
+        second_part_path = random_sandbox_video_path()
+        ff1 = ffmpy3.FFmpeg(
+            inputs={video.full_path: None},
+            outputs={first_part_path: f"-to {start}"}
+        )
+        ff2 = ffmpy3.FFmpeg(
+            inputs={video.full_path: f"-ss {end}"},
+            outputs={second_part_path: f"-ss {end}"}
+        )
+        await asyncio.gather(ff1.run_async(), ff2.run_async())
+        await asyncio.gather(ff1.wait(), ff2.wait())
+        inputs_file = random_sandbox_video_path("txt")
+        with open(inputs_file, "r") as f:
+            f.writelines([first_part_path, second_part_path])
+        output_path = random_sandbox_video_path()
+        ff_concat = ffmpy3.FFmpeg(
+            inputs={inputs_file: "-safe 0 -f concat"},
+            outputs={output_path: "-c copy"}
+        )
+        await ff_concat.run_async()
+        await ff_concat.wait()
+        await self.send_video_reply(message, output_path)
+
+    @staticmethod
+    def get_start_and_end(text_clean: str) -> Tuple[Optional[str], Optional[str]]:
+        if len(text_clean.split()) == 2:
+            start = text_clean.split()[0]
+            end = text_clean.split()[1]
+        elif len(text_clean.split(":")) == 2:
+            start = text_clean.split(":")[0]
+            end = text_clean.split(":")[1]
+        else:
+            return None, None
+        if start in ["start"]:
+            start = None
+            if not VideoCutHelper.is_valid_timestamp(end):
+                return None, None
+        if end in ["end"]:
+            end = None
+            if not VideoCutHelper.is_valid_timestamp(start):
+                return None, None
+        return start, end
+
+    @staticmethod
+    def is_valid_timestamp(timestamp: str) -> Optional[Match[str]]:
+        return re.fullmatch(r"^((\d+:)?\d\d:\d\d)|(\d+(\.\d+)?)$", timestamp)
 
 
 class VideoRotateHelper(Helper):
