@@ -322,6 +322,17 @@ class VideoCutHelper(Helper):
 
 
 class VideoRotateHelper(Helper):
+    ROTATE_CLOCK = ["right", "90", "clock", "clockwise", "90clock", "90clockwise"]
+    ROTATE_ANTICLOCK = [
+        "left", "270", "anticlock", "anticlockwise", "90anticlock", "90anticlockwise", "cclock", "counterclock",
+        "counterclockwise", "90cclock", "90counterclock", "90counterclockwise"
+    ]
+    ROTATE_180 = [
+        "180", "180clockwise", "180anticlockwise", "180clock", "180anticlock", "180cclock", "180counterclock",
+        "180counterclockwise"
+    ]
+    FLIP_HORIZONTAL = ["horizontal", "leftright"]
+    FLIP_VERTICAL = ["vertical", "topbottom"]
 
     def __init__(self, client: TelegramClient):
         super().__init__(client)
@@ -329,7 +340,47 @@ class VideoRotateHelper(Helper):
     async def on_new_message(self, message: Message):
         # If a message has text saying to rotate, and is a reply to a video, then cut it
         # `rotate left`, `rotate right`, `flip horizontal`?, `rotate 90`, `rotate 180`
-        pass
+        text_clean = message.text.strip().lower().replace("-", "")
+        if text_clean.startswith("rotate"):
+            transpose = self.get_rotate_direction(text_clean[len("rotate"):].strip())
+        elif text_clean.startswith("flip"):
+            transpose = self.get_flip_direction(text_clean[len("flip"):].strip())
+        else:
+            return
+        video = find_video_for_message(message)
+        if video is None:
+            await self.send_text_reply(message, "Cannot work out which video you want to rotate/flip.")
+        if transpose is None:
+            return await self.send_text_reply(message, "I do not understand this rotate/flip command.")
+        async with self.progress_message(message, "Rotating or flipping video.."):
+            output_path = random_sandbox_video_path()
+            ff = ffmpy3.FFmpeg(
+                inputs={video.full_path: None},
+                outputs={output_path: f"-vf \"{transpose}\""}
+            )
+            await ff.run_async()
+            await ff.wait()
+            await self.send_video_reply(message, output_path)
+
+    @staticmethod
+    def get_rotate_direction(text_clean: str) -> Optional[str]:
+        text_clean = text_clean.replace(" ", "")
+        if text_clean in VideoRotateHelper.ROTATE_CLOCK:
+            return "transpose=clock"
+        if text_clean in VideoRotateHelper.ROTATE_ANTICLOCK:
+            return "transpose=cclock"
+        if text_clean in VideoRotateHelper.ROTATE_180:
+            return "transpose=clock,transpose=clock"
+        return None
+
+    @staticmethod
+    def get_flip_direction(text_clean: str) -> Optional[str]:
+        text_clean = text_clean.replace(" ", "")
+        if text_clean in VideoRotateHelper.FLIP_HORIZONTAL:
+            return "transpose=cclock_flip,transpose=clock"
+        if text_clean in VideoRotateHelper.FLIP_VERTICAL:
+            return "transpose=clock,transpose=cclock_flip"
+        return None
 
 
 class VideoCropHelper(Helper):
