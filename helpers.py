@@ -395,7 +395,7 @@ class VideoCutHelper(Helper):
 
     @staticmethod
     def get_start_and_end(text_clean: str) -> Tuple[Optional[str], Optional[str]]:
-        if len(text_clean.split()) == 2:
+        if len(text_clean.replace("-", " ").split()) == 2:
             start = text_clean.split()[0]
             end = text_clean.split()[1]
         elif len(text_clean.split(":")) == 2:
