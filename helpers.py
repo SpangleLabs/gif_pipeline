@@ -345,15 +345,27 @@ class VideoCutHelper(Helper):
                 end = start
                 start = None
         if not cut_out:
-            new_path = random_sandbox_video_path()
-            out_string = (f"-ss {start}" if start is not None else "") + " " + (f"-to {end}" if end is not None else "")
-            ff = ffmpy3.FFmpeg(
-                inputs={video.full_path: None},
-                outputs={new_path: out_string}
-            )
-            await ff.run_async()
-            await ff.wait()
-            return await self.send_video_reply(message, new_path)
+            async with self.progress_message(message, "Cutting video"):
+                new_path = await VideoCutHelper.cut_video(video, start, end)
+                return await self.send_video_reply(message, new_path)
+        async with self.progress_message(message, "Cutting out video section"):
+            output_path = await VideoCutHelper.cut_out_video(video, start, end)
+            await self.send_video_reply(message, output_path)
+
+    @staticmethod
+    async def cut_video(video: Video, start: Optional[str], end: Optional[str]) -> str:
+        new_path = random_sandbox_video_path()
+        out_string = (f"-ss {start}" if start is not None else "") + " " + (f"-to {end}" if end is not None else "")
+        ff = ffmpy3.FFmpeg(
+            inputs={video.full_path: None},
+            outputs={new_path: out_string}
+        )
+        await ff.run_async()
+        await ff.wait()
+        return new_path
+
+    @staticmethod
+    async def cut_out_video(video: Video, start: str, end: str) -> str:
         first_part_path = random_sandbox_video_path()
         second_part_path = random_sandbox_video_path()
         ff1 = ffmpy3.FFmpeg(
@@ -376,7 +388,7 @@ class VideoCutHelper(Helper):
         )
         await ff_concat.run_async()
         await ff_concat.wait()
-        await self.send_video_reply(message, output_path)
+        return output_path
 
     @staticmethod
     def get_start_and_end(text_clean: str) -> Tuple[Optional[str], Optional[str]]:
