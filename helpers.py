@@ -82,6 +82,7 @@ class Helper(ABC):
         return self.__class__.__name__
 
 
+# noinspection PyUnresolvedReferences
 class DuplicateHelper(Helper):
     DECOMPOSE_DIRECTORY = "video_decompose"
     DECOMPOSE_JSON = "video_hashes.json"
@@ -185,6 +186,7 @@ class DuplicateHelper(Helper):
             await self.check_hash_in_store(hashes, message)
 
 
+# noinspection PyUnresolvedReferences
 class TelegramGifHelper(Helper):
     FFMPEG_OPTIONS = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
                      "-vf \"scale='min(1280,iw)':'min(720,ih)':force_original_aspect_" \
@@ -310,6 +312,7 @@ class GfycatDownloadHelper(Helper):
         pass
 
 
+# noinspection PyUnresolvedReferences
 class VideoCutHelper(Helper):
 
     def __init__(self, client: TelegramClient):
@@ -415,6 +418,7 @@ class VideoCutHelper(Helper):
         return re.fullmatch(r"^((\d+:)?\d\d:\d\d(\.\d+)?)|(\d+(\.\d+)?)$", timestamp)
 
 
+# noinspection PyUnresolvedReferences
 class VideoRotateHelper(Helper):
     ROTATE_CLOCK = ["right", "90", "clock", "clockwise", "90clock", "90clockwise"]
     ROTATE_ANTICLOCK = [
