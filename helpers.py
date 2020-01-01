@@ -367,8 +367,8 @@ class VideoCutHelper(Helper):
         await asyncio.gather(ff1.run_async(), ff2.run_async())
         await asyncio.gather(ff1.wait(), ff2.wait())
         inputs_file = random_sandbox_video_path("txt")
-        with open(inputs_file, "r") as f:
-            f.write(f"file '{first_part_path}'\nfile '{second_part_path}'")
+        with open(inputs_file, "w") as f:
+            f.write(f"file '{first_part_path.split('/')[1]}'\nfile '{second_part_path.split('/')[1]}'")
         output_path = random_sandbox_video_path()
         ff_concat = ffmpy3.FFmpeg(
             inputs={inputs_file: "-safe 0 -f concat"},
