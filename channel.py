@@ -288,6 +288,10 @@ class Video:
         if video_files and os.path.exists(metadata_path):
             metadata = VideoMetaData.load_from_json(metadata_path)
             return Video(metadata, video_files[0])
+        elif video_files:
+            video_metadata = VideoMetaData(message_directory)
+            video_metadata.save_to_json()
+            return Video(video_metadata, video_files[0])
         else:
             return None
 
