@@ -401,7 +401,7 @@ class VideoCutHelper(Helper):
 
     @staticmethod
     def is_valid_timestamp(timestamp: str) -> Optional[Match[str]]:
-        return re.fullmatch(r"^((\d+:)?\d\d:\d\d)|(\d+(\.\d+)?)$", timestamp)
+        return re.fullmatch(r"^((\d+:)?\d\d:\d\d(\.\d+)?)|(\d+(\.\d+)?)$", timestamp)
 
 
 class VideoRotateHelper(Helper):
