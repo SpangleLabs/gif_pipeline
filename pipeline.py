@@ -7,7 +7,7 @@ from typing import Dict, List, Union
 from telethon import events
 
 from channel import Channel, WorkshopGroup, Message, Group
-from helpers import DuplicateHelper, TelegramGifHelper
+from helpers import DuplicateHelper, TelegramGifHelper, VideoRotateHelper
 from telegram_client import TelegramClient
 
 
@@ -37,7 +37,8 @@ class Pipeline:
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
         helpers = [
             duplicate_helper,
-            TelegramGifHelper(self.client)
+            TelegramGifHelper(self.client),
+            VideoRotateHelper(self.client)
         ]
         for helper in helpers:
             self.helpers[helper.name] = helper
