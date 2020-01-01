@@ -175,12 +175,13 @@ class DuplicateHelper(Helper):
 
     async def on_new_message(self, message: Message):
         # If message has a video, decompose it if necessary, then check images against master hash
-        hashes = await self.get_message_hashes(message)
         if isinstance(message.channel, Channel):
+            hashes = await self.get_message_hashes(message)
             for image_hash in hashes:
                 self.add_hash_to_store(image_hash, message)
             return
         async with self.progress_message(message, "Checking whether this video has been seen before"):
+            hashes = await self.get_message_hashes(message)
             await self.check_hash_in_store(hashes, message)
 
 
