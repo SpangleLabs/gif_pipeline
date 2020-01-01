@@ -60,7 +60,7 @@ class Helper(ABC):
         new_message = await Message.from_telegram_message(message.channel, msg)
         message.channel.messages[new_message.message_id] = new_message
         file_ext = video_path.split(".")[-1]
-        new_path = f"{message.directory}/{Video.FILE_NAME}.{file_ext}"
+        new_path = f"{new_message.directory}/{Video.FILE_NAME}.{file_ext}"
         os.rename(video_path, new_path)
         await new_message.initialise_directory(self.client)
         return new_message
