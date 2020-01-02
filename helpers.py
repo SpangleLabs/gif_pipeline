@@ -61,6 +61,7 @@ class Helper(ABC):
         message.channel.messages[new_message.message_id] = new_message
         file_ext = video_path.split(".")[-1]
         new_path = f"{new_message.directory}/{Video.FILE_NAME}.{file_ext}"
+        os.makedirs(new_message.directory, exist_ok=True)
         os.rename(video_path, new_path)
         await new_message.initialise_directory(self.client)
         return new_message
