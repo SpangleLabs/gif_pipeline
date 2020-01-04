@@ -7,7 +7,7 @@ from typing import Dict, List, Union
 from telethon import events
 
 from channel import Channel, WorkshopGroup, Message, Group
-from helpers import DuplicateHelper, TelegramGifHelper, VideoRotateHelper, VideoCutHelper
+from helpers import DuplicateHelper, TelegramGifHelper, VideoRotateHelper, VideoCutHelper, VideoCropHelper
 from telegram_client import TelegramClient
 
 
@@ -39,7 +39,8 @@ class Pipeline:
             duplicate_helper,
             TelegramGifHelper(self.client),
             VideoRotateHelper(self.client),
-            VideoCutHelper(self.client)
+            VideoCutHelper(self.client),
+            VideoCropHelper(self.client)
         ]
         for helper in helpers:
             self.helpers[helper.name] = helper
