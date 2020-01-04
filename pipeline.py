@@ -52,9 +52,6 @@ class Pipeline:
         logging.info("Initialised DuplicateHelper")
         return helper
 
-    def initialise_gif_creator(self):
-        pass
-
     def watch_workshop(self):
         logging.info("Watching workshop")
         self.client.add_message_handler(self.on_new_message)
