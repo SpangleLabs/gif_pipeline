@@ -275,9 +275,24 @@ class TelegramGifHelper(Helper):
 
 
 class DownloadHelper(Helper):
-    LINK_REGEX = r"\b(?<![@.,%&#-])(?<protocol>\w{2,10}:\/\/)?((?:\w|\&\#\d{1,5};)[.-]?)+" \
-                 r"(\.([a-z]{2,15})|(?(protocol)(?:\:\d{1,6})|(?!)))\b(?![@])(\/)?" \
-                 r"(?:([\w\d\?\-=#:%@&.;])+(?:\/(?:([\w\d\?\-=#:%@&;.])+))*)?(?<![.,?!-])"
+    LINK_REGEX = r'('
+    # Scheme (HTTP, HTTPS, FTP and SFTP):
+    LINK_REGEX += r'(?:(https?|s?ftp):\/\/)?'
+    # www:
+    LINK_REGEX += r'(?:www\.)?'
+    LINK_REGEX += r'('
+    # Host and domain (including ccSLD):
+    LINK_REGEX += r'(?:(?:[A-Z0-9][A-Z0-9-]{0,61}[A-Z0-9]\.)+)'
+    # TLD:
+    LINK_REGEX += r'([A-Z]{2,6})'
+    # IP Address:
+    LINK_REGEX += r'|(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+    LINK_REGEX += r')'
+    # Port:
+    LINK_REGEX += r'(?::(\d{1,5}))?'
+    # Query path:
+    LINK_REGEX += r'(?:(\/\S+)*)'
+    LINK_REGEX += r')'
 
     def __init__(self, client: TelegramClient):
         super().__init__(client)
