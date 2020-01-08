@@ -306,11 +306,12 @@ class DownloadHelper(Helper):
         async with self.progress_message(message, "Downloading linked videos"):
             for link in links:
                 try:
-                    download_filename = self.download_link(link)
+                    link_str = link[0]
+                    download_filename = self.download_link(link_str)
                     await self.send_video_reply(message, download_filename)
                 except youtube_dl.utils.DownloadError:
                     await self.send_text_reply(
-                        message, f"Could not download video from link: {link}"
+                        message, f"Could not download video from link: {link_str}"
                     )
 
     @staticmethod
