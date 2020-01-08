@@ -7,3 +7,4 @@ ffmpy3
 requests
 async_generator
 python-dateutil
+youtube_dl

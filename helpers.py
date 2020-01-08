@@ -11,6 +11,7 @@ import uuid
 import ffmpy3
 import imagehash
 import requests
+import youtube_dl
 from PIL import Image
 from async_generator import asynccontextmanager
 import shutil
@@ -273,44 +274,38 @@ class TelegramGifHelper(Helper):
         return two_pass_filename
 
 
-class TwitterDownloadHelper(Helper):
+class DownloadHelper(Helper):
+    LINK_REGEX = r"\b(?<![@.,%&#-])(?<protocol>\w{2,10}:\/\/)?((?:\w|\&\#\d{1,5};)[.-]?)+" \
+                 r"(\.([a-z]{2,15})|(?(protocol)(?:\:\d{1,6})|(?!)))\b(?![@])(\/)?" \
+                 r"(?:([\w\d\?\-=#:%@&.;])+(?:\/(?:([\w\d\?\-=#:%@&;.])+))*)?(?<![.,?!-])"
 
     def __init__(self, client: TelegramClient):
         super().__init__(client)
 
     async def on_new_message(self, message: Message):
-        # If a message has a twitter link, and the twitter link has a video, download it
-        pass
+        if not message.text:
+            return
+        links = re.findall(DownloadHelper.LINK_REGEX, message.text, re.IGNORECASE)
+        if not links:
+            return
+        async with self.progress_message(message, "Downloading linked videos"):
+            for link in links:
+                try:
+                    download_filename = self.download_link(link)
+                    await self.send_video_reply(message, download_filename)
+                except youtube_dl.utils.DownloadError:
+                    await self.send_text_reply(
+                        message, f"Could not download video from link: {link}"
+                    )
 
-
-class YoutubeDownloadHelper(Helper):
-
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
-
-    async def on_new_message(self, message: Message):
-        # If a message has a youtube link, download it
-        pass
-
-
-class RedditDownloadHelper(Helper):
-
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
-
-    async def on_new_message(self, message: Message):
-        # If a message has text with a reddit link, and the reddit post has a video, download it
-        pass
-
-
-class GfycatDownloadHelper(Helper):
-
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
-
-    async def on_new_message(self, message: Message):
-        # If a message has text with a gfycat link, download it
-        pass
+    @staticmethod
+    def download_link(link: str) -> str:
+        output_path = random_sandbox_video_path("%(ext)s")
+        ydl_opts = {"outtmpl": output_path}
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(link, download=True)
+            filename = ydl.prepare_filename(info)
+        return filename
 
 
 # noinspection PyUnresolvedReferences
