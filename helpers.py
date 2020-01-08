@@ -309,19 +309,19 @@ class DownloadHelper(Helper):
                     link_str = link[0]
                     download_filename = self.download_link(link_str)
                     await self.send_video_reply(message, download_filename)
-                except youtube_dl.utils.DownloadError:
+                except (youtube_dl.utils.DownloadError, IndexError):
                     await self.send_text_reply(
                         message, f"Could not download video from link: {link_str}"
                     )
 
     @staticmethod
     def download_link(link: str) -> str:
-        output_path = random_sandbox_video_path("%(ext)s")
-        ydl_opts = {"outtmpl": output_path}
+        output_path = random_sandbox_video_path("")
+        ydl_opts = {"outtmpl": f"{output_path}%(ext)s"}
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(link, download=True)
-            filename = ydl.prepare_filename(info)
-        return filename
+            ydl.download([link])
+        files = glob.glob(f"{output_path}*")
+        return files[0]
 
 
 # noinspection PyUnresolvedReferences
