@@ -17,14 +17,22 @@
     {
       "handle": "tigergifs",
       "queue": false
+    },
+    {
+      "handle": "deersounds",
+      "queue": false
+    },
+    {
+      "handle": "alpacagifs",
+      "queue": false
     }
   ],
   "workshop_groups": [
     {
-      "handle": -379270695
+      "handle": -1226273323
     },
     {
-      "handle": -366227945
+      "handle": -1177921461
     }
   ]
 }
