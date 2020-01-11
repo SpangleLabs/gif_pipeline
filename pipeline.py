@@ -104,7 +104,7 @@ class Pipeline:
                         message.delete_directory()
                         workshop.messages.pop(deleted_id, None)
         else:
-            for channel in self.channels:
+            for channel in self.all_channels:
                 if channel.chat_id == channel_id:
                     for deleted_id in deleted_ids:
                         message = channel.messages.get(deleted_id)
