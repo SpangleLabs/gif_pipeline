@@ -209,7 +209,7 @@ class TelegramGifHelper(Helper):
                 await asyncio.gather(*(self.convert_gif_link(message, gif_link) for gif_link in gif_links))
                 return
         # If a message has text saying gif, and is a reply to a video, convert that video
-        if "gif" in message.text.lower():
+        if re.search(r"\bgif\b", message.text, re.IGNORECASE):
             video = find_video_for_message(message)
             if video is not None:
                 async with self.progress_message(message, "Converting video to telegram gif"):
