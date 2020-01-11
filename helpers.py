@@ -79,6 +79,9 @@ class Helper(ABC):
     async def on_new_message(self, message: Message):
         pass
 
+    async def on_deleted_message(self, message: Message):
+        pass
+
     @property
     def name(self) -> str:
         return self.__class__.__name__

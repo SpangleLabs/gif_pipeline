@@ -93,25 +93,39 @@ class Pipeline:
                 )
 
     async def on_deleted_message(self, event: events.MessageDeleted.Event):
+        # Get messages
+        messages = self.get_messages_for_delete_event(event)
+        for message in messages:
+            # Tell helpers
+            helper_results = await asyncio.gather(
+                *(helper.on_deleted_message(message) for helper in self.helpers.values()),
+                return_exceptions=True
+            )
+            results_dict = dict(zip(self.helpers.keys(), helper_results))
+            for helper, result in results_dict.items():
+                if isinstance(result, Exception):
+                    logging.error(
+                        f"Helper {helper} threw an exception trying to handle deleting message {message}.",
+                        exc_info=result
+                    )
+            # Remove messages from store
+            logging.info(f"Deleting message {message} from chat: {message.channel}")
+            message.delete_directory()
+            message.channel.messages.pop(message.message_id, None)
+
+    def get_messages_for_delete_event(self, event: events.MessageDeleted.Event):
         deleted_ids = event.deleted_ids
         channel_id = event.chat_id
         if channel_id is None:
-            for workshop in self.workshops:
-                for deleted_id in deleted_ids:
-                    message = workshop.messages.get(deleted_id)
-                    logging.info(f"Deleting message {message} from workshop group: {workshop}")
-                    if message is not None:
-                        message.delete_directory()
-                        workshop.messages.pop(deleted_id, None)
-        else:
-            for channel in self.all_channels:
-                if channel.chat_id == channel_id:
-                    for deleted_id in deleted_ids:
-                        message = channel.messages.get(deleted_id)
-                        logging.info(f"Deleting message {message} from channel: {channel}")
-                        if message is not None:
-                            message.delete_directory()
-                            channel.messages.pop(deleted_id, None)
+            all_messages = [
+                workshop.messages.get(deleted_id)
+                for deleted_id in deleted_ids
+                for workshop in self.workshops
+            ]
+            return filter(None, all_messages)
+        for channel in self.all_channels:
+            if channel.chat_id == channel_id:
+                return filter(None, [channel.messages.get(deleted_id) for deleted_id in deleted_ids])
 
 
 def setup_logging():
