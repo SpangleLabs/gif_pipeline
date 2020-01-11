@@ -53,7 +53,9 @@ class TelegramClient:
     async def send_video_message(
             self, chat_id: int, video_path: str, text: str = None, *, reply_to_msg_id: int = None
     ) -> message.Message:
-        return await self.client.send_file(chat_id, video_path, caption=text, reply_to=reply_to_msg_id)
+        return await self.client.send_file(
+            chat_id, video_path, caption=text, reply_to=reply_to_msg_id, allow_cache=False
+        )
 
     async def delete_message(self, chat_id: int, message_id: int):
         await self.client.delete_messages(chat_id, message_id)
