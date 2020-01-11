@@ -28,7 +28,7 @@ class Group(ABC):
     def telegram_link_for_message(self, message: 'Message') -> str:
         handle = self.handle
         if isinstance(self.handle, int):
-            handle = -self.handle
+            handle = abs(self.handle)
         return f"tg://openmessage?chat_id={handle}&message_id={message.message_id}"
 
     def create_directory(self):
