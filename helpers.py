@@ -5,7 +5,7 @@ import os
 import re
 import subprocess
 from abc import ABC, abstractmethod
-from typing import Optional, List, Set, Tuple, Match
+from typing import Optional, List, Set, Tuple, Match, Dict
 import uuid
 
 import ffmpy3
@@ -89,6 +89,7 @@ class Helper(ABC):
 
 # noinspection PyUnresolvedReferences
 class DuplicateHelper(Helper):
+    hashes: Dict[str, Set[Message]]
     DECOMPOSE_DIRECTORY = "video_decompose"
     DECOMPOSE_JSON = "video_hashes.json"
 
@@ -146,6 +147,11 @@ class DuplicateHelper(Helper):
             self.hashes[image_hash] = set()
         self.hashes[image_hash].add(message)
 
+    def remove_hash_from_store(self, image_hash: str, message: Message):
+        if image_hash not in self.hashes:
+            return
+        self.hashes[image_hash].discard(message)
+
     async def check_hash_in_store(self, image_hashes: List[str], message: Message):
         found_match = set()
         for image_hash in image_hashes:
@@ -191,6 +197,11 @@ class DuplicateHelper(Helper):
         async with self.progress_message(message, "Checking whether this video has been seen before"):
             hashes = await self.get_message_hashes(message)
             await self.check_hash_in_store(hashes, message)
+
+    async def on_deleted_message(self, message: Message):
+        hashes = await self.get_message_hashes(message)
+        for image_hash in hashes:
+            self.remove_hash_from_store(image_hash, message)
 
 
 # noinspection PyUnresolvedReferences
