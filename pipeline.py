@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import sys
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Iterator
 
 from telethon import events
 
@@ -113,7 +113,7 @@ class Pipeline:
             message.delete_directory()
             message.channel.messages.pop(message.message_id, None)
 
-    def get_messages_for_delete_event(self, event: events.MessageDeleted.Event):
+    def get_messages_for_delete_event(self, event: events.MessageDeleted.Event) -> Iterator[Message]:
         deleted_ids = event.deleted_ids
         channel_id = event.chat_id
         if channel_id is None:
@@ -126,6 +126,7 @@ class Pipeline:
         for channel in self.all_channels:
             if channel.chat_id == channel_id:
                 return filter(None, [channel.messages.get(deleted_id) for deleted_id in deleted_ids])
+        return []
 
 
 def setup_logging():
