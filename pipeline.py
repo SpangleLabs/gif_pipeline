@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import sys
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Iterator
 
 from telethon import events
 
@@ -75,11 +75,14 @@ class Pipeline:
             return
         # Convert to our custom Message object. This will update message data, but not the video, for edited messages
         logging.info(f"New message in chat: {chat}")
-        new_message = await Message.from_telegram_message(chat, message)
+        new_message = await Message.from_telegram_message(chat, message.message)
         chat.messages[new_message.message_id] = new_message
         await new_message.initialise_directory(self.client)
         logging.info(f"New message initialised: {new_message}")
         # Pass to helpers
+        await self.pass_message_to_handlers(new_message)
+
+    async def pass_message_to_handlers(self, new_message: Message):
         helper_results = await asyncio.gather(
             *(helper.on_new_message(new_message) for helper in self.helpers.values()),
             return_exceptions=True
@@ -91,27 +94,45 @@ class Pipeline:
                     f"Helper {helper} threw an exception trying to handle message {new_message}.",
                     exc_info=result
                 )
+            elif result:
+                for reply_message in result:
+                    await self.pass_message_to_handlers(reply_message)
 
     async def on_deleted_message(self, event: events.MessageDeleted.Event):
+        # Get messages
+        messages = self.get_messages_for_delete_event(event)
+        for message in messages:
+            # Tell helpers
+            helper_results = await asyncio.gather(
+                *(helper.on_deleted_message(message) for helper in self.helpers.values()),
+                return_exceptions=True
+            )
+            results_dict = dict(zip(self.helpers.keys(), helper_results))
+            for helper, result in results_dict.items():
+                if isinstance(result, Exception):
+                    logging.error(
+                        f"Helper {helper} threw an exception trying to handle deleting message {message}.",
+                        exc_info=result
+                    )
+            # Remove messages from store
+            logging.info(f"Deleting message {message} from chat: {message.channel}")
+            message.delete_directory()
+            message.channel.messages.pop(message.message_id, None)
+
+    def get_messages_for_delete_event(self, event: events.MessageDeleted.Event) -> Iterator[Message]:
         deleted_ids = event.deleted_ids
         channel_id = event.chat_id
         if channel_id is None:
-            for workshop in self.workshops:
-                for deleted_id in deleted_ids:
-                    message = workshop.messages.get(deleted_id)
-                    logging.info(f"Deleting message {message} from workshop group: {workshop}")
-                    if message is not None:
-                        message.delete_directory()
-                        workshop.messages.pop(deleted_id, None)
-        else:
-            for channel in self.channels:
-                if channel.chat_id == channel_id:
-                    for deleted_id in deleted_ids:
-                        message = channel.messages.get(deleted_id)
-                        logging.info(f"Deleting message {message} from channel: {channel}")
-                        if message is not None:
-                            message.delete_directory()
-                            channel.messages.pop(deleted_id, None)
+            all_messages = [
+                workshop.messages.get(deleted_id)
+                for deleted_id in deleted_ids
+                for workshop in self.workshops
+            ]
+            return filter(None, all_messages)
+        for channel in self.all_channels:
+            if channel.chat_id == channel_id:
+                return filter(None, [channel.messages.get(deleted_id) for deleted_id in deleted_ids])
+        return []
 
 
 def setup_logging():

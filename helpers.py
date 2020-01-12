@@ -5,7 +5,7 @@ import os
 import re
 import subprocess
 from abc import ABC, abstractmethod
-from typing import Optional, List, Set, Tuple, Match
+from typing import Optional, List, Set, Tuple, Match, Dict
 import uuid
 
 import ffmpy3
@@ -76,7 +76,10 @@ class Helper(ABC):
         await self.client.delete_message(message.chat_id, msg.message_id)
 
     @abstractmethod
-    async def on_new_message(self, message: Message):
+    async def on_new_message(self, message: Message) -> Optional[List[Message]]:
+        pass
+
+    async def on_deleted_message(self, message: Message):
         pass
 
     @property
@@ -86,6 +89,7 @@ class Helper(ABC):
 
 # noinspection PyUnresolvedReferences
 class DuplicateHelper(Helper):
+    hashes: Dict[str, Set[Message]]
     DECOMPOSE_DIRECTORY = "video_decompose"
     DECOMPOSE_JSON = "video_hashes.json"
 
@@ -143,15 +147,22 @@ class DuplicateHelper(Helper):
             self.hashes[image_hash] = set()
         self.hashes[image_hash].add(message)
 
-    async def check_hash_in_store(self, image_hashes: List[str], message: Message):
+    def remove_hash_from_store(self, image_hash: str, message: Message):
+        if image_hash not in self.hashes:
+            return
+        self.hashes[image_hash].discard(message)
+
+    async def check_hash_in_store(self, image_hashes: List[str], message: Message) -> Optional[Message]:
         found_match = set()
         for image_hash in image_hashes:
             if image_hash in self.hashes:
                 found_match = found_match.union(self.hashes[image_hash])
+        warning_msg = None
         if len(found_match) > 0:
-            await self.post_duplicate_warning(message, found_match)
+            warning_msg = await self.post_duplicate_warning(message, found_match)
         for image_hash in image_hashes:
             self.add_hash_to_store(image_hash, message)
+        return warning_msg
 
     async def post_duplicate_warning(self, new_message: Message, potential_matches: Set[Message]):
         message_links = [message.telegram_link for message in potential_matches]
@@ -176,7 +187,7 @@ class DuplicateHelper(Helper):
         await ff.run_async()
         await ff.wait()
 
-    async def on_new_message(self, message: Message):
+    async def on_new_message(self, message: Message) -> Optional[List[Message]]:
         # If message has a video, decompose it if necessary, then check images against master hash
         if isinstance(message.channel, Channel):
             hashes = await self.get_message_hashes(message)
@@ -187,7 +198,14 @@ class DuplicateHelper(Helper):
             return
         async with self.progress_message(message, "Checking whether this video has been seen before"):
             hashes = await self.get_message_hashes(message)
-            await self.check_hash_in_store(hashes, message)
+            warning_msg = await self.check_hash_in_store(hashes, message)
+        if warning_msg is not None:
+            return [warning_msg]
+
+    async def on_deleted_message(self, message: Message):
+        hashes = await self.get_message_hashes(message)
+        for image_hash in hashes:
+            self.remove_hash_from_store(image_hash, message)
 
 
 # noinspection PyUnresolvedReferences
@@ -201,37 +219,36 @@ class TelegramGifHelper(Helper):
     def __init__(self, client: TelegramClient):
         super().__init__(client)
 
-    async def on_new_message(self, message: Message):
+    async def on_new_message(self, message: Message) -> Optional[List[Message]]:
         # If message has text which is a link to a gif, download it, then convert it
         gif_links = re.findall(r"[^\s]+\.gif", message.text, re.IGNORECASE)
         if gif_links:
             async with self.progress_message(message, "Processing gif links in message"):
-                await asyncio.gather(*(self.convert_gif_link(message, gif_link) for gif_link in gif_links))
-                return
+                return await asyncio.gather(*(self.convert_gif_link(message, gif_link) for gif_link in gif_links))
         # If a message has text saying gif, and is a reply to a video, convert that video
         if re.search(r"\bgif\b", message.text, re.IGNORECASE):
             video = find_video_for_message(message)
             if video is not None:
                 async with self.progress_message(message, "Converting video to telegram gif"):
                     new_path = await self.convert_video_to_telegram_gif(video.full_path)
-                    await self.send_video_reply(message, new_path)
-                return
-            await self.send_text_reply(
+                    video_reply = await self.send_video_reply(message, new_path)
+                return [video_reply]
+            reply = await self.send_text_reply(
                 message,
                 "Cannot work out which video you want to convert to a gif. "
                 "Please reply to the video you want to convert with the message \"gif\"."
             )
-            return
+            return [reply]
         # Otherwise, ignore
         return
 
-    async def convert_gif_link(self, message: Message, gif_link: str):
+    async def convert_gif_link(self, message: Message, gif_link: str) -> Message:
         resp = requests.get(gif_link)
         gif_path = random_sandbox_video_path("gif")
         with open(gif_path, "wb") as f:
             f.write(resp.content)
         new_path = await self.convert_video_to_telegram_gif(gif_path)
-        await self.send_video_reply(message, new_path)
+        return await self.send_video_reply(message, new_path)
 
     @staticmethod
     async def convert_video_to_telegram_gif(video_path: str) -> str:
@@ -308,14 +325,19 @@ class DownloadHelper(Helper):
         if not links:
             return
         async with self.progress_message(message, "Downloading linked videos"):
+            replies = []
             for link in links:
-                try:
-                    download_filename = self.download_link(link)
-                    await self.send_video_reply(message, download_filename)
-                except (youtube_dl.utils.DownloadError, IndexError):
-                    await self.send_text_reply(
-                        message, f"Could not download video from link: {link}"
-                    )
+                replies.append(await self.handle_link(message, link))
+            return replies
+
+    async def handle_link(self, message: Message, link: str) -> Message:
+        try:
+            download_filename = self.download_link(link)
+            return await self.send_video_reply(message, download_filename)
+        except (youtube_dl.utils.DownloadError, IndexError):
+            return await self.send_text_reply(
+                message, f"Could not download video from link: {link}"
+            )
 
     @staticmethod
     def download_link(link: str) -> str:
@@ -347,13 +369,16 @@ class VideoCutHelper(Helper):
             return None
         video = find_video_for_message(message)
         if video is None:
-            return "C"
+            return [await self.send_text_reply(
+                message,
+                "I am not sure which video you would like to cut. Please reply to the video with your cut command."
+            )]
         if start is None and end is None:
-            return await self.send_text_reply(
+            return [await self.send_text_reply(
                 message,
                 "Start and end was not understood for this cut. "
                 "Please provide start and end in the format MM:SS or as a number of seconds, with a space between them."
-            )
+            )]
         if cut_out and (start is None or end is None):
             cut_out = False
             if start is None:
@@ -365,10 +390,10 @@ class VideoCutHelper(Helper):
         if not cut_out:
             async with self.progress_message(message, "Cutting video"):
                 new_path = await VideoCutHelper.cut_video(video, start, end)
-                return await self.send_video_reply(message, new_path)
+                return [await self.send_video_reply(message, new_path)]
         async with self.progress_message(message, "Cutting out video section"):
             output_path = await VideoCutHelper.cut_out_video(video, start, end)
-            await self.send_video_reply(message, output_path)
+            return [await self.send_video_reply(message, output_path)]
 
     @staticmethod
     async def cut_video(video: Video, start: Optional[str], end: Optional[str]) -> str:
@@ -464,7 +489,7 @@ class VideoRotateHelper(Helper):
         if video is None:
             await self.send_text_reply(message, "Cannot work out which video you want to rotate/flip.")
         if transpose is None:
-            return await self.send_text_reply(message, "I do not understand this rotate/flip command.")
+            return [await self.send_text_reply(message, "I do not understand this rotate/flip command.")]
         async with self.progress_message(message, "Rotating or flipping video.."):
             output_path = random_sandbox_video_path()
             ff = ffmpy3.FFmpeg(
@@ -473,7 +498,7 @@ class VideoRotateHelper(Helper):
             )
             await ff.run_async()
             await ff.wait()
-            await self.send_video_reply(message, output_path)
+            return [await self.send_video_reply(message, output_path)]
 
     @staticmethod
     def get_rotate_direction(text_clean: str) -> Optional[str]:
@@ -496,6 +521,7 @@ class VideoRotateHelper(Helper):
         return None
 
 
+# noinspection PyUnresolvedReferences
 class VideoCropHelper(Helper):
     LEFT = ["left", "l"]
     RIGHT = ["right", "r"]
@@ -516,15 +542,16 @@ class VideoCropHelper(Helper):
             return
         crop_string = self.parse_crop_input(text_clean[len("crop"):].strip())
         if crop_string is None:
-            return await self.send_text_reply(
+            return [await self.send_text_reply(
                 message,
                 "I don't understand this crop command. "
                 "Please specify what percentage to cut off the left, right, top, bottom. "
                 "Alternatively specify the desired percentage for the width and height. "
-                "Use the format `crop left 20% right 20% top 10%`.")
+                "Use the format `crop left 20% right 20% top 10%`."
+            )]
         video = find_video_for_message(message)
         if video is None:
-            return await self.send_text_reply(message, "I'm not sure which video you would like to crop.")
+            return [await self.send_text_reply(message, "I'm not sure which video you would like to crop.")]
         output_path = random_sandbox_video_path()
         async with self.progress_message(message, "Cropping video"):
             ff = ffmpy3.FFmpeg(
@@ -533,7 +560,7 @@ class VideoCropHelper(Helper):
             )
             await ff.run_async()
             await ff.wait()
-            return await self.send_video_reply(message, output_path)
+            return [await self.send_video_reply(message, output_path)]
 
     def parse_crop_input(self, input_clean: str) -> Optional[str]:
         input_split = re.split(r"[\s:=]", input_clean)
