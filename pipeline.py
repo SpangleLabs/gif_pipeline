@@ -75,11 +75,14 @@ class Pipeline:
             return
         # Convert to our custom Message object. This will update message data, but not the video, for edited messages
         logging.info(f"New message in chat: {chat}")
-        new_message = await Message.from_telegram_message(chat, message)
+        new_message = await Message.from_telegram_message(chat, message.message)
         chat.messages[new_message.message_id] = new_message
         await new_message.initialise_directory(self.client)
         logging.info(f"New message initialised: {new_message}")
         # Pass to helpers
+        await self.pass_message_to_handlers(new_message)
+
+    async def pass_message_to_handlers(self, new_message: Message):
         helper_results = await asyncio.gather(
             *(helper.on_new_message(new_message) for helper in self.helpers.values()),
             return_exceptions=True
@@ -91,6 +94,9 @@ class Pipeline:
                     f"Helper {helper} threw an exception trying to handle message {new_message}.",
                     exc_info=result
                 )
+            elif result:
+                for reply_message in result:
+                    await self.pass_message_to_handlers(reply_message)
 
     async def on_deleted_message(self, event: events.MessageDeleted.Event):
         # Get messages
