@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import glob
 import json
@@ -6,7 +5,7 @@ import logging
 import os
 import shutil
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, List
 
 import dateutil.parser
 
@@ -112,6 +111,7 @@ class WorkshopGroup(Group):
 
 
 class Message:
+    history: List[str]
     FILE_NAME = "message.json"
 
     def __init__(self, channel: Group, message_id: int, posted: datetime):
@@ -122,6 +122,7 @@ class Message:
         # Internal stuff
         self.directory = f"{channel.directory}{message_id:06}"
         self.video = None  # type: Optional[Video]
+        self.history = []  # list of links to messages this has in history
         # Telegram message data
         self.chat_id = None  # type: int
         self.chat_username = None  # type: Optional[str]
@@ -167,6 +168,9 @@ class Message:
         message.is_reply = message_data["reply_to"]
         if message.is_reply:
             message.reply_to_msg_id = message_data["reply_to"]["message_id"]
+        # Load message history, if applicable
+        if "history" in message:
+            message.history = message_data["history"]
         return message
 
     @staticmethod
@@ -212,7 +216,8 @@ class Message:
             "text": self.text,
             "is_forward": self.is_forward,
             "file": None,
-            "reply_to": None
+            "reply_to": None,
+            "history": self.history
         }
         if self.has_file:
             message_data["file"] = {
@@ -230,6 +235,9 @@ class Message:
     def delete_directory(self):
         shutil.rmtree(self.directory)
         pass
+
+    def extend_history_from(self, message: 'Message'):
+        self.history = message.history + [message.telegram_link]
 
     def __repr__(self):
         return f"Message(chat_id={self.chat_username or self.chat_id}, message_id={self.message_id})"

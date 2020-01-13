@@ -28,11 +28,16 @@ def find_video_for_message(message: Message) -> Optional[Video]:
     if message.is_reply:
         reply_to = message.reply_to_msg_id
         reply_to_msg = message.channel.messages[reply_to]
+        # Set up history
+        message.extend_history_from(reply_to_msg)
         return reply_to_msg.video
     # Otherwise, get the video from the message above it?
     messages_above = [k for k, v in message.channel.messages.items() if k < message.message_id and v.has_video]
     if messages_above:
-        return message.channel.messages[max(messages_above)].video
+        msg_above = message.channel.messages[max(messages_above)]
+        # Set up history
+        message.extend_history_from(msg_above)
+        return msg_above.video
     return None
 
 
@@ -50,6 +55,7 @@ class Helper(ABC):
         msg = await self.client.send_text_message(message.chat_id, text, reply_to_msg_id=message.message_id)
         new_message = await Message.from_telegram_message(message.channel, msg)
         message.channel.messages[new_message.message_id] = new_message
+        new_message.extend_history_from(message)
         await new_message.initialise_directory(self.client)
         return new_message
 
@@ -60,6 +66,7 @@ class Helper(ABC):
         )
         new_message = await Message.from_telegram_message(message.channel, msg)
         message.channel.messages[new_message.message_id] = new_message
+        new_message.extend_history_from(message)
         file_ext = video_path.split(".")[-1]
         new_path = f"{new_message.directory}/{Video.FILE_NAME}.{file_ext}"
         os.makedirs(new_message.directory, exist_ok=True)
@@ -156,7 +163,12 @@ class DuplicateHelper(Helper):
         found_match = set()
         for image_hash in image_hashes:
             if image_hash in self.hashes:
-                found_match = found_match.union(self.hashes[image_hash])
+                matches_not_in_history = {
+                    msg
+                    for msg in self.hashes[image_hash]
+                    if msg.telegram_link not in message.history
+                }
+                found_match = found_match.union(matches_not_in_history)
         warning_msg = None
         if len(found_match) > 0:
             warning_msg = await self.post_duplicate_warning(message, found_match)
