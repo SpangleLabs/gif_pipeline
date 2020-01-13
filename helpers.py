@@ -319,6 +319,9 @@ class DownloadHelper(Helper):
     async def on_new_message(self, message: Message):
         if not message.text:
             return
+        # TODO: something not awful
+        if "Could not download video from link" in message.text:
+            return
         matches = re.findall(DownloadHelper.LINK_REGEX, message.text, re.IGNORECASE)
         # Remove gif links, TelegramGifHelper handles those
         links = [match[0] for match in matches if not match[0].endswith(".gif")]
