@@ -647,6 +647,26 @@ class VideoCropHelper(Helper):
         return f"crop=in_w*{width/100:.2f}:in_h*{height/100:.2f}:in_w*{left/100:.2f}:in_h*{top/100:.2f}"
 
 
+class StabiliseHelper(Helper):
+
+    async def on_new_message(self, message: Message) -> Optional[List[Message]]:
+        text_clean = message.text.lower().strip()
+        if text_clean not in ["stabilise", "stabilize", "stab", "deshake", "unshake"]:
+            return
+        video = find_video_for_message(message)
+        if video is None:
+            return [await self.send_text_reply(message, "I'm not sure which video you would like to stabilise.")]
+        output_path = random_sandbox_video_path()
+        async with self.progress_message(message, "Stabilising video"):
+            ff = ffmpy3.FFmpeg(
+                inputs={video.full_path: None},
+                outputs={output_path: "-vf deshake"}
+            )
+            await ff.run_async()
+            await ff.wait()
+            return [await self.send_video_reply(message, output_path)]
+
+
 class GifSendHelper(Helper):
 
     def __init__(self, client: TelegramClient):
