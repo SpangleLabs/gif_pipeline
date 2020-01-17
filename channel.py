@@ -169,7 +169,7 @@ class Message:
         if message.is_reply:
             message.reply_to_msg_id = message_data["reply_to"]["message_id"]
         # Load message history, if applicable
-        if "history" in message:
+        if "history" in message_data:
             message.history = message_data["history"]
         return message
 
