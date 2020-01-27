@@ -8,7 +8,7 @@ from telethon import events
 
 from channel import Channel, WorkshopGroup, Message, Group
 from helpers import DuplicateHelper, TelegramGifHelper, VideoRotateHelper, VideoCutHelper, \
-    VideoCropHelper, DownloadHelper, StabiliseHelper
+    VideoCropHelper, DownloadHelper, StabiliseHelper, QualityVideoHelper
 from telegram_client import TelegramClient
 
 
@@ -43,7 +43,8 @@ class Pipeline:
             VideoCutHelper(self.client),
             VideoCropHelper(self.client),
             DownloadHelper(self.client),
-            StabiliseHelper(self.client)
+            StabiliseHelper(self.client),
+            QualityVideoHelper(self.client)
         ]
         for helper in helpers:
             self.helpers[helper.name] = helper

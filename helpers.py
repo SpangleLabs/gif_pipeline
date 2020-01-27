@@ -667,6 +667,26 @@ class StabiliseHelper(Helper):
             return [await self.send_video_reply(message, output_path)]
 
 
+class QualityVideoHelper(Helper):
+
+    async def on_new_message(self, message: Message) -> Optional[List[Message]]:
+        text_clean = message.text.lower().strip()
+        if text_clean != "video":
+            return
+        video = find_video_for_message(message)
+        if video is None:
+            return [await self.send_text_reply(message, "I'm not sure which video you want to video.")]
+        output_path = random_sandbox_video_path()
+        async with self.progress_message(message, "Converting video into video"):
+            ff = ffmpy3.FFmpeg(
+                inputs={video.full_path: None},
+                outputs={output_path: "-qscale 0"}
+            )
+            await ff.run_async()
+            await ff.wait()
+            return [await self.send_video_reply(message, output_path)]
+
+
 class GifSendHelper(Helper):
 
     def __init__(self, client: TelegramClient):
