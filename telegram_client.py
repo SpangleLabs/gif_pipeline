@@ -12,6 +12,10 @@ class TelegramClient:
         self.client.start()
         self.message_cache = {}
 
+    async def initialise(self):
+        # Get dialogs list, to ensure entities are initialised in library
+        await self.client.get_dialogs()
+
     def _save_message(self, message):
         chat_id = message.chat_id
         message_id = message.id
