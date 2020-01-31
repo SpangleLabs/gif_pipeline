@@ -360,7 +360,7 @@ class DownloadHelper(Helper):
         ydl_opts = {"outtmpl": f"{output_path}%(ext)s"}
         # If downloading from reddit, use the DASH video, not the HLS video, which has corruption at 6 second intervals
         if "v.redd.it" in link or "reddit.com" in link:
-            ydl_opts["f"] = "dash-VIDEO-1+dash-AUDIO-1"
+            ydl_opts["format"] = "dash-VIDEO-1+dash-AUDIO-1"
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([link])
         files = glob.glob(f"{output_path}*")
