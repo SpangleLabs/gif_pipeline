@@ -78,6 +78,7 @@ class Helper(ABC):
     async def progress_message(self, message: Message, text: str = None):
         if text is None:
             text = f"In progress. {self.name} is working on this."
+        text = f"⏳ {text}"
         msg = await self.send_text_reply(message, text)
         try:
             yield
