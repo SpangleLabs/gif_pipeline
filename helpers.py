@@ -650,6 +650,7 @@ class VideoCropHelper(Helper):
         return f"crop=in_w*{width/100:.2f}:in_h*{height/100:.2f}:in_w*{left/100:.2f}:in_h*{top/100:.2f}"
 
 
+# noinspection PyUnresolvedReferences
 class StabiliseHelper(Helper):
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
@@ -670,6 +671,7 @@ class StabiliseHelper(Helper):
             return [await self.send_video_reply(message, output_path)]
 
 
+# noinspection PyUnresolvedReferences
 class QualityVideoHelper(Helper):
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
@@ -681,13 +683,34 @@ class QualityVideoHelper(Helper):
             return [await self.send_text_reply(message, "I'm not sure which video you want to video.")]
         output_path = random_sandbox_video_path()
         async with self.progress_message(message, "Converting video into video"):
-            ff = ffmpy3.FFmpeg(
-                inputs={video.full_path: None},
-                outputs={output_path: "-qscale 0"}
-            )
+            if not self.video_has_audio_track(video):
+                ff = ffmpy3.FFmpeg(
+                    global_options=["-f lavfi"],
+                    inputs={
+                        video.full_path: None,
+                        "anullsrc=channel_layout=stereo:sample_rate=44100": None
+                    },
+                    outputs={output_path: "-qscale:v 0 -acodec aac -map 0:0 -map 1:0 -shortest"}
+                )
+            else:
+                ff = ffmpy3.FFmpeg(
+                    inputs={video.full_path: None},
+                    outputs={output_path: "-qscale 0"}
+                )
             await ff.run_async()
             await ff.wait()
             return [await self.send_video_reply(message, output_path)]
+
+    async def video_has_audio_track(self, video: Video):
+        ffprobe = ffmpy3.FFprobe(
+            global_options=["-v error"],
+            inputs={video.full_path: "-show_streams -select_streams a -loglevel error"}
+        )
+        ffprobe_process = await ffprobe.run_async(stdout=subprocess.PIPE)
+        ffprobe_out = await ffprobe_process.communicate()
+        await ffprobe.wait()
+        output = ffprobe_out[0].decode('utf-8').strip()
+        return len(output) != 0
 
 
 class GifSendHelper(Helper):
