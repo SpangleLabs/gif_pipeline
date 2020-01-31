@@ -683,12 +683,12 @@ class QualityVideoHelper(Helper):
             return [await self.send_text_reply(message, "I'm not sure which video you want to video.")]
         output_path = random_sandbox_video_path()
         async with self.progress_message(message, "Converting video into video"):
-            if not self.video_has_audio_track(video):
+            if not await self.video_has_audio_track(video):
                 ff = ffmpy3.FFmpeg(
                     global_options=["-f lavfi"],
                     inputs={
-                        video.full_path: None,
-                        "anullsrc=channel_layout=stereo:sample_rate=44100": None
+                        "aevalsrc=0": None,
+                        video.full_path: None
                     },
                     outputs={output_path: "-qscale:v 0 -acodec aac -map 0:0 -map 1:0 -shortest"}
                 )
