@@ -68,7 +68,8 @@ class Group(ABC):
                 if message is not None:
                     messages[message.message_id] = message
             except Exception as e:
-                logging.warning(f"Failed to read message from directory: {subdirectory}. Exception: ", exc_info=e)
+                logging.warning(f"Failed to read message from directory: {subdirectory}. Deleting directory. Exception: ", exc_info=e)
+                shutil.rmtree(subdirectory)
         return messages
 
     async def read_messages_from_channel(self, client: TelegramClient) -> Dict[int, 'Message']:
