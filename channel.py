@@ -188,7 +188,7 @@ class Message:
         message.text = message_data.text
         if message_data.forward is not None:
             message.is_forward = True
-        if message_data.file is not None:
+        if message_data.file is not None and message_data.web_preview is None:
             message.has_file = True
             message.file_mime_type = message_data.file.mime_type
             message.file_size = message_data.file.size
