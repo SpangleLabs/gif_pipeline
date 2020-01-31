@@ -313,7 +313,7 @@ class DownloadHelper(Helper):
     LINK_REGEX += r'(?:www\.)?'
     LINK_REGEX += r'('
     # Host and domain (including ccSLD):
-    LINK_REGEX += r'(?:(?:[A-Z0-9][A-Z0-9-]{0,61}[A-Z0-9]\.)+)'
+    LINK_REGEX += r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+)'
     # TLD:
     LINK_REGEX += r'([A-Z]{2,6})'
     # IP Address:
