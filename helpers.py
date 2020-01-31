@@ -79,8 +79,12 @@ class Helper(ABC):
         if text is None:
             text = f"In progress. {self.name} is working on this."
         msg = await self.send_text_reply(message, text)
-        yield
-        await self.client.delete_message(message.chat_id, msg.message_id)
+        try:
+            yield
+        except Exception:
+            await self.send_text_reply(message, f"Command failed. {self.name} tried but failed to process this.")
+        finally:
+            await self.client.delete_message(message.chat_id, msg.message_id)
 
     @abstractmethod
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
@@ -111,7 +115,7 @@ class DuplicateHelper(Helper):
             workshop_messages = list(workshop.messages.values())
             for message in workshop_messages:
                 hashes = await self.get_message_hashes(message)
-                await self.check_hash_in_store(hashes, message)
+                await self.check_hash_in_store(hashes, message)  # Maybe don't warning if the decompose.json was already there?
 
     async def add_channel_hashes_to_store(self, channel: Channel):
         for message in channel.messages.values():
