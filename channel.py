@@ -28,7 +28,7 @@ class Group(ABC):
         handle = self.handle
         if isinstance(self.handle, int):
             handle = abs(self.handle)
-        return f"tg://openmessage?chat_id={handle}&message_id={message.message_id}"
+        return f"https://t.me/c/{handle}/{message.message_id}"
 
     def create_directory(self):
         os.makedirs(self.directory, exist_ok=True)
