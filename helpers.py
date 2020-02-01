@@ -82,8 +82,9 @@ class Helper(ABC):
         msg = await self.send_text_reply(message, text)
         try:
             yield
-        except Exception:
+        except Exception as e:
             await self.send_text_reply(message, f"Command failed. {self.name} tried but failed to process this.")
+            raise e
         finally:
             await self.client.delete_message(message.chat_id, msg.message_id)
 
