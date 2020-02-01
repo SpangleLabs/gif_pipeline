@@ -115,17 +115,22 @@ class DuplicateHelper(Helper):
         for workshop in workshops:
             workshop_messages = list(workshop.messages.values())
             for message in workshop_messages:
-                hashes = await self.get_message_hashes(message)
-                await self.check_hash_in_store(hashes, message)  # Maybe don't warning if the decompose.json was already there?
+                existing_hashes = await self.get_message_hashes(message)
+                if existing_hashes is not None:
+                    for image_hash in existing_hashes:
+                        self.add_hash_to_store(image_hash, message)
+                    continue
+                new_hashes = await self.create_message_hashes(message)
+                await self.check_hash_in_store(new_hashes, message)
 
     async def add_channel_hashes_to_store(self, channel: Channel):
         for message in channel.messages.values():
-            hashes = await self.get_message_hashes(message)
+            hashes = await self.get_or_create_message_hashes(message)
             for image_hash in hashes:
                 self.add_hash_to_store(image_hash, message)
 
     @staticmethod
-    async def get_message_hashes(message: Message) -> List[str]:
+    async def get_message_hashes(message: Message) -> Optional[List[str]]:
         message_decompose_path = f"{message.directory}/{DuplicateHelper.DECOMPOSE_DIRECTORY}"
         try:
             with open(f"{message.directory}/{DuplicateHelper.DECOMPOSE_JSON}", "r") as f:
@@ -134,25 +139,36 @@ class DuplicateHelper(Helper):
                 shutil.rmtree(message_decompose_path)
             return message_hashes
         except FileNotFoundError:
-            if message.video is None:
-                return []
-            # Decompose video into images
-            if not os.path.exists(message_decompose_path):
-                os.mkdir(message_decompose_path)
-                await DuplicateHelper.decompose_video(message.video.full_path, message_decompose_path)
-            # Hash the images
-            hashes = []
-            for image_file in glob.glob(f"{message_decompose_path}/*.png"):
-                image = Image.open(image_file)
-                image_hash = str(imagehash.dhash(image))
-                hashes.append(image_hash)
-            # Delete the images
-            shutil.rmtree(message_decompose_path)
-            # Save hashes
-            with open(f"{message.directory}/{DuplicateHelper.DECOMPOSE_JSON}", "w") as f:
-                json.dump(hashes, f)
-            # Return hashes
-            return hashes
+            return None
+
+    @staticmethod
+    async def create_message_hashes(message: Message) -> List[str]:
+        if message.video is None:
+            return []
+        # Decompose video into images
+        if not os.path.exists(message_decompose_path):
+            os.mkdir(message_decompose_path)
+            await DuplicateHelper.decompose_video(message.video.full_path, message_decompose_path)
+        # Hash the images
+        hashes = []
+        for image_file in glob.glob(f"{message_decompose_path}/*.png"):
+            image = Image.open(image_file)
+            image_hash = str(imagehash.dhash(image))
+            hashes.append(image_hash)
+        # Delete the images
+        shutil.rmtree(message_decompose_path)
+        # Save hashes
+        with open(f"{message.directory}/{DuplicateHelper.DECOMPOSE_JSON}", "w") as f:
+            json.dump(hashes, f)
+        # Return hashes
+        return hashes
+
+    @staticmethod
+    async def get_or_create_message_hashes(message: Message) -> List[str]:
+        existing_hashes = self.get_message_hashes(message)
+        if existing_hashes is not None:
+            return existing_hashes
+        return self.create_message_hashes(message)
 
     def add_hash_to_store(self, image_hash: str, message: Message):
         if image_hash not in self.hashes:
@@ -207,20 +223,20 @@ class DuplicateHelper(Helper):
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
         # If message has a video, decompose it if necessary, then check images against master hash
         if isinstance(message.channel, Channel):
-            hashes = await self.get_message_hashes(message)
+            hashes = await self.get_or_create_message_hashes(message)
             for image_hash in hashes:
                 self.add_hash_to_store(image_hash, message)
             return
         if message.video is None:
             return
         async with self.progress_message(message, "Checking whether this video has been seen before"):
-            hashes = await self.get_message_hashes(message)
+            hashes = await self.get_or_create_message_hashes(message)
             warning_msg = await self.check_hash_in_store(hashes, message)
         if warning_msg is not None:
             return [warning_msg]
 
     async def on_deleted_message(self, message: Message):
-        hashes = await self.get_message_hashes(message)
+        hashes = await self.get_or_create_message_hashes(message)
         for image_hash in hashes:
             self.remove_hash_from_store(image_hash, message)
 
