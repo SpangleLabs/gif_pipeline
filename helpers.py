@@ -143,6 +143,7 @@ class DuplicateHelper(Helper):
 
     @staticmethod
     async def create_message_hashes(message: Message) -> List[str]:
+        message_decompose_path = f"{message.directory}/{DuplicateHelper.DECOMPOSE_DIRECTORY}"
         if message.video is None:
             return []
         # Decompose video into images
