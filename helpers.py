@@ -165,10 +165,10 @@ class DuplicateHelper(Helper):
 
     @staticmethod
     async def get_or_create_message_hashes(message: Message) -> List[str]:
-        existing_hashes = self.get_message_hashes(message)
+        existing_hashes = await DuplicateHelper.get_message_hashes(message)
         if existing_hashes is not None:
             return existing_hashes
-        return self.create_message_hashes(message)
+        return await DuplicateHelper.create_message_hashes(message)
 
     def add_hash_to_store(self, image_hash: str, message: Message):
         if image_hash not in self.hashes:
