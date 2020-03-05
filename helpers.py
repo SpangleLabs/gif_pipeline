@@ -754,7 +754,8 @@ class MSGHelper(TelegramGifHelper):
 
     async def handle_post_link(self, message: Message, post_id: str):
         api_link = f"https://e621.net/post/show/{post_id}.json"
-        api_data = requests.get(api_link).json()
+        api_resp = requests.get(api_link, headers={"User-Agent": "Gif pipeline (my username is dr-spangle)"})
+        api_data = api_resp.json()
         file_ext = api_data["file_ext"]
         if file_ext not in ["gif", "webm"]:
             return await self.send_text_reply(message, "That post doesn't seem to be a gif or webm.")
