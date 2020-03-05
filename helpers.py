@@ -359,7 +359,7 @@ class DownloadHelper(Helper):
             return
         matches = re.findall(DownloadHelper.LINK_REGEX, message.text, re.IGNORECASE)
         # Remove gif links, TelegramGifHelper handles those
-        links = [match[0] for match in matches if link_is_monitored(match[0])]
+        links = [match[0] for match in matches if self.link_is_monitored(match[0])]
         if not links:
             return
         async with self.progress_message(message, "Downloading linked videos"):
