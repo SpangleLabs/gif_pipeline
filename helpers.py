@@ -746,20 +746,20 @@ class MSGHelper(TelegramGifHelper):
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
         # If message has relevant link in it
-        matching_links = re.findall(r"e621.net/post/show/([0-9]+)", message.text, re.IGNORECASE)
+        matching_links = re.findall(r"e621.net/posts/([0-9]+)", message.text, re.IGNORECASE)
         if not matching_links:
             return None
         async with self.progress_message(message, "Processing MSG links in message"):
             return await asyncio.gather(*(self.handle_post_link(message, post_id) for post_id in matching_links))
 
     async def handle_post_link(self, message: Message, post_id: str):
-        api_link = f"https://e621.net/post/show/{post_id}.json"
+        api_link = f"https://e621.net/posts/{post_id}.json"
         api_resp = requests.get(api_link, headers={"User-Agent": "Gif pipeline (my username is dr-spangle)"})
         api_data = api_resp.json()
-        file_ext = api_data["file_ext"]
+        file_ext = api_data["post"]["file"]["ext"]
         if file_ext not in ["gif", "webm"]:
             return await self.send_text_reply(message, "That post doesn't seem to be a gif or webm.")
-        file_url = api_data["file_url"]
+        file_url = api_data["post"]["file"]["url"]
         # Download file
         resp = requests.get(file_url)
         file_path = random_sandbox_video_path(file_ext)
