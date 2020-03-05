@@ -359,7 +359,7 @@ class DownloadHelper(Helper):
             return
         matches = re.findall(DownloadHelper.LINK_REGEX, message.text, re.IGNORECASE)
         # Remove gif links, TelegramGifHelper handles those
-        links = [match[0] for match in matches if not match[0].endswith(".gif")]
+        links = [match[0] for match in matches if link_is_monitored(match[0])]
         if not links:
             return
         async with self.progress_message(message, "Downloading linked videos"):
@@ -367,6 +367,9 @@ class DownloadHelper(Helper):
             for link in links:
                 replies.append(await self.handle_link(message, link))
             return replies
+
+    def link_is_monitored(self, link):
+        return not link.endswith(".gif") and "e621.net" not in link
 
     async def handle_link(self, message: Message, link: str) -> Message:
         try:
@@ -747,7 +750,7 @@ class MSGHelper(TelegramGifHelper):
         if not matching_links:
             return None
         async with self.progress_message(message, "Processing MSG links in message"):
-            return await asyncio.gather(*(self.handle_post_link(message, link.group(1)) for link in matching_links))
+            return await asyncio.gather(*(self.handle_post_link(message, post_id) for post_id in matching_links))
 
     async def handle_post_link(self, message: Message, post_id: str):
         api_link = f"https://e621.net/post/show/{post_id}.json"
