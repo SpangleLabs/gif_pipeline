@@ -736,6 +736,37 @@ class QualityVideoHelper(Helper):
         return len(output) != 0
 
 
+class MSGHelper(TelegramGifHelper):
+
+    def __init__(self, client: TelegramClient):
+        super().__init__(client)
+
+    async def on_new_message(self, message: Message) -> Optional[List[Message]]:
+        # If message has relevant link in it
+        matching_links = re.findall(r"e621.net/post/show/([0-9]+)", message.text, re.IGNORECASE)
+        if not matching_links:
+            return None
+        async with self.progress_message(message, "Processing MSG links in message"):
+            return await asyncio.gather(*(self.handle_post_link(message, link.group(1)) for link in matching_links))
+
+    async def handle_post_link(self, message: Message, post_id: str):
+        api_link = f"https://e621.net/post/show/{post_id}.json"
+        api_data = requests.get(api_link).json()
+        file_ext = api_data["file_ext"]
+        if file_ext not in ["gif", "webm"]:
+            return await self.send_text_reply(message, "That post doesn't seem to be a gif or webm.")
+        file_url = api_data["file_url"]
+        # Download file
+        resp = requests.get(file_url)
+        file_path = random_sandbox_video_path(file_ext)
+        with open(file_path, "wb") as f:
+            f.write(resp.content)
+        # If gif, convert to telegram gif
+        if file_ext == "gif":
+            file_path = await self.convert_video_to_telegram_gif(file_path)
+        return await self.send_video_reply(message, file_path)
+
+
 class GifSendHelper(Helper):
 
     def __init__(self, client: TelegramClient):
