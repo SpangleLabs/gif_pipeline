@@ -798,6 +798,7 @@ class ImgurGalleryHelper(Helper):
 
     def send_imgur_video(self, message, image):
         file_url = image["mp4"]
+        file_ext = file_url.split(".")[-1]
         resp = requests.get(file_url)
         file_path = random_sandbox_video_path(file_ext)
         with open(file_path, "wb") as f:
