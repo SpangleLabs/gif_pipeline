@@ -796,7 +796,7 @@ class ImgurGalleryHelper(Helper):
             return await self.send_text_reply(message, "That imgur gallery contains no videos.")
         return await asyncio.gather(*(self.send_imgur_video(message, image) for image in images))
 
-    def send_imgur_video(self, message, image):
+    async def send_imgur_video(self, message, image):
         file_url = image["mp4"]
         file_ext = file_url.split(".")[-1]
         resp = requests.get(file_url)
