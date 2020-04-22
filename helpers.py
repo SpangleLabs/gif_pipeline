@@ -771,6 +771,39 @@ class MSGHelper(TelegramGifHelper):
         return await self.send_video_reply(message, file_path)
 
 
+class ImgurGalleryHelper(Helper):
+
+    def __init__(self, client: TelegramClient, imgur_client_id):
+        super().__init__(client)
+        self.imgur_client_id = imgur_client_id
+
+    async def on_new_message(self, message: Message) -> Optional[List[Message]]:
+        # If message has imgur gallery/album link in it
+        matching_links = re.findall(r"imgur.com/(?:gallery|a)/([0-9a-z]+)", message.text, re.IGNORECASE)
+        if not matching_links:
+            return None
+        async with self.progress_message(message, "Processing imgur gallery links in message"):
+            return await asyncio.gather(*(self.handle_gallery_link(message, gallery_id) for gallery_id in matching_links))
+
+    async def handle_gallery_link(self, message: Message, gallery_id: str):
+        api_url = "https://api.imgur.com/3/album/{}".format(gallery_id)
+        api_key = f"Client-ID {self.imgur_client_id}"
+        api_resp = requests.get(api_url, headers={"Authorization": api_key})
+        api_data = api_resp.json()
+        images = [image for image in api_data["images"] if "mp4" in image]
+        if len(images) == 0:
+            return await self.send_text_reply(message, "That imgur gallery contains no videos.")
+        return await asyncio.gather(*(self.send_imgur_video(message, image) for image in images))
+
+    def send_imgur_video(self, message, image):
+        file_url = image["mp4"]
+        resp = requests.get(file_url)
+        file_path = random_sandbox_video_path(file_ext)
+        with open(file_path, "wb") as f:
+            f.write(resp.content)
+        return await self.send_video_reply(message, file_path)
+
+
 class GifSendHelper(Helper):
 
     def __init__(self, client: TelegramClient):
