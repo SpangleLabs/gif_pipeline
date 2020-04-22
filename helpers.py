@@ -369,7 +369,8 @@ class DownloadHelper(Helper):
             return replies
 
     def link_is_monitored(self, link):
-        return not link.endswith(".gif") and "e621.net" not in link
+        exclude_list = ["e621.net", "imgur.com/a/", "imgur.com/gallery/"]
+        return not link.endswith(".gif") and all(exclude not in link for exclude in exclude_list)
 
     async def handle_link(self, message: Message, link: str) -> Message:
         try:
