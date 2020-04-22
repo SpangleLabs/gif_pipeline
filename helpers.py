@@ -791,7 +791,7 @@ class ImgurGalleryHelper(Helper):
         api_key = f"Client-ID {self.imgur_client_id}"
         api_resp = requests.get(api_url, headers={"Authorization": api_key})
         api_data = api_resp.json()
-        images = [image for image in api_data["images"] if "mp4" in image]
+        images = [image for image in api_data["data"]["images"] if "mp4" in image]
         if len(images) == 0:
             return await self.send_text_reply(message, "That imgur gallery contains no videos.")
         return await asyncio.gather(*(self.send_imgur_video(message, image) for image in images))
