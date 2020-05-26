@@ -841,8 +841,9 @@ class AutoSceneSplitHelper(VideoCutHelper):
         stats_manager = StatsManager()
         scene_manager = SceneManager(stats_manager)
         scene_manager.add_detector(ContentDetector(threshold=threshold))
-        base_timecode = video_manager.get_base_timecode()
         try:
+            video_manager.start()
+            base_timecode = video_manager.get_base_timecode()
             scene_manager.detect_scenes(frame_source=video_manager)
             scene_list = scene_manager.get_scene_list(base_timecode)
             video_replies = []
