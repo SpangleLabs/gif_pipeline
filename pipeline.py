@@ -8,7 +8,8 @@ from telethon import events
 
 from channel import Channel, WorkshopGroup, Message, Group
 from helpers import DuplicateHelper, TelegramGifHelper, VideoRotateHelper, VideoCutHelper, \
-    VideoCropHelper, DownloadHelper, StabiliseHelper, QualityVideoHelper, MSGHelper, ImgurGalleryHelper
+    VideoCropHelper, DownloadHelper, StabiliseHelper, QualityVideoHelper, MSGHelper, ImgurGalleryHelper, \
+    AutoSceneSplitHelper
 from telegram_client import TelegramClient
 
 
@@ -48,7 +49,8 @@ class Pipeline:
             DownloadHelper(self.client),
             StabiliseHelper(self.client),
             QualityVideoHelper(self.client),
-            MSGHelper(self.client)
+            MSGHelper(self.client),
+            AutoSceneSplitHelper(self.client)
         ]
         if "imgur" in self.api_keys:
             helpers.append(ImgurGalleryHelper(self.client, self.api_keys["imgur"]["client_id"]))
