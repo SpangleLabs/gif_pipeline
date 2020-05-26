@@ -16,6 +16,10 @@ from PIL import Image
 from async_generator import asynccontextmanager
 import shutil
 
+from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetector
+from scenedetect.platform import get_and_create_path
+from scenedetect.video_splitter import split_video_ffmpeg
+
 from channel import Message, Video, Channel, WorkshopGroup
 from telegram_client import TelegramClient
 
@@ -805,6 +809,58 @@ class ImgurGalleryHelper(Helper):
         with open(file_path, "wb") as f:
             f.write(resp.content)
         return await self.send_video_reply(message, file_path)
+
+
+class AutoSceneSplitHelper(Helper):
+
+    async def on_new_message(self, message: Message) -> Optional[List[Message]]:
+        text_clean = message.text.strip().lower()
+        key_word = "split scenes"
+        if not text_clean.startswith(key_word):
+            return None
+        args = text_clean[len(key_word):].strip()
+        if len(args) == 0:
+            threshold = 30
+        else:
+            try:
+                threshold = int(args)
+            except ValueError:
+                return [await self.send_text_reply(
+                    message,
+                    "I don't understand that threshold setting. Please specify an integer. e.g. 'split scenes 20'"
+                )]
+        # Parse and split
+        video_manager = VideoManager([message.video.full_path])
+        stats_manager = StatsManager()
+        scene_manager = SceneManager(stats_manager)
+        scene_manager.add_detector(ContentDetector(threshold=threshold))
+        base_timecode = video_manager.get_base_timecode()
+        split_name_format = '$VIDEO_NAME-Scene-$SCENE_NUMBER.mp4'
+        # TODO: use sandbox
+        output_directory = "./"
+        try:
+            scene_manager.detect_scenes(frame_source=video_manager)
+            scene_list = scene_manager.get_scene_list(base_timecode)
+            video_paths = video_manager.get_video_paths()
+            # TODO: remove this, use sandbox files instead.
+            video_name = os.path.basename(video_paths[0])
+            if video_name.rfind('.') >= 0:
+                video_name = video_name[:video_name.rfind('.')]
+            # TODO: Remove this, and use sandbox
+            output_file_prefix = get_and_create_path(split_name_format, output_directory)
+            # TODO: remove this, do it myself.
+            split_video_ffmpeg(
+                video_paths,
+                scene_list,
+                output_file_prefix,
+                video_name,
+                arg_override=None,
+                hide_progress=False,
+                suppress_output=False
+            )
+        finally:
+            video_manager.release()
+        pass
 
 
 class GifSendHelper(Helper):
