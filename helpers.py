@@ -868,7 +868,7 @@ class AutoSceneSplitHelper(VideoCutHelper):
             VideoCutHelper.cut_video(
                 video,
                 start_time.get_timecode(),
-                end_time.previous_timecode().get_timecode()
+                end_time.previous_frame().get_timecode()
             ) for (start_time, end_time) in scene_list
         ))
         video_replies = []
