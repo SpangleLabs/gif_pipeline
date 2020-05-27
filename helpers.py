@@ -865,7 +865,7 @@ class AutoSceneSplitHelper(VideoCutHelper):
             scene_list: List[Tuple[FrameTimecode, FrameTimecode]]
     ) -> Optional[List[Message]]:
         cut_videos = await asyncio.gather(*(
-            await VideoCutHelper.cut_video(
+            VideoCutHelper.cut_video(
                 video,
                 start_time.get_timecode(),
                 end_time.previous_timecode().get_timecode()
