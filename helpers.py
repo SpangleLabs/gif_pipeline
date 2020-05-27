@@ -16,7 +16,7 @@ from PIL import Image
 from async_generator import asynccontextmanager
 import shutil
 
-from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetector
+from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetector, FrameTimecode
 
 from channel import Message, Video, Channel, WorkshopGroup
 from telegram_client import TelegramClient
@@ -730,7 +730,8 @@ class QualityVideoHelper(Helper):
             await ff.wait()
             return [await self.send_video_reply(message, output_path)]
 
-    async def video_has_audio_track(self, video: Video):
+    @staticmethod
+    async def video_has_audio_track(video: Video):
         ffprobe = ffmpy3.FFprobe(
             global_options=["-v error"],
             inputs={video.full_path: "-show_streams -select_streams a -loglevel error"}
@@ -786,7 +787,9 @@ class ImgurGalleryHelper(Helper):
         if not matching_links:
             return None
         async with self.progress_message(message, "Processing imgur gallery links in message"):
-            galleries = await asyncio.gather(*(self.handle_gallery_link(message, gallery_id) for gallery_id in matching_links))
+            galleries = await asyncio.gather(*(
+                self.handle_gallery_link(message, gallery_id) for gallery_id in matching_links
+            ))
             return [message for gallery in galleries for message in gallery]
 
     async def handle_gallery_link(self, message: Message, gallery_id: str) -> List[Message]:
@@ -833,10 +836,15 @@ class AutoSceneSplitHelper(VideoCutHelper):
                 message,
                 "I am not sure which video you would like to split. Please reply to the video with your split command."
             )]
-        async with self.progress_message(message, "Splitting video into scenes"):
-            return await self.split_scenes(message, video, threshold)
+        async with self.progress_message(message, "Calculating scene list"):
+            scene_list = self.calculate_scene_list(video, threshold)
+        if len(scene_list) == 1:
+            return [await self.send_text_reply(message, "This video contains only 1 scene.")]
+        async with self.progress_message(message, f"Splitting video into {len(scene_list)} scenes"):
+            return await self.split_scenes(message, video, scene_list)
 
-    async def split_scenes(self, message: Message, video: Video, threshold: int = 30) -> Optional[List[Message]]:
+    @staticmethod
+    def calculate_scene_list(video: Video, threshold: int = 30) -> List[Tuple[FrameTimecode, FrameTimecode]]:
         video_manager = VideoManager([video.full_path])
         stats_manager = StatsManager()
         scene_manager = SceneManager(stats_manager)
@@ -846,13 +854,27 @@ class AutoSceneSplitHelper(VideoCutHelper):
             base_timecode = video_manager.get_base_timecode()
             scene_manager.detect_scenes(frame_source=video_manager)
             scene_list = scene_manager.get_scene_list(base_timecode)
-            video_replies = []
-            for i, (start_time, end_time) in enumerate(scene_list):
-                new_path = await VideoCutHelper.cut_video(video, start_time.get_timecode(), end_time.get_timecode())
-                video_replies.append(await self.send_video_reply(message, new_path))
-            return video_replies
+            return scene_list
         finally:
             video_manager.release()
+
+    async def split_scenes(
+            self,
+            message: Message,
+            video: Video,
+            scene_list: List[Tuple[FrameTimecode, FrameTimecode]]
+    ) -> Optional[List[Message]]:
+        cut_videos = await asyncio.gather(*(
+            await VideoCutHelper.cut_video(
+                video,
+                start_time.get_timecode(),
+                end_time.previous_timecode().get_timecode()
+            ) for (start_time, end_time) in scene_list
+        ))
+        video_replies = []
+        for new_path in cut_videos:
+            video_replies.append(await self.send_video_reply(message, new_path))
+        return video_replies
 
 
 class GifSendHelper(Helper):
