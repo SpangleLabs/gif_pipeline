@@ -54,7 +54,7 @@ async def bounded_gather(coros: List[Awaitable[T]], bound: int = 5) -> List[T]:
     semaphore = asyncio.Semaphore(bound)
 
     async def bounded_func(coro: Awaitable[T]) -> T:
-        with semaphore:
+        async with semaphore:
             return await coro
 
     bounded_coros = [bounded_func(coro) for coro in coros]
