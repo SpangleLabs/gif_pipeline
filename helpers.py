@@ -837,7 +837,8 @@ class AutoSceneSplitHelper(VideoCutHelper):
                 "I am not sure which video you would like to split. Please reply to the video with your split command."
             )]
         async with self.progress_message(message, "Calculating scene list"):
-            scene_list = self.calculate_scene_list(video, threshold)
+            loop = asyncio.get_event_loop()
+            scene_list = await loop.run_in_executor(None, self.calculate_scene_list, video, threshold)
         if len(scene_list) == 1:
             return [await self.send_text_reply(message, "This video contains only 1 scene.")]
         async with self.progress_message(message, f"Splitting video into {len(scene_list)} scenes"):
