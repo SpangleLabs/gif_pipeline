@@ -5,7 +5,7 @@ import os
 import re
 import subprocess
 from abc import ABC, abstractmethod
-from typing import Optional, List, Set, Tuple, Match, Dict
+from typing import Optional, List, Set, Tuple, Match, Dict, TypeVar, Awaitable
 import uuid
 
 import ffmpy3
@@ -20,6 +20,8 @@ from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetecto
 
 from channel import Message, Video, Channel, WorkshopGroup
 from telegram_client import TelegramClient
+
+T = TypeVar('T')
 
 
 def find_video_for_message(message: Message) -> Optional[Video]:
@@ -46,6 +48,17 @@ def find_video_for_message(message: Message) -> Optional[Video]:
 def random_sandbox_video_path(file_ext: str = "mp4"):
     os.makedirs("sandbox", exist_ok=True)
     return f"sandbox/{uuid.uuid4()}.{file_ext}"
+
+
+async def bounded_gather(coros: List[Awaitable[T]], bound: int = 5) -> List[T]:
+    semaphore = asyncio.Semaphore(bound)
+
+    async def bounded_func(coro: Awaitable[T]) -> T:
+        with semaphore:
+            return await coro
+
+    bounded_coros = [bounded_func(coro) for coro in coros]
+    return await asyncio.gather(*bounded_coros)
 
 
 class Helper(ABC):
@@ -865,13 +878,13 @@ class AutoSceneSplitHelper(VideoCutHelper):
             video: Video,
             scene_list: List[Tuple[FrameTimecode, FrameTimecode]]
     ) -> Optional[List[Message]]:
-        cut_videos = await asyncio.gather(*(
+        cut_videos = await bounded_gather([
             VideoCutHelper.cut_video(
                 video,
                 start_time.get_timecode(),
                 end_time.previous_frame().get_timecode()
             ) for (start_time, end_time) in scene_list
-        ))
+        ])
         video_replies = []
         for new_path in cut_videos:
             video_replies.append(await self.send_video_reply(message, new_path))
