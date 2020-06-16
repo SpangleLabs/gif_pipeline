@@ -12,7 +12,6 @@ class YoutubeDLTask(Task[str]):
         self.link = link
         self.output_path = output_path
 
-    @abstractmethod
     async def run(self) -> str:
         ydl_opts = {"outtmpl": f"{self.output_path}%(ext)s"}
         # If downloading from reddit, use the DASH video, not the HLS video, which has corruption at 6 second intervals
