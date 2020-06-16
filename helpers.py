@@ -285,8 +285,7 @@ class TelegramGifHelper(Helper):
         new_path = await self.convert_video_to_telegram_gif(gif_path)
         return await self.send_video_reply(message, new_path)
 
-    @staticmethod
-    async def convert_video_to_telegram_gif(video_path: str) -> str:
+    async def convert_video_to_telegram_gif(self, video_path: str) -> str:
         first_pass_filename = random_sandbox_video_path()
         # first pass
         task = FfmpegTask(
@@ -304,7 +303,7 @@ class TelegramGifHelper(Helper):
             global_options=["-v error"],
             inputs={first_pass_filename: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
         )
-        duration = float(self.worker.run_task(probe_task))
+        duration = float(await self.worker.await_task(probe_task))
         # 2 pass run
         bitrate = TelegramGifHelper.TARGET_SIZE_MB / duration * 1000000 * 8
         task1 = FfmpegTask(
@@ -431,7 +430,7 @@ class VideoCutHelper(Helper):
                 new_path = await self.cut_video(video, start, end)
                 return [await self.send_video_reply(message, new_path)]
         async with self.progress_message(message, "Cutting out video section"):
-            output_path = await VideoCutHelper.cut_out_video(video, start, end)
+            output_path = await self.cut_out_video(video, start, end)
             return [await self.send_video_reply(message, output_path)]
 
     async def cut_video(self, video: Video, start: Optional[str], end: Optional[str]) -> str:
@@ -444,8 +443,7 @@ class VideoCutHelper(Helper):
         await self.worker.await_task(task)
         return new_path
 
-    @staticmethod
-    async def cut_out_video(video: Video, start: str, end: str) -> str:
+    async def cut_out_video(self, video: Video, start: str, end: str) -> str:
         first_part_path = random_sandbox_video_path()
         second_part_path = random_sandbox_video_path()
         task1 = FfmpegTask(
