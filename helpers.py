@@ -4,12 +4,10 @@ import json
 import os
 import re
 import shutil
-import subprocess
 import uuid
 from abc import ABC, abstractmethod
 from typing import Optional, List, Set, Tuple, Match, Dict, TypeVar
 
-import ffmpy3
 import imagehash
 import requests
 import youtube_dl
@@ -19,6 +17,7 @@ from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetecto
 
 from channel import Message, Video, Channel, WorkshopGroup
 from tasks.ffmpeg_task import FfmpegTask
+from tasks.ffmprobe_task import FFprobeTask
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient
 
@@ -244,7 +243,6 @@ class DuplicateHelper(Helper):
             self.remove_hash_from_store(image_hash, message)
 
 
-# noinspection PyUnresolvedReferences
 class TelegramGifHelper(Helper):
     FFMPEG_OPTIONS = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
                      "-vf \"scale='min(1280,iw)':'min(720,ih)':force_original_aspect_" \
@@ -302,14 +300,11 @@ class TelegramGifHelper(Helper):
         # If it's too big, do a 2 pass run
         two_pass_filename = random_sandbox_video_path()
         # Get video duration from ffprobe
-        ffprobe = ffmpy3.FFprobe(
+        probe_task = FFprobeTask(
             global_options=["-v error"],
             inputs={first_pass_filename: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
         )
-        ffprobe_process = await ffprobe.run_async(stdout=subprocess.PIPE)
-        ffprobe_out = await ffprobe_process.communicate()
-        await ffprobe.wait()
-        duration = float(ffprobe_out[0].decode('utf-8').strip())
+        duration = float(self.worker.run_task(probe_task))
         # 2 pass run
         bitrate = TelegramGifHelper.TARGET_SIZE_MB / duration * 1000000 * 8
         task1 = FfmpegTask(
@@ -394,7 +389,6 @@ class DownloadHelper(Helper):
         return files[0]
 
 
-# noinspection PyUnresolvedReferences
 class VideoCutHelper(Helper):
 
     def __init__(self, client: TelegramClient, worker: TaskWorker):
@@ -499,7 +493,6 @@ class VideoCutHelper(Helper):
         return re.fullmatch(r"^(((\d+:)?\d)?\d:\d\d(\.\d+)?)|(\d+(\.\d+)?)$", timestamp)
 
 
-# noinspection PyUnresolvedReferences
 class VideoRotateHelper(Helper):
     ROTATE_CLOCK = ["right", "90", "clock", "clockwise", "90clock", "90clockwise"]
     ROTATE_ANTICLOCK = [
@@ -561,7 +554,6 @@ class VideoRotateHelper(Helper):
         return None
 
 
-# noinspection PyUnresolvedReferences
 class VideoCropHelper(Helper):
     LEFT = ["left", "l"]
     RIGHT = ["right", "r"]
@@ -671,7 +663,6 @@ class VideoCropHelper(Helper):
         return f"crop=in_w*{width / 100:.2f}:in_h*{height / 100:.2f}:in_w*{left / 100:.2f}:in_h*{top / 100:.2f}"
 
 
-# noinspection PyUnresolvedReferences
 class StabiliseHelper(Helper):
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
@@ -691,7 +682,6 @@ class StabiliseHelper(Helper):
             return [await self.send_video_reply(message, output_path)]
 
 
-# noinspection PyUnresolvedReferences
 class QualityVideoHelper(Helper):
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
@@ -720,17 +710,12 @@ class QualityVideoHelper(Helper):
             await self.worker.await_task(task)
             return [await self.send_video_reply(message, output_path)]
 
-    @staticmethod
-    async def video_has_audio_track(video: Video):
-        ffprobe = ffmpy3.FFprobe(
+    async def video_has_audio_track(self, video: Video):
+        task = FFprobeTask(
             global_options=["-v error"],
             inputs={video.full_path: "-show_streams -select_streams a -loglevel error"}
         )
-        ffprobe_process = await ffprobe.run_async(stdout=subprocess.PIPE)
-        ffprobe_out = await ffprobe_process.communicate()
-        await ffprobe.wait()
-        output = ffprobe_out[0].decode('utf-8').strip()
-        return len(output) != 0
+        return len(await self.worker.await_task(task))
 
 
 class MSGHelper(TelegramGifHelper):

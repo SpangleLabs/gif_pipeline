@@ -3,7 +3,7 @@ import ffmpy3
 from tasks.task import Task
 
 
-class FfmpegTask(Task):
+class FfmpegTask(Task[None]):
 
     def __init__(self, *, global_options=None, inputs=None, outputs=None):
         self.global_options = global_options

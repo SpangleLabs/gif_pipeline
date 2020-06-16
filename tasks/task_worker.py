@@ -1,7 +1,7 @@
 import asyncio
 from typing import List
 
-from tasks.task import Task
+from tasks.task import Task, T
 
 
 class TaskWorker:
@@ -10,7 +10,7 @@ class TaskWorker:
         self.num_concurrent = num_concurrent
         self.semaphore = asyncio.Semaphore(num_concurrent)
 
-    async def await_task(self, task: Task):
+    async def await_task(self, task: Task[T]) -> T:
         async with self.semaphore:
             return await task.run()
 
