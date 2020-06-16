@@ -19,6 +19,7 @@ import shutil
 from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetector, FrameTimecode
 
 from channel import Message, Video, Channel, WorkshopGroup
+from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient
 
 T = TypeVar('T')
@@ -63,8 +64,9 @@ async def bounded_gather(coros: List[Awaitable[T]], bound: int = 5) -> List[T]:
 
 class Helper(ABC):
 
-    def __init__(self, client: TelegramClient):
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
         self.client = client
+        self.worker = worker
 
     async def send_text_reply(self, message: Message, text: str) -> Message:
         msg = await self.client.send_text_message(message.chat_id, text, reply_to_msg_id=message.message_id)
@@ -120,9 +122,9 @@ class DuplicateHelper(Helper):
     DECOMPOSE_DIRECTORY = "video_decompose"
     DECOMPOSE_JSON = "video_hashes.json"
 
-    def __init__(self, client: TelegramClient):
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
         # Initialise, get all channels, get all videos, decompose all, add to the master hash
-        super().__init__(client)
+        super().__init__(client, worker)
         self.hashes = {}
 
     async def initialise_hashes(self, channels: List[Channel], workshops: List[WorkshopGroup]):
@@ -265,8 +267,8 @@ class TelegramGifHelper(Helper):
     CRF_OPTION = " -crf 18"
     TARGET_SIZE_MB = 8
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
         # If message has text which is a link to a gif, download it, then convert it
@@ -363,8 +365,8 @@ class DownloadHelper(Helper):
     LINK_REGEX += r'(?:(\/\S+)*)'
     LINK_REGEX += r')'
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         if not message.text:
@@ -412,8 +414,8 @@ class DownloadHelper(Helper):
 # noinspection PyUnresolvedReferences
 class VideoCutHelper(Helper):
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         # If a message has text saying to cut, with times?
@@ -532,8 +534,8 @@ class VideoRotateHelper(Helper):
     FLIP_HORIZONTAL = ["horizontal", "leftright"]
     FLIP_VERTICAL = ["vertical", "topbottom"]
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         # If a message has text saying to rotate, and is a reply to a video, then cut it
@@ -591,8 +593,8 @@ class VideoCropHelper(Helper):
     HEIGHT = ["height", "h"]
     VALID_WORDS = LEFT + RIGHT + TOP + BOTTOM + WIDTH + HEIGHT
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         # If a message has text saying to crop, some percentages maybe?
@@ -758,8 +760,8 @@ class QualityVideoHelper(Helper):
 
 class MSGHelper(TelegramGifHelper):
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
         # If message has relevant link in it
@@ -790,8 +792,8 @@ class MSGHelper(TelegramGifHelper):
 
 class ImgurGalleryHelper(Helper):
 
-    def __init__(self, client: TelegramClient, imgur_client_id):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker, imgur_client_id: str):
+        super().__init__(client, worker)
         self.imgur_client_id = imgur_client_id
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
@@ -893,8 +895,8 @@ class AutoSceneSplitHelper(VideoCutHelper):
 
 class GifSendHelper(Helper):
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         # If a message says to send to a channel, and replies to a gif, then forward to that channel
@@ -905,8 +907,8 @@ class GifSendHelper(Helper):
 
 class ArchiveHelper(Helper):
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         # If a message says to archive, move to archive channel
@@ -915,8 +917,8 @@ class ArchiveHelper(Helper):
 
 class DeleteHelper(Helper):
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         # If a message says to delete, delete it and delete local files

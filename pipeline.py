@@ -10,6 +10,7 @@ from channel import Channel, WorkshopGroup, Message, Group
 from helpers import DuplicateHelper, TelegramGifHelper, VideoRotateHelper, VideoCutHelper, \
     VideoCropHelper, DownloadHelper, StabiliseHelper, QualityVideoHelper, MSGHelper, ImgurGalleryHelper, \
     AutoSceneSplitHelper
+from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient
 
 
@@ -19,6 +20,7 @@ class Pipeline:
         self.workshops = [WorkshopGroup(x["handle"]) for x in config["workshop_groups"]]
         self.client = TelegramClient(config['api_id'], config['api_hash'])
         self.api_keys = config.get("api_keys", {})
+        self.worker = TaskWorker(3)
         self.helpers = {}
 
     @property
@@ -42,24 +44,24 @@ class Pipeline:
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
         helpers = [
             duplicate_helper,
-            TelegramGifHelper(self.client),
-            VideoRotateHelper(self.client),
-            VideoCutHelper(self.client),
-            VideoCropHelper(self.client),
-            DownloadHelper(self.client),
-            StabiliseHelper(self.client),
-            QualityVideoHelper(self.client),
-            MSGHelper(self.client),
-            AutoSceneSplitHelper(self.client)
+            TelegramGifHelper(self.client, self.worker),
+            VideoRotateHelper(self.client, self.worker),
+            VideoCutHelper(self.client, self.worker),
+            VideoCropHelper(self.client, self.worker),
+            DownloadHelper(self.client, self.worker),
+            StabiliseHelper(self.client, self.worker),
+            QualityVideoHelper(self.client, self.worker),
+            MSGHelper(self.client, self.worker),
+            AutoSceneSplitHelper(self.client, self.worker)
         ]
         if "imgur" in self.api_keys:
-            helpers.append(ImgurGalleryHelper(self.client, self.api_keys["imgur"]["client_id"]))
+            helpers.append(ImgurGalleryHelper(self.client, self.worker, self.api_keys["imgur"]["client_id"]))
         for helper in helpers:
             self.helpers[helper.name] = helper
         logging.info(f"Initialised {len(self.helpers)} helpers")
 
     async def initialise_duplicate_detector(self) -> DuplicateHelper:
-        helper = DuplicateHelper(self.client)
+        helper = DuplicateHelper(self.client, self.worker)
         logging.info("Initialising DuplicateHelper")
         await helper.initialise_hashes(self.channels, self.workshops)
         logging.info("Initialised DuplicateHelper")
