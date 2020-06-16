@@ -19,6 +19,7 @@ import shutil
 from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetector, FrameTimecode
 
 from channel import Message, Video, Channel, WorkshopGroup
+from tasks.ffmpeg_task import FfmpegTask
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient
 
@@ -451,22 +452,20 @@ class VideoCutHelper(Helper):
                 start = None
         if not cut_out:
             async with self.progress_message(message, "Cutting video"):
-                new_path = await VideoCutHelper.cut_video(video, start, end)
+                new_path = await self.cut_video(video, start, end)
                 return [await self.send_video_reply(message, new_path)]
         async with self.progress_message(message, "Cutting out video section"):
             output_path = await VideoCutHelper.cut_out_video(video, start, end)
             return [await self.send_video_reply(message, output_path)]
 
-    @staticmethod
-    async def cut_video(video: Video, start: Optional[str], end: Optional[str]) -> str:
+    async def cut_video(self, video: Video, start: Optional[str], end: Optional[str]) -> str:
         new_path = random_sandbox_video_path()
         out_string = (f"-ss {start}" if start is not None else "") + " " + (f"-to {end}" if end is not None else "")
-        ff = ffmpy3.FFmpeg(
+        task = FfmpegTask(
             inputs={video.full_path: None},
             outputs={new_path: out_string}
         )
-        await ff.run_async()
-        await ff.wait()
+        await self.worker.await_task(task)
         return new_path
 
     @staticmethod
@@ -880,8 +879,8 @@ class AutoSceneSplitHelper(VideoCutHelper):
             video: Video,
             scene_list: List[Tuple[FrameTimecode, FrameTimecode]]
     ) -> Optional[List[Message]]:
-        cut_videos = await bounded_gather([
-            VideoCutHelper.cut_video(
+        cut_videos = await asyncio.gather(*[
+            self.cut_video(
                 video,
                 start_time.get_timecode(),
                 end_time.previous_frame().get_timecode()
