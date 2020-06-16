@@ -369,14 +369,14 @@ class DownloadHelper(Helper):
 
     async def handle_link(self, message: Message, link: str) -> Message:
         try:
-            download_filename = self.download_link(link)
+            download_filename = await self.download_link(link)
             return await self.send_video_reply(message, download_filename)
         except (youtube_dl.utils.DownloadError, IndexError):
             return await self.send_text_reply(
                 message, f"Could not download video from link: {link}"
             )
 
-    def download_link(self, link: str) -> str:
+    async def download_link(self, link: str) -> str:
         output_path = random_sandbox_video_path("")
         task = YoutubeDLTask(link, output_path)
         return await self.worker.await_task(task)
