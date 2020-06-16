@@ -19,6 +19,7 @@ from channel import Message, Video, Channel, WorkshopGroup
 from tasks.ffmpeg_task import FfmpegTask
 from tasks.ffmprobe_task import FFprobeTask
 from tasks.task_worker import TaskWorker
+from tasks.youtube_dl_task import YoutubeDLTask
 from telegram_client import TelegramClient
 
 T = TypeVar('T')
@@ -375,17 +376,10 @@ class DownloadHelper(Helper):
                 message, f"Could not download video from link: {link}"
             )
 
-    @staticmethod
-    def download_link(link: str) -> str:
+    def download_link(self, link: str) -> str:
         output_path = random_sandbox_video_path("")
-        ydl_opts = {"outtmpl": f"{output_path}%(ext)s"}
-        # If downloading from reddit, use the DASH video, not the HLS video, which has corruption at 6 second intervals
-        if "v.redd.it" in link or "reddit.com" in link:
-            ydl_opts["format"] = "dash-VIDEO-1+dash-AUDIO-1/bestvideo+bestaudio/best"
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([link])
-        files = glob.glob(f"{output_path}*")
-        return files[0]
+        task = YoutubeDLTask(link, output_path)
+        return await self.worker.await_task(task)
 
 
 class VideoCutHelper(Helper):
