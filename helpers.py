@@ -3,10 +3,11 @@ import glob
 import json
 import os
 import re
+import shutil
 import subprocess
-from abc import ABC, abstractmethod
-from typing import Optional, List, Set, Tuple, Match, Dict, TypeVar, Awaitable
 import uuid
+from abc import ABC, abstractmethod
+from typing import Optional, List, Set, Tuple, Match, Dict, TypeVar
 
 import ffmpy3
 import imagehash
@@ -14,8 +15,6 @@ import requests
 import youtube_dl
 from PIL import Image
 from async_generator import asynccontextmanager
-import shutil
-
 from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetector, FrameTimecode
 
 from channel import Message, Video, Channel, WorkshopGroup
@@ -614,8 +613,8 @@ class VideoCropHelper(Helper):
         if len(input_split) % 2 != 0:
             return None
         left, right, top, bottom, width, height = None, None, None, None, None, None
-        for i in range(len(input_split)//2):
-            a, b = input_split[2*i], input_split[(2*i)+1]
+        for i in range(len(input_split) // 2):
+            a, b = input_split[2 * i], input_split[(2 * i) + 1]
             word, value = None, None
             if a in self.VALID_WORDS:
                 try:
@@ -676,7 +675,7 @@ class VideoCropHelper(Helper):
         if max(width, height) > 100:
             return None
         # Create crop string
-        return f"crop=in_w*{width/100:.2f}:in_h*{height/100:.2f}:in_w*{left/100:.2f}:in_h*{top/100:.2f}"
+        return f"crop=in_w*{width / 100:.2f}:in_h*{height / 100:.2f}:in_w*{left / 100:.2f}:in_h*{top / 100:.2f}"
 
 
 # noinspection PyUnresolvedReferences
