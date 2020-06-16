@@ -159,15 +159,14 @@ class DuplicateHelper(Helper):
         except FileNotFoundError:
             return None
 
-    @staticmethod
-    async def create_message_hashes(message: Message) -> List[str]:
+    async def create_message_hashes(self, message: Message) -> List[str]:
         message_decompose_path = f"{message.directory}/{DuplicateHelper.DECOMPOSE_DIRECTORY}"
         if message.video is None:
             return []
         # Decompose video into images
         if not os.path.exists(message_decompose_path):
             os.mkdir(message_decompose_path)
-            await DuplicateHelper.decompose_video(message.video.full_path, message_decompose_path)
+            await self.decompose_video(message.video.full_path, message_decompose_path)
         # Hash the images
         hashes = []
         for image_file in glob.glob(f"{message_decompose_path}/*.png"):
@@ -182,12 +181,11 @@ class DuplicateHelper(Helper):
         # Return hashes
         return hashes
 
-    @staticmethod
-    async def get_or_create_message_hashes(message: Message) -> List[str]:
+    async def get_or_create_message_hashes(self, message: Message) -> List[str]:
         existing_hashes = await DuplicateHelper.get_message_hashes(message)
         if existing_hashes is not None:
             return existing_hashes
-        return await DuplicateHelper.create_message_hashes(message)
+        return await self.create_message_hashes(message)
 
     def add_hash_to_store(self, image_hash: str, message: Message):
         if image_hash not in self.hashes:
@@ -230,14 +228,12 @@ class DuplicateHelper(Helper):
             hashes.append(image_hash)
         return hashes
 
-    @staticmethod
-    async def decompose_video(video_path: str, decompose_dir_path: str):
-        ff = ffmpy3.FFmpeg(
+    async def decompose_video(self, video_path: str, decompose_dir_path: str):
+        task = FfmpegTask(
             inputs={video_path: None},
             outputs={f"{decompose_dir_path}/out%d.png": "-vf fps=5 -vsync 0"}
         )
-        await ff.run_async()
-        await ff.wait()
+        await self.worker.await_task(task)
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
         # If message has a video, decompose it if necessary, then check images against master hash
@@ -386,7 +382,8 @@ class DownloadHelper(Helper):
                 replies.append(await self.handle_link(message, link))
             return replies
 
-    def link_is_monitored(self, link):
+    @staticmethod
+    def link_is_monitored(link):
         exclude_list = ["e621.net", "imgur.com/a/", "imgur.com/gallery/"]
         return not link.endswith(".gif") and all(exclude not in link for exclude in exclude_list)
 
