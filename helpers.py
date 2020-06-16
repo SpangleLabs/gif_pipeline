@@ -52,17 +52,6 @@ def random_sandbox_video_path(file_ext: str = "mp4"):
     return f"sandbox/{uuid.uuid4()}.{file_ext}"
 
 
-async def bounded_gather(coros: List[Awaitable[T]], bound: int = 5) -> List[T]:
-    semaphore = asyncio.Semaphore(bound)
-
-    async def bounded_func(coro: Awaitable[T]) -> T:
-        async with semaphore:
-            return await coro
-
-    bounded_coros = [bounded_func(coro) for coro in coros]
-    return await asyncio.gather(*bounded_coros)
-
-
 class Helper(ABC):
 
     def __init__(self, client: TelegramClient, worker: TaskWorker):
