@@ -291,12 +291,11 @@ class TelegramGifHelper(Helper):
     async def convert_video_to_telegram_gif(video_path: str) -> str:
         first_pass_filename = random_sandbox_video_path()
         # first pass
-        ff = ffmpy3.FFmpeg(
+        task = FfmpegTask(
             inputs={video_path: None},
             outputs={first_pass_filename: TelegramGifHelper.FFMPEG_OPTIONS + TelegramGifHelper.CRF_OPTION}
         )
-        await ff.run_async()
-        await ff.wait()
+        await self.worker.await_task(task)
         # Check file size
         if os.path.getsize(first_pass_filename) < TelegramGifHelper.TARGET_SIZE_MB * 1000_000:
             return first_pass_filename
@@ -313,20 +312,18 @@ class TelegramGifHelper(Helper):
         duration = float(ffprobe_out[0].decode('utf-8').strip())
         # 2 pass run
         bitrate = TelegramGifHelper.TARGET_SIZE_MB / duration * 1000000 * 8
-        ff1 = ffmpy3.FFmpeg(
+        task1 = FfmpegTask(
             global_options=["-y"],
             inputs={video_path: None},
             outputs={os.devnull: TelegramGifHelper.FFMPEG_OPTIONS + " -b:v " + str(bitrate) + " -pass 1 -f mp4"}
         )
-        await ff1.run_async()
-        await ff1.wait()
-        ff2 = ffmpy3.FFmpeg(
+        await self.worker.await_task(task1)
+        task2 = FfmpegTask(
             global_options=["-y"],
             inputs={video_path: None},
             outputs={two_pass_filename: TelegramGifHelper.FFMPEG_OPTIONS + " -b:v " + str(bitrate) + " -pass 2"}
         )
-        await ff2.run_async()
-        await ff2.wait()
+        await self.worker.await_task(task2)
         return two_pass_filename
 
 
@@ -457,26 +454,24 @@ class VideoCutHelper(Helper):
     async def cut_out_video(video: Video, start: str, end: str) -> str:
         first_part_path = random_sandbox_video_path()
         second_part_path = random_sandbox_video_path()
-        ff1 = ffmpy3.FFmpeg(
+        task1 = FfmpegTask(
             inputs={video.full_path: None},
             outputs={first_part_path: f"-to {start}"}
         )
-        ff2 = ffmpy3.FFmpeg(
+        task2 = FfmpegTask(
             inputs={video.full_path: None},
             outputs={second_part_path: f"-ss {end}"}
         )
-        await asyncio.gather(ff1.run_async(), ff2.run_async())
-        await asyncio.gather(ff1.wait(), ff2.wait())
+        await self.worker.await_tasks([task1, task2])
         inputs_file = random_sandbox_video_path("txt")
         with open(inputs_file, "w") as f:
             f.write(f"file '{first_part_path.split('/')[1]}'\nfile '{second_part_path.split('/')[1]}'")
         output_path = random_sandbox_video_path()
-        ff_concat = ffmpy3.FFmpeg(
+        task_concat = FfmpegTask(
             inputs={inputs_file: "-safe 0 -f concat"},
             outputs={output_path: "-c copy"}
         )
-        await ff_concat.run_async()
-        await ff_concat.wait()
+        await self.worker.await_task(task_concat)
         return output_path
 
     @staticmethod
@@ -538,12 +533,11 @@ class VideoRotateHelper(Helper):
             return [await self.send_text_reply(message, "I do not understand this rotate/flip command.")]
         async with self.progress_message(message, "Rotating or flipping video.."):
             output_path = random_sandbox_video_path()
-            ff = ffmpy3.FFmpeg(
+            task = FfmpegTask(
                 inputs={video.full_path: None},
                 outputs={output_path: f"-vf \"{transpose}\""}
             )
-            await ff.run_async()
-            await ff.wait()
+            await self.worker.await_task(task)
             return [await self.send_video_reply(message, output_path)]
 
     @staticmethod
@@ -600,12 +594,11 @@ class VideoCropHelper(Helper):
             return [await self.send_text_reply(message, "I'm not sure which video you would like to crop.")]
         output_path = random_sandbox_video_path()
         async with self.progress_message(message, "Cropping video"):
-            ff = ffmpy3.FFmpeg(
+            task = FfmpegTask(
                 inputs={video.full_path: None},
                 outputs={output_path: f"-filter:v \"{crop_string}\" -c:a copy"}
             )
-            await ff.run_async()
-            await ff.wait()
+            await self.worker.await_task(task)
             return [await self.send_video_reply(message, output_path)]
 
     def parse_crop_input(self, input_clean: str) -> Optional[str]:
@@ -690,12 +683,11 @@ class StabiliseHelper(Helper):
             return [await self.send_text_reply(message, "I'm not sure which video you would like to stabilise.")]
         output_path = random_sandbox_video_path()
         async with self.progress_message(message, "Stabilising video"):
-            ff = ffmpy3.FFmpeg(
+            task = FfmpegTask(
                 inputs={video.full_path: None},
                 outputs={output_path: "-vf deshake"}
             )
-            await ff.run_async()
-            await ff.wait()
+            await self.worker.await_task(task)
             return [await self.send_video_reply(message, output_path)]
 
 
@@ -712,7 +704,7 @@ class QualityVideoHelper(Helper):
         output_path = random_sandbox_video_path()
         async with self.progress_message(message, "Converting video into video"):
             if not await self.video_has_audio_track(video):
-                ff = ffmpy3.FFmpeg(
+                task = FfmpegTask(
                     global_options=["-f lavfi"],
                     inputs={
                         "aevalsrc=0": None,
@@ -721,12 +713,11 @@ class QualityVideoHelper(Helper):
                     outputs={output_path: "-qscale:v 0 -acodec aac -map 0:0 -map 1:0 -shortest"}
                 )
             else:
-                ff = ffmpy3.FFmpeg(
+                task = FfmpegTask(
                     inputs={video.full_path: None},
                     outputs={output_path: "-qscale 0"}
                 )
-            await ff.run_async()
-            await ff.wait()
+            await self.worker.await_task(task)
             return [await self.send_video_reply(message, output_path)]
 
     @staticmethod
