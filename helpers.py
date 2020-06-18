@@ -3,22 +3,23 @@ import glob
 import json
 import os
 import re
-import subprocess
-from abc import ABC, abstractmethod
-from typing import Optional, List, Set, Tuple, Match, Dict, TypeVar, Awaitable
+import shutil
 import uuid
+from abc import ABC, abstractmethod
+from typing import Optional, List, Set, Tuple, Match, Dict, TypeVar
 
-import ffmpy3
 import imagehash
 import requests
 import youtube_dl
 from PIL import Image
 from async_generator import asynccontextmanager
-import shutil
-
 from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetector, FrameTimecode
 
 from channel import Message, Video, Channel, WorkshopGroup
+from tasks.ffmpeg_task import FfmpegTask
+from tasks.ffmprobe_task import FFprobeTask
+from tasks.task_worker import TaskWorker
+from tasks.youtube_dl_task import YoutubeDLTask
 from telegram_client import TelegramClient
 
 T = TypeVar('T')
@@ -50,21 +51,11 @@ def random_sandbox_video_path(file_ext: str = "mp4"):
     return f"sandbox/{uuid.uuid4()}.{file_ext}"
 
 
-async def bounded_gather(coros: List[Awaitable[T]], bound: int = 5) -> List[T]:
-    semaphore = asyncio.Semaphore(bound)
-
-    async def bounded_func(coro: Awaitable[T]) -> T:
-        async with semaphore:
-            return await coro
-
-    bounded_coros = [bounded_func(coro) for coro in coros]
-    return await asyncio.gather(*bounded_coros)
-
-
 class Helper(ABC):
 
-    def __init__(self, client: TelegramClient):
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
         self.client = client
+        self.worker = worker
 
     async def send_text_reply(self, message: Message, text: str) -> Message:
         msg = await self.client.send_text_message(message.chat_id, text, reply_to_msg_id=message.message_id)
@@ -120,9 +111,9 @@ class DuplicateHelper(Helper):
     DECOMPOSE_DIRECTORY = "video_decompose"
     DECOMPOSE_JSON = "video_hashes.json"
 
-    def __init__(self, client: TelegramClient):
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
         # Initialise, get all channels, get all videos, decompose all, add to the master hash
-        super().__init__(client)
+        super().__init__(client, worker)
         self.hashes = {}
 
     async def initialise_hashes(self, channels: List[Channel], workshops: List[WorkshopGroup]):
@@ -156,15 +147,14 @@ class DuplicateHelper(Helper):
         except FileNotFoundError:
             return None
 
-    @staticmethod
-    async def create_message_hashes(message: Message) -> List[str]:
+    async def create_message_hashes(self, message: Message) -> List[str]:
         message_decompose_path = f"{message.directory}/{DuplicateHelper.DECOMPOSE_DIRECTORY}"
         if message.video is None:
             return []
         # Decompose video into images
         if not os.path.exists(message_decompose_path):
             os.mkdir(message_decompose_path)
-            await DuplicateHelper.decompose_video(message.video.full_path, message_decompose_path)
+            await self.decompose_video(message.video.full_path, message_decompose_path)
         # Hash the images
         hashes = []
         for image_file in glob.glob(f"{message_decompose_path}/*.png"):
@@ -179,12 +169,11 @@ class DuplicateHelper(Helper):
         # Return hashes
         return hashes
 
-    @staticmethod
-    async def get_or_create_message_hashes(message: Message) -> List[str]:
+    async def get_or_create_message_hashes(self, message: Message) -> List[str]:
         existing_hashes = await DuplicateHelper.get_message_hashes(message)
         if existing_hashes is not None:
             return existing_hashes
-        return await DuplicateHelper.create_message_hashes(message)
+        return await self.create_message_hashes(message)
 
     def add_hash_to_store(self, image_hash: str, message: Message):
         if image_hash not in self.hashes:
@@ -227,14 +216,12 @@ class DuplicateHelper(Helper):
             hashes.append(image_hash)
         return hashes
 
-    @staticmethod
-    async def decompose_video(video_path: str, decompose_dir_path: str):
-        ff = ffmpy3.FFmpeg(
+    async def decompose_video(self, video_path: str, decompose_dir_path: str):
+        task = FfmpegTask(
             inputs={video_path: None},
             outputs={f"{decompose_dir_path}/out%d.png": "-vf fps=5 -vsync 0"}
         )
-        await ff.run_async()
-        await ff.wait()
+        await self.worker.await_task(task)
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
         # If message has a video, decompose it if necessary, then check images against master hash
@@ -257,7 +244,6 @@ class DuplicateHelper(Helper):
             self.remove_hash_from_store(image_hash, message)
 
 
-# noinspection PyUnresolvedReferences
 class TelegramGifHelper(Helper):
     FFMPEG_OPTIONS = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
                      "-vf \"scale='min(1280,iw)':'min(720,ih)':force_original_aspect_" \
@@ -265,8 +251,8 @@ class TelegramGifHelper(Helper):
     CRF_OPTION = " -crf 18"
     TARGET_SIZE_MB = 8
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
         # If message has text which is a link to a gif, download it, then convert it
@@ -300,46 +286,39 @@ class TelegramGifHelper(Helper):
         new_path = await self.convert_video_to_telegram_gif(gif_path)
         return await self.send_video_reply(message, new_path)
 
-    @staticmethod
-    async def convert_video_to_telegram_gif(video_path: str) -> str:
+    async def convert_video_to_telegram_gif(self, video_path: str) -> str:
         first_pass_filename = random_sandbox_video_path()
         # first pass
-        ff = ffmpy3.FFmpeg(
+        task = FfmpegTask(
             inputs={video_path: None},
             outputs={first_pass_filename: TelegramGifHelper.FFMPEG_OPTIONS + TelegramGifHelper.CRF_OPTION}
         )
-        await ff.run_async()
-        await ff.wait()
+        await self.worker.await_task(task)
         # Check file size
         if os.path.getsize(first_pass_filename) < TelegramGifHelper.TARGET_SIZE_MB * 1000_000:
             return first_pass_filename
         # If it's too big, do a 2 pass run
         two_pass_filename = random_sandbox_video_path()
         # Get video duration from ffprobe
-        ffprobe = ffmpy3.FFprobe(
+        probe_task = FFprobeTask(
             global_options=["-v error"],
             inputs={first_pass_filename: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
         )
-        ffprobe_process = await ffprobe.run_async(stdout=subprocess.PIPE)
-        ffprobe_out = await ffprobe_process.communicate()
-        await ffprobe.wait()
-        duration = float(ffprobe_out[0].decode('utf-8').strip())
+        duration = float(await self.worker.await_task(probe_task))
         # 2 pass run
         bitrate = TelegramGifHelper.TARGET_SIZE_MB / duration * 1000000 * 8
-        ff1 = ffmpy3.FFmpeg(
+        task1 = FfmpegTask(
             global_options=["-y"],
             inputs={video_path: None},
             outputs={os.devnull: TelegramGifHelper.FFMPEG_OPTIONS + " -b:v " + str(bitrate) + " -pass 1 -f mp4"}
         )
-        await ff1.run_async()
-        await ff1.wait()
-        ff2 = ffmpy3.FFmpeg(
+        await self.worker.await_task(task1)
+        task2 = FfmpegTask(
             global_options=["-y"],
             inputs={video_path: None},
             outputs={two_pass_filename: TelegramGifHelper.FFMPEG_OPTIONS + " -b:v " + str(bitrate) + " -pass 2"}
         )
-        await ff2.run_async()
-        await ff2.wait()
+        await self.worker.await_task(task2)
         return two_pass_filename
 
 
@@ -363,8 +342,8 @@ class DownloadHelper(Helper):
     LINK_REGEX += r'(?:(\/\S+)*)'
     LINK_REGEX += r')'
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         if not message.text:
@@ -383,37 +362,30 @@ class DownloadHelper(Helper):
                 replies.append(await self.handle_link(message, link))
             return replies
 
-    def link_is_monitored(self, link):
+    @staticmethod
+    def link_is_monitored(link):
         exclude_list = ["e621.net", "imgur.com/a/", "imgur.com/gallery/"]
         return not link.endswith(".gif") and all(exclude not in link for exclude in exclude_list)
 
     async def handle_link(self, message: Message, link: str) -> Message:
         try:
-            download_filename = self.download_link(link)
+            download_filename = await self.download_link(link)
             return await self.send_video_reply(message, download_filename)
         except (youtube_dl.utils.DownloadError, IndexError):
             return await self.send_text_reply(
                 message, f"Could not download video from link: {link}"
             )
 
-    @staticmethod
-    def download_link(link: str) -> str:
+    async def download_link(self, link: str) -> str:
         output_path = random_sandbox_video_path("")
-        ydl_opts = {"outtmpl": f"{output_path}%(ext)s"}
-        # If downloading from reddit, use the DASH video, not the HLS video, which has corruption at 6 second intervals
-        if "v.redd.it" in link or "reddit.com" in link:
-            ydl_opts["format"] = "dash-VIDEO-1+dash-AUDIO-1/bestvideo+bestaudio/best"
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([link])
-        files = glob.glob(f"{output_path}*")
-        return files[0]
+        task = YoutubeDLTask(link, output_path)
+        return await self.worker.await_task(task)
 
 
-# noinspection PyUnresolvedReferences
 class VideoCutHelper(Helper):
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         # If a message has text saying to cut, with times?
@@ -449,48 +421,43 @@ class VideoCutHelper(Helper):
                 start = None
         if not cut_out:
             async with self.progress_message(message, "Cutting video"):
-                new_path = await VideoCutHelper.cut_video(video, start, end)
+                new_path = await self.cut_video(video, start, end)
                 return [await self.send_video_reply(message, new_path)]
         async with self.progress_message(message, "Cutting out video section"):
-            output_path = await VideoCutHelper.cut_out_video(video, start, end)
+            output_path = await self.cut_out_video(video, start, end)
             return [await self.send_video_reply(message, output_path)]
 
-    @staticmethod
-    async def cut_video(video: Video, start: Optional[str], end: Optional[str]) -> str:
+    async def cut_video(self, video: Video, start: Optional[str], end: Optional[str]) -> str:
         new_path = random_sandbox_video_path()
         out_string = (f"-ss {start}" if start is not None else "") + " " + (f"-to {end}" if end is not None else "")
-        ff = ffmpy3.FFmpeg(
+        task = FfmpegTask(
             inputs={video.full_path: None},
             outputs={new_path: out_string}
         )
-        await ff.run_async()
-        await ff.wait()
+        await self.worker.await_task(task)
         return new_path
 
-    @staticmethod
-    async def cut_out_video(video: Video, start: str, end: str) -> str:
+    async def cut_out_video(self, video: Video, start: str, end: str) -> str:
         first_part_path = random_sandbox_video_path()
         second_part_path = random_sandbox_video_path()
-        ff1 = ffmpy3.FFmpeg(
+        task1 = FfmpegTask(
             inputs={video.full_path: None},
             outputs={first_part_path: f"-to {start}"}
         )
-        ff2 = ffmpy3.FFmpeg(
+        task2 = FfmpegTask(
             inputs={video.full_path: None},
             outputs={second_part_path: f"-ss {end}"}
         )
-        await asyncio.gather(ff1.run_async(), ff2.run_async())
-        await asyncio.gather(ff1.wait(), ff2.wait())
+        await self.worker.await_tasks([task1, task2])
         inputs_file = random_sandbox_video_path("txt")
         with open(inputs_file, "w") as f:
             f.write(f"file '{first_part_path.split('/')[1]}'\nfile '{second_part_path.split('/')[1]}'")
         output_path = random_sandbox_video_path()
-        ff_concat = ffmpy3.FFmpeg(
+        task_concat = FfmpegTask(
             inputs={inputs_file: "-safe 0 -f concat"},
             outputs={output_path: "-c copy"}
         )
-        await ff_concat.run_async()
-        await ff_concat.wait()
+        await self.worker.await_task(task_concat)
         return output_path
 
     @staticmethod
@@ -518,7 +485,6 @@ class VideoCutHelper(Helper):
         return re.fullmatch(r"^(((\d+:)?\d)?\d:\d\d(\.\d+)?)|(\d+(\.\d+)?)$", timestamp)
 
 
-# noinspection PyUnresolvedReferences
 class VideoRotateHelper(Helper):
     ROTATE_CLOCK = ["right", "90", "clock", "clockwise", "90clock", "90clockwise"]
     ROTATE_ANTICLOCK = [
@@ -532,8 +498,8 @@ class VideoRotateHelper(Helper):
     FLIP_HORIZONTAL = ["horizontal", "leftright"]
     FLIP_VERTICAL = ["vertical", "topbottom"]
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         # If a message has text saying to rotate, and is a reply to a video, then cut it
@@ -552,12 +518,11 @@ class VideoRotateHelper(Helper):
             return [await self.send_text_reply(message, "I do not understand this rotate/flip command.")]
         async with self.progress_message(message, "Rotating or flipping video.."):
             output_path = random_sandbox_video_path()
-            ff = ffmpy3.FFmpeg(
+            task = FfmpegTask(
                 inputs={video.full_path: None},
                 outputs={output_path: f"-vf \"{transpose}\""}
             )
-            await ff.run_async()
-            await ff.wait()
+            await self.worker.await_task(task)
             return [await self.send_video_reply(message, output_path)]
 
     @staticmethod
@@ -581,7 +546,6 @@ class VideoRotateHelper(Helper):
         return None
 
 
-# noinspection PyUnresolvedReferences
 class VideoCropHelper(Helper):
     LEFT = ["left", "l"]
     RIGHT = ["right", "r"]
@@ -591,8 +555,8 @@ class VideoCropHelper(Helper):
     HEIGHT = ["height", "h"]
     VALID_WORDS = LEFT + RIGHT + TOP + BOTTOM + WIDTH + HEIGHT
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         # If a message has text saying to crop, some percentages maybe?
@@ -614,12 +578,11 @@ class VideoCropHelper(Helper):
             return [await self.send_text_reply(message, "I'm not sure which video you would like to crop.")]
         output_path = random_sandbox_video_path()
         async with self.progress_message(message, "Cropping video"):
-            ff = ffmpy3.FFmpeg(
+            task = FfmpegTask(
                 inputs={video.full_path: None},
                 outputs={output_path: f"-filter:v \"{crop_string}\" -c:a copy"}
             )
-            await ff.run_async()
-            await ff.wait()
+            await self.worker.await_task(task)
             return [await self.send_video_reply(message, output_path)]
 
     def parse_crop_input(self, input_clean: str) -> Optional[str]:
@@ -627,8 +590,8 @@ class VideoCropHelper(Helper):
         if len(input_split) % 2 != 0:
             return None
         left, right, top, bottom, width, height = None, None, None, None, None, None
-        for i in range(len(input_split)//2):
-            a, b = input_split[2*i], input_split[(2*i)+1]
+        for i in range(len(input_split) // 2):
+            a, b = input_split[2 * i], input_split[(2 * i) + 1]
             word, value = None, None
             if a in self.VALID_WORDS:
                 try:
@@ -689,10 +652,9 @@ class VideoCropHelper(Helper):
         if max(width, height) > 100:
             return None
         # Create crop string
-        return f"crop=in_w*{width/100:.2f}:in_h*{height/100:.2f}:in_w*{left/100:.2f}:in_h*{top/100:.2f}"
+        return f"crop=in_w*{width / 100:.2f}:in_h*{height / 100:.2f}:in_w*{left / 100:.2f}:in_h*{top / 100:.2f}"
 
 
-# noinspection PyUnresolvedReferences
 class StabiliseHelper(Helper):
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
@@ -704,16 +666,14 @@ class StabiliseHelper(Helper):
             return [await self.send_text_reply(message, "I'm not sure which video you would like to stabilise.")]
         output_path = random_sandbox_video_path()
         async with self.progress_message(message, "Stabilising video"):
-            ff = ffmpy3.FFmpeg(
+            task = FfmpegTask(
                 inputs={video.full_path: None},
                 outputs={output_path: "-vf deshake"}
             )
-            await ff.run_async()
-            await ff.wait()
+            await self.worker.await_task(task)
             return [await self.send_video_reply(message, output_path)]
 
 
-# noinspection PyUnresolvedReferences
 class QualityVideoHelper(Helper):
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
@@ -726,7 +686,7 @@ class QualityVideoHelper(Helper):
         output_path = random_sandbox_video_path()
         async with self.progress_message(message, "Converting video into video"):
             if not await self.video_has_audio_track(video):
-                ff = ffmpy3.FFmpeg(
+                task = FfmpegTask(
                     global_options=["-f lavfi"],
                     inputs={
                         "aevalsrc=0": None,
@@ -735,31 +695,25 @@ class QualityVideoHelper(Helper):
                     outputs={output_path: "-qscale:v 0 -acodec aac -map 0:0 -map 1:0 -shortest"}
                 )
             else:
-                ff = ffmpy3.FFmpeg(
+                task = FfmpegTask(
                     inputs={video.full_path: None},
                     outputs={output_path: "-qscale 0"}
                 )
-            await ff.run_async()
-            await ff.wait()
+            await self.worker.await_task(task)
             return [await self.send_video_reply(message, output_path)]
 
-    @staticmethod
-    async def video_has_audio_track(video: Video):
-        ffprobe = ffmpy3.FFprobe(
+    async def video_has_audio_track(self, video: Video):
+        task = FFprobeTask(
             global_options=["-v error"],
             inputs={video.full_path: "-show_streams -select_streams a -loglevel error"}
         )
-        ffprobe_process = await ffprobe.run_async(stdout=subprocess.PIPE)
-        ffprobe_out = await ffprobe_process.communicate()
-        await ffprobe.wait()
-        output = ffprobe_out[0].decode('utf-8').strip()
-        return len(output) != 0
+        return len(await self.worker.await_task(task))
 
 
 class MSGHelper(TelegramGifHelper):
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
         # If message has relevant link in it
@@ -790,8 +744,8 @@ class MSGHelper(TelegramGifHelper):
 
 class ImgurGalleryHelper(Helper):
 
-    def __init__(self, client: TelegramClient, imgur_client_id):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker, imgur_client_id: str):
+        super().__init__(client, worker)
         self.imgur_client_id = imgur_client_id
 
     async def on_new_message(self, message: Message) -> Optional[List[Message]]:
@@ -878,8 +832,8 @@ class AutoSceneSplitHelper(VideoCutHelper):
             video: Video,
             scene_list: List[Tuple[FrameTimecode, FrameTimecode]]
     ) -> Optional[List[Message]]:
-        cut_videos = await bounded_gather([
-            VideoCutHelper.cut_video(
+        cut_videos = await asyncio.gather(*[
+            self.cut_video(
                 video,
                 start_time.get_timecode(),
                 end_time.previous_frame().get_timecode()
@@ -893,8 +847,8 @@ class AutoSceneSplitHelper(VideoCutHelper):
 
 class GifSendHelper(Helper):
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         # If a message says to send to a channel, and replies to a gif, then forward to that channel
@@ -905,8 +859,8 @@ class GifSendHelper(Helper):
 
 class ArchiveHelper(Helper):
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         # If a message says to archive, move to archive channel
@@ -915,8 +869,8 @@ class ArchiveHelper(Helper):
 
 class DeleteHelper(Helper):
 
-    def __init__(self, client: TelegramClient):
-        super().__init__(client)
+    def __init__(self, client: TelegramClient, worker: TaskWorker):
+        super().__init__(client, worker)
 
     async def on_new_message(self, message: Message):
         # If a message says to delete, delete it and delete local files
