@@ -15,7 +15,8 @@ from PIL import Image
 from async_generator import asynccontextmanager
 from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetector, FrameTimecode
 
-from channel import Message, Video, Channel, WorkshopGroup
+from group import Channel, WorkshopGroup
+from message import Message, Video
 from tasks.ffmpeg_task import FfmpegTask
 from tasks.ffmprobe_task import FFprobeTask
 from tasks.task_worker import TaskWorker

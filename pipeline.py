@@ -6,7 +6,8 @@ from typing import Dict, List, Union, Iterator
 
 from telethon import events
 
-from channel import Channel, WorkshopGroup, Message, Group
+from group import Channel, WorkshopGroup, Group
+from message import Message
 from helpers import DuplicateHelper, TelegramGifHelper, VideoRotateHelper, VideoCutHelper, \
     VideoCropHelper, DownloadHelper, StabiliseHelper, QualityVideoHelper, MSGHelper, ImgurGalleryHelper, \
     AutoSceneSplitHelper
