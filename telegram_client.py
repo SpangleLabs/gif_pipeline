@@ -4,6 +4,7 @@ from typing import Callable, Coroutine, Union
 import telethon
 from telethon import events
 from telethon.tl.custom import message
+from telethon.tl.functions.messages import MigrateChatRequest
 
 
 class TelegramClient:
@@ -66,3 +67,6 @@ class TelegramClient:
 
     def synchronise_async(self, future: Union[Future, Coroutine]):
         return self.client.loop.run_until_complete(future)
+
+    async def upgrade_chat_to_supergroup(self, chat_id: int):
+        await self.client(MigrateChatRequest(chat_id=chat_id))
