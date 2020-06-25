@@ -1,13 +1,4 @@
 
-create table if not exists channels
-(
-    chat_handle text not null,
-    queue       boolean default false not null
-);
-
-create unique index if not exists channels_chat_handle_uindex
-    on channels (chat_handle);
-
 create table if not exists chats
 (
     chat_id  int not null
@@ -49,11 +40,3 @@ create table if not exists video_hashes
         references messages
             on update restrict on delete restrict
 );
-
-create table if not exists workshops
-(
-    chat_id int not null
-);
-
-create unique index if not exists workshops_chat_id_uindex
-    on workshops (chat_id);
