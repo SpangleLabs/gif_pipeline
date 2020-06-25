@@ -6,7 +6,8 @@ from typing import Dict, List, Union, Iterator
 
 from telethon import events
 
-from group import Channel, WorkshopGroup, Group
+from database import Database
+from group import Group
 from message import Message
 from helpers import DuplicateHelper, TelegramGifHelper, VideoRotateHelper, VideoCutHelper, \
     VideoCropHelper, DownloadHelper, StabiliseHelper, QualityVideoHelper, MSGHelper, ImgurGalleryHelper, \
@@ -17,8 +18,9 @@ from telegram_client import TelegramClient
 
 class Pipeline:
     def __init__(self, config: Dict):
-        self.channels = [Channel.from_json(x) for x in config['channels']]
-        self.workshops = [WorkshopGroup(x["handle"]) for x in config["workshop_groups"]]
+        self.database = Database()
+        self.channels = self.database.list_channels()
+        self.workshops = self.database.list_workshops()
         self.client = TelegramClient(config['api_id'], config['api_hash'])
         self.api_keys = config.get("api_keys", {})
         self.worker = TaskWorker(3)
