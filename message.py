@@ -8,7 +8,6 @@ from typing import List, Optional
 
 import dateutil.parser
 
-from group import Group
 from telegram_client import TelegramClient
 
 
@@ -16,7 +15,7 @@ class Message:
     history: List[str]
     FILE_NAME = "message.json"
 
-    def __init__(self, channel: Group, message_id: int, posted: datetime):
+    def __init__(self, channel: 'Group', message_id: int, posted: datetime):
         # Basic parameters
         self.channel = channel
         self.message_id = message_id
@@ -46,7 +45,7 @@ class Message:
         return self.channel.telegram_link_for_message(self)
 
     @staticmethod
-    def from_directory(channel: Group, directory: str) -> Optional['Message']:
+    def from_directory(channel: 'Group', directory: str) -> Optional['Message']:
         message_id = int(directory.strip("/").split("/")[-1])
         with open(f"{directory}/{Message.FILE_NAME}", "r") as f:
             message_data = json.load(f)
@@ -76,7 +75,7 @@ class Message:
         return message
 
     @staticmethod
-    async def from_telegram_message(channel: Group, message_data) -> 'Message':
+    async def from_telegram_message(channel: 'Group', message_data) -> 'Message':
         message_id = message_data.id
         posted = message_data.date
         message = Message(channel, message_id, posted)
