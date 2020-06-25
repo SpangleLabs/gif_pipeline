@@ -27,7 +27,7 @@ class Pipeline:
         self.helpers = {}
 
     @property
-    def all_channels(self) -> List[Group]:
+    def all_chats(self) -> List[Group]:
         channels = [x for x in self.channels]  # type: List[Group]
         for workshop in self.workshops:
             channels.append(workshop)
@@ -38,8 +38,10 @@ class Pipeline:
         # Initialise client
         self.client.synchronise_async(self.client.initialise())
         # Scrape channels
-        channel_init_awaitables = [chan.initialise_channel(self.client) for chan in self.all_channels]
-        self.client.synchronise_async(asyncio.wait(channel_init_awaitables))
+        chat_init_awaitables = [
+            chan.initialise(self.client, self.database) for chan in self.all_chats
+        ]
+        self.client.synchronise_async(asyncio.wait(chat_init_awaitables))
         logging.info("Initialised channels")
 
     def initialise_helpers(self):
@@ -81,7 +83,7 @@ class Pipeline:
         # Get chat, check it's one we know
         chat_id = message.chat_id
         chat = None
-        for group in self.all_channels:
+        for group in self.all_chats:
             if group.chat_id == chat_id:
                 chat = group
                 break
@@ -144,7 +146,7 @@ class Pipeline:
                 for workshop in self.workshops
             ]
             return filter(None, all_messages)
-        for channel in self.all_channels:
+        for channel in self.all_chats:
             if channel.chat_id == channel_id:
                 return filter(None, [channel.messages.get(deleted_id) for deleted_id in deleted_ids])
         return []

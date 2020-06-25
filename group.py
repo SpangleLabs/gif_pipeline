@@ -29,7 +29,7 @@ class Group(ABC):
     def create_directory(self):
         os.makedirs(self.directory, exist_ok=True)
 
-    async def initialise_channel(self, client: TelegramClient):
+    async def initialise(self, client: TelegramClient, database: Database):
         logging.info(f"Initialising channel: {self}")
         self.create_directory()
         directory_messages = self.read_messages_from_directory()
