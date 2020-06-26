@@ -29,8 +29,14 @@ class Group(ABC):
     def create_directory(self):
         os.makedirs(self.directory, exist_ok=True)
 
-    async def initialise(self, client: TelegramClient, database: Database):
+    async def initialise(self, client: TelegramClient, database: 'Database'):
         logging.info(f"Initialising channel: {self}")
+        # Get chat id, name, etc
+        chat_entity = await client.get_entity(self.handle)
+        # Ensure chat is in database
+        database.upsert_chat(chat_entity.id, chat_entity.username, chat_entity.title)
+        # Get messages from database
+        database_messages = database.list_messages_for_chat(chat_entity.id)
         self.create_directory()
         directory_messages = self.read_messages_from_directory()
         channel_messages = await self.read_messages_from_channel(client)
