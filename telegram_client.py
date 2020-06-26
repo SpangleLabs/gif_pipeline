@@ -2,7 +2,7 @@ from asyncio import Future
 from typing import Callable, Coroutine, Union
 
 import telethon
-from telethon import events
+from telethon import events, hints
 from telethon.tl.custom import message
 from telethon.tl.functions.messages import MigrateChatRequest
 
@@ -28,6 +28,9 @@ class TelegramClient:
         if chat_id not in self.message_cache:
             return None
         return self.message_cache[chat_id].get(message_id)
+
+    async def get_entity(self, handle: str) -> hints.Entity:
+        return await self.client.get_entity(handle)
 
     async def iter_channel_messages(self, channel_handle: str):
         channel_entity = await self.client.get_entity(channel_handle)
