@@ -7,7 +7,7 @@ from typing import Dict, List, Union, Iterator
 from telethon import events
 
 from database import Database
-from group import Group, Channel, WorkshopGroup
+from group import Group, Channel, WorkshopGroup, ChannelConfig, WorkshopConfig
 from message import Message
 from helpers import DuplicateHelper, TelegramGifHelper, VideoRotateHelper, VideoCutHelper, \
     VideoCropHelper, DownloadHelper, StabiliseHelper, QualityVideoHelper, MSGHelper, ImgurGalleryHelper, \
@@ -16,13 +16,41 @@ from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient
 
 
-class Pipeline:
+class PipelineConfig:
+
     def __init__(self, config: Dict):
-        self.database = Database()
-        self.channels = [Channel.from_json(x) for x in config['channels']]
-        self.workshops = [WorkshopGroup(x["handle"]) for x in config["workshop_groups"]]
-        self.client = TelegramClient(config['api_id'], config['api_hash'])
+        self.channels = [ChannelConfig.from_json(x) for x in config['channels']]
+        self.workshops = [WorkshopConfig.from_json(x) for x in config["workshop_groups"]]
+        self.api_id = config["api_id"]
+        self.api_hash = config["api_hash"]
         self.api_keys = config.get("api_keys", {})
+
+    async def initialise_pipeline(self) -> 'Pipeline':
+        database = Database()
+        client = TelegramClient(self.api_id, self.api_hash)
+        await client.initialise()
+        logging.info("Initialising channels")
+        channels = await asyncio.gather(*[conf.initialise(client, database) for conf in self.channels])
+        workshops = await asyncio.gather(*[conf.initialise(client, database) for conf in self.workshops])
+        pipeline = Pipeline(database, client, channels, workshops, self.api_keys)
+        logging.info("Initialised channels")
+        return pipeline
+
+
+class Pipeline:
+    def __init__(
+            self,
+            database: Database,
+            client: TelegramClient,
+            channels: List[Channel],
+            workshops: List[WorkshopGroup],
+            api_keys: Dict[str, Dict[str, str]]
+    ):
+        self.database = database
+        self.channels = channels
+        self.workshops = workshops
+        self.client = client
+        self.api_keys = api_keys
         self.worker = TaskWorker(3)
         self.helpers = {}
 
@@ -32,17 +60,6 @@ class Pipeline:
         for workshop in self.workshops:
             channels.append(workshop)
         return channels
-
-    def initialise_channels(self):
-        logging.info("Initialising channels")
-        # Initialise client
-        self.client.synchronise_async(self.client.initialise())
-        # Scrape channels
-        chat_init_awaitables = [
-            chan.initialise(self.client, self.database) for chan in self.all_chats
-        ]
-        self.client.synchronise_async(asyncio.wait(chat_init_awaitables))
-        logging.info("Initialised channels")
 
     def initialise_helpers(self):
         logging.info("Initialising helpers")
@@ -177,7 +194,7 @@ if __name__ == "__main__":
     setup_logging()
     with open("config.json", "r") as c:
         conf = json.load(c)
-    pipeline = Pipeline(conf)
-    pipeline.initialise_channels()
+    pipeline_conf = PipelineConfig(conf)
+    pipeline = await pipeline_conf.initialise_pipeline()
     pipeline.initialise_helpers()
     pipeline.watch_workshop()
