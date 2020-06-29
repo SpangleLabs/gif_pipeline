@@ -8,7 +8,38 @@ from typing import List, Optional
 
 import dateutil.parser
 
-from telegram_client import TelegramClient
+
+class MessageData:
+    def __init__(
+            self,
+            chat_id: int,
+            message_id: int,
+            msg_datetime: datetime.datetime,
+            text: str,
+            is_forward: bool,
+            has_file: bool,
+            file_name: Optional[str],
+            file_mime_type: Optional[str],
+            reply_to: Optional[int],
+            sender_id: int,
+            is_scheduled
+    ):
+        self.chat_id = chat_id
+        self.message_id = message_id
+        self.datetime = msg_datetime
+        self.text = text
+        self.is_forward = is_forward
+        self.has_file = has_file
+        self.file_name = file_name
+        self.file_mime_type = file_mime_type
+        self.reply_to = reply_to
+        self.sender_id = sender_id
+        self.is_scheduled = is_scheduled
+
+    async def initialise(self, group, client) -> 'Message':
+        # Check if file exists, and is downloaded.
+        # TODO
+        pass
 
 
 class Message:
@@ -205,7 +236,7 @@ class Video:
             return None
 
     @staticmethod
-    async def from_message(message: Message, client: TelegramClient, message_directory: str):
+    async def from_message(message: Message, client: 'TelegramClient', message_directory: str):
         file_ext = message.file_mime_type.split("/")[-1]
         video_path = f"{message_directory}/{Video.FILE_NAME}.{file_ext}"
         if not os.path.exists(video_path):

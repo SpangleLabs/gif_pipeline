@@ -1,19 +1,21 @@
 from asyncio import Future
-from typing import Callable, Coroutine, Union
+from typing import Callable, Coroutine, Union, Generator
 
 import telethon
 from telethon import events, hints
 from telethon.tl.custom import message
 from telethon.tl.functions.messages import MigrateChatRequest
 
+from message import MessageData
+
 
 class TelegramClient:
-    def __init__(self, api_id, api_hash):
+    def __init__(self, api_id: str, api_hash: str):
         self.client = telethon.TelegramClient('duplicate_checker', api_id, api_hash)
         self.client.start()
         self.message_cache = {}
 
-    async def initialise(self):
+    async def initialise(self) -> None:
         # Get dialogs list, to ensure entities are initialised in library
         await self.client.get_dialogs()
 
@@ -32,11 +34,23 @@ class TelegramClient:
     async def get_entity(self, handle: str) -> hints.Entity:
         return await self.client.get_entity(handle)
 
-    async def iter_channel_messages(self, channel_handle: str):
+    async def iter_channel_messages(self, channel_handle: str) -> Generator[MessageData, None, None]:
         channel_entity = await self.client.get_entity(channel_handle)
         async for message in self.client.iter_messages(channel_entity):
             self._save_message(message)
-            yield message
+            yield MessageData(
+                message.chat_id,
+                message.id,
+                message.date,
+                message.text,
+                message.forward is not None,
+                message.file is not None,
+                None,
+                (message.file or None) and message.file.mime_type,
+                message.reply_to_msg_id,
+                message.sender.id,
+                False
+            )
 
     async def download_media(self, chat_id: int, message_id: int, path: str):
         message = self._get_message(chat_id, message_id)
