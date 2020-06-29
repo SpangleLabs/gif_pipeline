@@ -12,6 +12,22 @@ from message import MessageData
 R = TypeVar("R")
 
 
+def message_data_from_telegram(msg: telethon.tl.custom.message.Message) -> MessageData:
+    return MessageData(
+            msg.chat_id,
+            msg.id,
+            msg.date,
+            msg.text,
+            msg.forward is not None,
+            msg.file is not None,
+            None,
+            (msg.file or None) and msg.file.mime_type,
+            msg.reply_to_msg_id,
+            msg.sender.id,
+            False
+        )
+
+
 class TelegramClient:
     def __init__(self, api_id: int, api_hash: str):
         self.client = telethon.TelegramClient('duplicate_checker', api_id, api_hash)
@@ -43,19 +59,7 @@ class TelegramClient:
         channel_entity = await self.client.get_entity(channel_handle)
         async for msg in self.client.iter_messages(channel_entity):
             self._save_message(msg)
-            yield MessageData(
-                msg.chat_id,
-                msg.id,
-                msg.date,
-                msg.text,
-                msg.forward is not None,
-                msg.file is not None,
-                None,
-                (msg.file or None) and msg.file.mime_type,
-                msg.reply_to_msg_id,
-                msg.sender.id,
-                False
-            )
+            yield message_data_from_telegram(msg)
 
     async def download_media(self, chat_id: int, message_id: int, path: str) -> Optional[str]:
         msg = self._get_message(chat_id, message_id)

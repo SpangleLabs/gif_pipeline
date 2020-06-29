@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import sys
-from typing import Dict, List, Union, Iterator
+from typing import Dict, List, Union, Iterator, Optional
 
 from telethon import events
 
@@ -13,7 +13,7 @@ from helpers import DuplicateHelper, TelegramGifHelper, VideoRotateHelper, Video
     VideoCropHelper, DownloadHelper, StabiliseHelper, QualityVideoHelper, MSGHelper, ImgurGalleryHelper, \
     AutoSceneSplitHelper
 from tasks.task_worker import TaskWorker
-from telegram_client import TelegramClient
+from telegram_client import TelegramClient, message_data_from_telegram
 
 
 class PipelineConfig:
@@ -31,7 +31,9 @@ class PipelineConfig:
         await client.initialise()
         logging.info("Initialising channels")
         channels = await asyncio.gather(*[Channel.from_config(conf, client, database) for conf in self.channels])
-        workshops = await asyncio.gather(*[WorkshopGroup.from_config(conf, client, database) for conf in self.workshops])
+        workshops = await asyncio.gather(*[
+            WorkshopGroup.from_config(conf, client, database) for conf in self.workshops
+        ])
         pipe = Pipeline(database, client, channels, workshops, self.api_keys)
         logging.info("Initialised channels")
         return pipe
@@ -60,6 +62,12 @@ class Pipeline:
         for workshop in self.workshops:
             channels.append(workshop)
         return channels
+
+    def chat_by_id(self, chat_id: int) -> Optional[Group]:
+        for chat in self.all_chats:
+            if chat.chat_data.chat_id == chat_id:
+                return chat
+        return None
 
     def initialise_helpers(self) -> None:
         logging.info("Initialising helpers")
@@ -95,23 +103,18 @@ class Pipeline:
         self.client.add_delete_handler(self.on_deleted_message)
         self.client.client.run_until_disconnected()
 
-    async def on_new_message(self, message: Union[events.NewMessage.Event, events.MessageEdited.Event]):
+    async def on_new_message(self, event: Union[events.NewMessage.Event, events.MessageEdited.Event]):
         # This is called for both new messages, and edited messages
         # Get chat, check it's one we know
-        chat_id = message.chat_id
-        chat = None
-        for group in self.all_chats:
-            if group.chat_id == chat_id:
-                chat = group
-                break
+        chat = self.chat_by_id(event.chat_id)
         if chat is None:
             logging.debug("Ignoring new message in other chat")
             return
         # Convert to our custom Message object. This will update message data, but not the video, for edited messages
         logging.info(f"New message in chat: {chat}")
-        new_message = await Message.from_telegram_message(chat, message.message)
-        chat.messages[new_message.message_id] = new_message
-        await new_message.initialise_directory(self.client)
+        message_data = message_data_from_telegram(event.message)
+        new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
+        chat.messages.append(new_message)
         logging.info(f"New message initialised: {new_message}")
         # Pass to helpers
         await self.pass_message_to_handlers(new_message)
@@ -134,6 +137,7 @@ class Pipeline:
 
     async def on_deleted_message(self, event: events.MessageDeleted.Event):
         # Get messages
+        chat = self.chat_by_id(event.chat_id)
         messages = self.get_messages_for_delete_event(event)
         for message in messages:
             # Tell helpers
@@ -151,22 +155,21 @@ class Pipeline:
             # Remove messages from store
             logging.info(f"Deleting message {message} from chat: {message.chat_data}")
             message.delete(self.database)
-            message.channel.messages.pop(message.message_id, None)
+            chat.remove_message(message.message_data)
 
     def get_messages_for_delete_event(self, event: events.MessageDeleted.Event) -> Iterator[Message]:
         deleted_ids = event.deleted_ids
-        channel_id = event.chat_id
-        if channel_id is None:
-            all_messages = [
-                workshop.messages.get(deleted_id)
-                for deleted_id in deleted_ids
+        if event.chat_id is None:
+            return [
+                message
                 for workshop in self.workshops
+                for message in workshop.messages
+                if message.message_data.message_id in deleted_ids
             ]
-            return filter(None, all_messages)
-        for channel in self.all_chats:
-            if channel.chat_id == channel_id:
-                return filter(None, [channel.messages.get(deleted_id) for deleted_id in deleted_ids])
-        return []
+        chat = self.chat_by_id(event.chat_id)
+        if chat is None:
+            return []
+        return [message for message in chat.messages if message.message_data.message_id in deleted_ids]
 
 
 def setup_logging() -> None:
