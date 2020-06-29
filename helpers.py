@@ -16,7 +16,7 @@ from async_generator import asynccontextmanager
 from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetector, FrameTimecode
 
 from group import Channel, WorkshopGroup
-from message import Message, Video
+from message import Message
 from tasks.ffmpeg_task import FfmpegTask
 from tasks.ffmprobe_task import FFprobeTask
 from tasks.task_worker import TaskWorker
@@ -24,7 +24,7 @@ from tasks.youtube_dl_task import YoutubeDLTask
 from telegram_client import TelegramClient
 
 T = TypeVar('T')
-
+Video = TypeVar("Video")  # TODO
 
 def find_video_for_message(message: Message) -> Optional[Video]:
     # If given message has a video, return that

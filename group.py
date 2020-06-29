@@ -6,12 +6,10 @@ from abc import ABC, abstractmethod
 from typing import Dict, Union, Any, TypeVar, List, Optional
 from typing import TYPE_CHECKING
 
-from message import Message
-from telegram_client import TelegramClient
-
 if TYPE_CHECKING:
+    from telegram_client import TelegramClient
     from database import Database
-    from message import MessageData
+    from message import MessageData, Message
 T = TypeVar('T', bound='Group')
 
 
@@ -87,7 +85,7 @@ class Group(ABC):
         self.client = client
 
     @classmethod
-    def from_config(cls, config: 'ChatConfig', client: TelegramClient, database: 'Database') -> Group:
+    async def from_config(cls, config: 'ChatConfig', client: TelegramClient, database: 'Database') -> Group:
         logging.info(f"Initialising channel: {config}")
         # Get chat id, name, etc
         chat_data = await client.get_chat_data(config.handle)
@@ -130,12 +128,12 @@ class Group(ABC):
 class Channel(Group):
 
     @classmethod
-    def from_config(cls, config: 'ChatConfig', client: TelegramClient, database: 'Database') -> Channel:
+    async def from_config(cls, config: 'ChatConfig', client: TelegramClient, database: 'Database') -> Channel:
         ...
 
 
 class WorkshopGroup(Group):
 
     @classmethod
-    def from_config(cls, config: 'ChatConfig', client: TelegramClient, database: 'Database') -> WorkshopGroup:
+    async def from_config(cls, config: 'ChatConfig', client: TelegramClient, database: 'Database') -> WorkshopGroup:
         ...

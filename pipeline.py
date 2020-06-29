@@ -25,15 +25,17 @@ class PipelineConfig:
         self.api_hash = config["api_hash"]
         self.api_keys = config.get("api_keys", {})
 
-    async def initialise_pipeline(self) -> 'Pipeline':
+    def initialise_pipeline(self) -> 'Pipeline':
         database = Database()
         client = TelegramClient(self.api_id, self.api_hash)
-        await client.initialise()
+        client.synchronise_async(client.initialise())
         logging.info("Initialising channels")
-        channels = await asyncio.gather(*[Channel.from_config(conf, client, database) for conf in self.channels])
-        workshops = await asyncio.gather(*[
+        channels = client.synchronise_async(asyncio.gather(*[
+            Channel.from_config(conf, client, database) for conf in self.channels
+        ]))
+        workshops = client.synchronise_async(asyncio.gather(*[
             WorkshopGroup.from_config(conf, client, database) for conf in self.workshops
-        ])
+        ]))
         pipe = Pipeline(database, client, channels, workshops, self.api_keys)
         logging.info("Initialised channels")
         return pipe
@@ -198,6 +200,6 @@ if __name__ == "__main__":
     with open("config.json", "r") as c:
         CONF = json.load(c)
     pipeline_conf = PipelineConfig(CONF)
-    pipeline = await pipeline_conf.initialise_pipeline()
+    pipeline = pipeline_conf.initialise_pipeline()
     pipeline.initialise_helpers()
     pipeline.watch_workshop()

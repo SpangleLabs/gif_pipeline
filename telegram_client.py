@@ -1,5 +1,5 @@
 from asyncio import Future
-from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar
+from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any
 
 import telethon
 from telethon import events
@@ -99,7 +99,7 @@ class TelegramClient:
     async def delete_message(self, chat_id: int, message_id: int) -> None:
         await self.client.delete_messages(chat_id, message_id)
 
-    def synchronise_async(self, future: Union[Future[R], Coroutine[R]]) -> R:
+    def synchronise_async(self, future: Union[Future, Coroutine]) -> Any:
         return self.client.loop.run_until_complete(future)
 
     async def upgrade_chat_to_supergroup(self, chat_id: int) -> None:
