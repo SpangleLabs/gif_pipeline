@@ -2,10 +2,11 @@ from asyncio import Future
 from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar
 
 import telethon
-from telethon import events, hints
+from telethon import events
 from telethon.tl.custom import message
 from telethon.tl.functions.messages import MigrateChatRequest
 
+from group import ChatData
 from message import MessageData
 
 R = TypeVar("R")
@@ -33,10 +34,12 @@ class TelegramClient:
             return None
         return self.message_cache[chat_id].get(message_id)
 
-    async def get_entity(self, handle: str) -> hints.Entity:
-        return await self.client.get_entity(handle)
+    async def get_chat_data(self, handle: str) -> ChatData:
+        entity = await self.client.get_entity(handle)
+        return ChatData(entity.id, entity.username, entity.title)
 
-    async def iter_channel_messages(self, channel_handle: str) -> Generator[MessageData, None, None]:
+    async def iter_channel_messages(self, chat_data: ChatData) -> Generator[MessageData, None, None]:
+        channel_handle = chat_data.username or chat_data.chat_id
         channel_entity = await self.client.get_entity(channel_handle)
         async for msg in self.client.iter_messages(channel_entity):
             self._save_message(msg)

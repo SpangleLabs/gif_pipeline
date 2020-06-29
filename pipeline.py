@@ -30,11 +30,11 @@ class PipelineConfig:
         client = TelegramClient(self.api_id, self.api_hash)
         await client.initialise()
         logging.info("Initialising channels")
-        channels = await asyncio.gather(*[conf.initialise(client, database) for conf in self.channels])
-        workshops = await asyncio.gather(*[conf.initialise(client, database) for conf in self.workshops])
-        pipeline = Pipeline(database, client, channels, workshops, self.api_keys)
+        channels = await asyncio.gather(*[Channel.from_config(conf, client, database) for conf in self.channels])
+        workshops = await asyncio.gather(*[WorkshopGroup.from_config(conf, client, database) for conf in self.workshops])
+        pipe = Pipeline(database, client, channels, workshops, self.api_keys)
         logging.info("Initialised channels")
-        return pipeline
+        return pipe
 
 
 class Pipeline:
@@ -61,7 +61,7 @@ class Pipeline:
             channels.append(workshop)
         return channels
 
-    def initialise_helpers(self):
+    def initialise_helpers(self) -> None:
         logging.info("Initialising helpers")
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
         helpers = [
@@ -89,7 +89,7 @@ class Pipeline:
         logging.info("Initialised DuplicateHelper")
         return helper
 
-    def watch_workshop(self):
+    def watch_workshop(self) -> None:
         logging.info("Watching workshop")
         self.client.add_message_handler(self.on_new_message)
         self.client.add_delete_handler(self.on_deleted_message)
@@ -149,8 +149,8 @@ class Pipeline:
                         exc_info=result
                     )
             # Remove messages from store
-            logging.info(f"Deleting message {message} from chat: {message.channel}")
-            message.delete_directory()
+            logging.info(f"Deleting message {message} from chat: {message.chat_data}")
+            message.delete(self.database)
             message.channel.messages.pop(message.message_id, None)
 
     def get_messages_for_delete_event(self, event: events.MessageDeleted.Event) -> Iterator[Message]:
@@ -169,7 +169,7 @@ class Pipeline:
         return []
 
 
-def setup_logging():
+def setup_logging() -> None:
     formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -183,7 +183,7 @@ def setup_logging():
     logger.addHandler(console_handler)
 
 
-def setup_loop():
+def setup_loop() -> None:
     if sys.platform == 'win32':
         loop = asyncio.ProactorEventLoop()
         asyncio.set_event_loop(loop)
@@ -193,8 +193,8 @@ if __name__ == "__main__":
     setup_loop()
     setup_logging()
     with open("config.json", "r") as c:
-        conf = json.load(c)
-    pipeline_conf = PipelineConfig(conf)
+        CONF = json.load(c)
+    pipeline_conf = PipelineConfig(CONF)
     pipeline = await pipeline_conf.initialise_pipeline()
     pipeline.initialise_helpers()
     pipeline.watch_workshop()

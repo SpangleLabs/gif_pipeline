@@ -1,7 +1,15 @@
+from __future__ import annotations
+
 import datetime
 import logging
 import os
 from typing import Optional
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from telegram_client import TelegramClient
+    from database import Database
+    from group import ChatData
 
 
 class MessageData:
@@ -50,8 +58,8 @@ class MessageData:
 
 class Message:
 
-    def __init__(self, message_data: MessageData, group: 'Group'):
-        self.group = group
+    def __init__(self, message_data: MessageData, chat_data: ChatData):
+        self.chat_data = chat_data
         self.message_data = message_data
 
     @property
@@ -61,14 +69,14 @@ class Message:
 
     @property
     def telegram_link(self) -> str:
-        return self.group.telegram_link_for_message(self)
+        return self.chat_data.telegram_link_for_message(self)
 
     @classmethod
-    async def from_message_data(cls, message_data: MessageData, group: 'Group', client: 'TelegramClient'):
+    async def from_message_data(cls, message_data: MessageData, chat_data: 'ChatData', client: 'TelegramClient'):
         if message_data.has_file:
             if message_data.file_path is None:
                 file_ext = message_data.file_mime_type.split("/")[-1]
-                video_path = f"{group.directory}/{message_data.message_id}.{file_ext}"
+                video_path = f"{chat_data.directory}/{message_data.message_id}.{file_ext}"
                 if not os.path.exists(video_path):
                     logging.info(f"Downloading video from message: {message_data}")
                     await client.download_media(message_data.chat_id, message_data.message_id, video_path)
@@ -78,7 +86,7 @@ class Message:
                     logging.info(f"Downloading video from message: {message_data}")
                     await client.download_media(message_data.chat_id, message_data.message_id, message_data.file_path)
         # Create message
-        return Message(message_data, group)
+        return Message(message_data, chat_data)
 
     def delete(self, database: 'Database') -> None:
         try:

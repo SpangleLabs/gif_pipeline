@@ -1,7 +1,8 @@
-from typing import List, Optional
+from typing import List
 
 import sqlite3
 
+from group import ChatData
 from message import MessageData
 
 
@@ -18,24 +19,24 @@ class Database:
             cur.executescript(f.read())
         self.conn.commit()
 
-    def upsert_chat(self, chat_id: int, handle: Optional[str], title: str) -> None:
+    def save_chat(self, chat_data: ChatData):
         cur = self.conn.cursor()
         cur.execute(
             "INSERT INTO chats (chat_id, username, title) VALUES(?, ?, ?) "
             "ON CONFLICT(chat_id) DO UPDATE SET username=excluded.username, title=excluded.title;",
-            (chat_id, handle, title)
+            (chat_data.chat_id, chat_data.username, chat_data.title)
         )
         self.conn.commit()
         cur.close()
 
-    def list_messages_for_chat(self, chat_id: int) -> List[MessageData]:
+    def list_messages_for_chat(self, chat_data: ChatData) -> List[MessageData]:
         cur = self.conn.cursor()
         messages = []
         for row in cur.execute(
             "SELECT chat_id, message_id, datetime, text, is_forward, "
             "file_path, file_mime_type, reply_to, sender_id, is_scheduled "
             "FROM messages WHERE chat_id = ?",
-            (chat_id, )
+            (chat_data.chat_id, )
         ):
             messages.append(MessageData(
                 row["chat_id"],
