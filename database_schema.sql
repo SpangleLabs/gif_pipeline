@@ -43,3 +43,6 @@ create table if not exists video_hashes
         references messages
             on update restrict on delete restrict
 );
+
+create index if not exists video_hashes_hash_entry_id_index
+	on video_hashes (hash, entry_id);
