@@ -66,7 +66,7 @@ class Database:
             "reply_to=excluded.reply_to, sender_id=excluded.sender_id",
             (
                 message.chat_id, message.message_id, message.datetime, message.text, message.is_forward,
-                message.file_path, message.file_mime_type, message.reply_to, message.sender_id
+                message.file_path, message.file_mime_type, message.reply_to, message.sender_id, message.is_scheduled
             )
         )
         self.conn.commit()

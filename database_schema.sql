@@ -33,6 +33,9 @@ create table if not exists messages
     is_scheduled   boolean not null
 );
 
+create unique index if not exists messages_chat_id_message_id_is_scheduled_uindex
+	on messages (chat_id, message_id, is_scheduled);
+
 create table if not exists video_hashes
 (
     hash     text    not null,
