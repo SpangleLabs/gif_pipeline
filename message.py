@@ -25,7 +25,7 @@ class MessageData:
             file_mime_type: Optional[str],
             reply_to: Optional[int],
             sender_id: int,
-            is_scheduled
+            is_scheduled: bool
     ):
         self.chat_id = chat_id
         self.message_id = message_id
@@ -76,7 +76,7 @@ class Message:
         if message_data.has_file:
             if message_data.file_path is None:
                 file_ext = message_data.file_mime_type.split("/")[-1]
-                video_path = f"{chat_data.directory}/{message_data.message_id}.{file_ext}"
+                video_path = f"{chat_data.directory}{message_data.message_id:06}.{file_ext}"
                 if not os.path.exists(video_path):
                     logging.info(f"Downloading video from message: {message_data}")
                     await client.download_media(message_data.chat_id, message_data.message_id, video_path)
