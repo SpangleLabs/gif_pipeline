@@ -94,7 +94,8 @@ class Database:
                 "WHERE m.chat_id = ? AND m.message_id = ? AND m.is_scheduled = ?",
                 (message.chat_id, message.message_id, message.is_scheduled)
         ):
-            hashes.append(row["hash"])
+            if row["hash"] is not None:
+                hashes.append(row["hash"])
         return hashes
 
     def get_messages_for_hashes(self, image_hashes: List[str]) -> List[MessageData]:
