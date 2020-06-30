@@ -76,24 +76,24 @@ class Pipeline:
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
         helpers = [
             duplicate_helper,
-            TelegramGifHelper(self.client, self.worker),
-            VideoRotateHelper(self.client, self.worker),
-            VideoCutHelper(self.client, self.worker),
-            VideoCropHelper(self.client, self.worker),
-            DownloadHelper(self.client, self.worker),
-            StabiliseHelper(self.client, self.worker),
-            QualityVideoHelper(self.client, self.worker),
-            MSGHelper(self.client, self.worker),
-            AutoSceneSplitHelper(self.client, self.worker)
+            TelegramGifHelper(self.database, self.client, self.worker),
+            VideoRotateHelper(self.database, self.client, self.worker),
+            VideoCutHelper(self.database, self.client, self.worker),
+            VideoCropHelper(self.database, self.client, self.worker),
+            DownloadHelper(self.database, self.client, self.worker),
+            StabiliseHelper(self.database, self.client, self.worker),
+            QualityVideoHelper(self.database, self.client, self.worker),
+            MSGHelper(self.database, self.client, self.worker),
+            AutoSceneSplitHelper(self.database, self.client, self.worker)
         ]
         if "imgur" in self.api_keys:
-            helpers.append(ImgurGalleryHelper(self.client, self.worker, self.api_keys["imgur"]["client_id"]))
+            helpers.append(ImgurGalleryHelper(self.database, self.client, self.worker))
         for helper in helpers:
             self.helpers[helper.name] = helper
         logging.info(f"Initialised {len(self.helpers)} helpers")
 
     async def initialise_duplicate_detector(self) -> DuplicateHelper:
-        helper = DuplicateHelper(self.client, self.worker)
+        helper = DuplicateHelper(self.database, self.client, self.worker)
         logging.info("Initialising DuplicateHelper")
         await helper.initialise_hashes(self.channels, self.workshops)
         logging.info("Initialised DuplicateHelper")
@@ -119,11 +119,11 @@ class Pipeline:
         chat.messages.append(new_message)
         logging.info(f"New message initialised: {new_message}")
         # Pass to helpers
-        await self.pass_message_to_handlers(new_message)
+        await self.pass_message_to_handlers(chat, new_message)
 
-    async def pass_message_to_handlers(self, new_message: Message):
+    async def pass_message_to_handlers(self, chat: Group, new_message: Message):
         helper_results = await asyncio.gather(
-            *(helper.on_new_message(new_message) for helper in self.helpers.values()),
+            *(helper.on_new_message(chat, new_message) for helper in self.helpers.values()),
             return_exceptions=True
         )
         results_dict = dict(zip(self.helpers.keys(), helper_results))
@@ -135,7 +135,7 @@ class Pipeline:
                 )
             elif result:
                 for reply_message in result:
-                    await self.pass_message_to_handlers(reply_message)
+                    await self.pass_message_to_handlers(chat, reply_message)
 
     async def on_deleted_message(self, event: events.MessageDeleted.Event):
         # Get messages
@@ -144,7 +144,7 @@ class Pipeline:
         for message in messages:
             # Tell helpers
             helper_results = await asyncio.gather(
-                *(helper.on_deleted_message(message) for helper in self.helpers.values()),
+                *(helper.on_deleted_message(chat, message) for helper in self.helpers.values()),
                 return_exceptions=True
             )
             results_dict = dict(zip(self.helpers.keys(), helper_results))

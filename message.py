@@ -55,6 +55,10 @@ class MessageData:
     def __hash__(self) -> int:
         return hash((self.chat_id, self.message_id, self.is_scheduled))
 
+    def expected_file_path(self, chat_data: ChatData):
+        file_ext = self.file_mime_type.split("/")[-1]
+        return f"{chat_data.directory}{self.message_id:06}.{file_ext}"
+
 
 class Message:
 
@@ -69,14 +73,17 @@ class Message:
 
     @property
     def telegram_link(self) -> str:
-        return self.chat_data.telegram_link_for_message(self)
+        return self.chat_data.telegram_link_for_message(self.message_data)
+
+    @property
+    def text(self) -> str:
+        return self.message_data.text
 
     @classmethod
     async def from_message_data(cls, message_data: MessageData, chat_data: 'ChatData', client: 'TelegramClient'):
         if message_data.has_file:
             if message_data.file_path is None:
-                file_ext = message_data.file_mime_type.split("/")[-1]
-                video_path = f"{chat_data.directory}{message_data.message_id:06}.{file_ext}"
+                video_path = message_data.expected_file_path(chat_data)
                 if not os.path.exists(video_path):
                     logging.info(f"Downloading video from message: {message_data}")
                     await client.download_media(message_data.chat_id, message_data.message_id, video_path)

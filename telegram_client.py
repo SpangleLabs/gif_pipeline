@@ -100,8 +100,8 @@ class TelegramClient:
             chat_id, video_path, caption=text, reply_to=reply_to_msg_id, allow_cache=False
         )
 
-    async def delete_message(self, chat_id: int, message_id: int) -> None:
-        await self.client.delete_messages(chat_id, message_id)
+    async def delete_message(self, message_data: MessageData) -> None:
+        await self.client.delete_messages(message_data.chat_id, message_data.message_id)
 
     def synchronise_async(self, future: Union[Future, Coroutine]) -> Any:
         return self.client.loop.run_until_complete(future)
