@@ -103,9 +103,9 @@ class Database:
         cur = self.conn.cursor()
         hashes = []
         for row in cur.execute(
-                "SELECT v.hash FROM video_hashes v "
-                "RIGHT JOIN messages m on v.entry_id = m.entry_id W"
-                "HERE m.chat_id = ? AND m.message_id = ? AND m.is_scheduled = ?",
+                "SELECT vh.hash FROM messages m "
+                "LEFT JOIN video_hashes vh on m.entry_id = vh.entry_id "
+                "WHERE m.chat_id = ? AND m.message_id = ? AND m.is_scheduled = ?",
                 (message.chat_id, message.message_id, message.is_scheduled)
         ):
             hashes.append(row["hash"])
