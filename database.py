@@ -85,20 +85,6 @@ class Database:
         )
         self.conn.commit()
 
-    def load_hashes(self) -> Dict[str, Set[MessageData]]:
-        cur = self.conn.cursor()
-        hashes: Dict[str, Set[MessageData]] = defaultdict(lambda: set())
-        for row in cur.execute(
-                "SELECT video_hashes.hash, m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
-                "m.file_path, m.file_mime_type, m.reply_to, m.sender_id, m.is_scheduled "
-                "FROM video_hashes "
-                "FULL OUTER JOIN messages m on video_hashes.entry_id = m.entry_id"
-        ):
-            if row["hash"] is None:
-                continue
-            hashes[row["hash"]].add(message_data_from_row(row))
-        return hashes
-
     def get_hashes_for_message(self, message: MessageData) -> List[str]:
         cur = self.conn.cursor()
         hashes = []
