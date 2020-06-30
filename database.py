@@ -1,6 +1,7 @@
+import sqlite3
 from typing import List
 
-import sqlite3
+import dateutil.parser
 
 from group import ChatData
 from message import MessageData
@@ -33,23 +34,23 @@ class Database:
         cur = self.conn.cursor()
         messages = []
         for row in cur.execute(
-            "SELECT chat_id, message_id, datetime, text, is_forward, "
-            "file_path, file_mime_type, reply_to, sender_id, is_scheduled "
-            "FROM messages WHERE chat_id = ?",
-            (chat_data.chat_id, )
+                "SELECT chat_id, message_id, datetime, text, is_forward, "
+                "file_path, file_mime_type, reply_to, sender_id, is_scheduled "
+                "FROM messages WHERE chat_id = ?",
+                (chat_data.chat_id,)
         ):
             messages.append(MessageData(
-                row["chat_id"],
-                row["message_id"],
-                row["datetime"],
-                row["text"],
-                row["is_forward"],
-                row["file_path"] is not None,
-                row["file_path"],
-                row["file_mime_type"],
-                row["reply_to"],
-                row["sender_id"],
-                row["is_scheduled"]
+                row[0],
+                row[1],
+                dateutil.parser.parse(row[2]),
+                row[3],
+                bool(row[4]),
+                row[5] is not None,
+                row[5],
+                row[6],
+                row[7],
+                row[8],
+                bool(row[9])
             ))
         return messages
 
