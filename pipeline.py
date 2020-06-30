@@ -87,7 +87,7 @@ class Pipeline:
             AutoSceneSplitHelper(self.database, self.client, self.worker)
         ]
         if "imgur" in self.api_keys:
-            helpers.append(ImgurGalleryHelper(self.database, self.client, self.worker))
+            helpers.append(ImgurGalleryHelper(self.database, self.client, self.worker, self.api_keys["imgur"]["client_id"]))
         for helper in helpers:
             self.helpers[helper.name] = helper
         logging.info(f"Initialised {len(self.helpers)} helpers")
