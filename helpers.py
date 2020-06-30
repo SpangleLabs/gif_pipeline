@@ -5,7 +5,7 @@ import re
 import shutil
 import uuid
 from abc import ABC, abstractmethod
-from typing import Optional, List, Set, Tuple, Match, TypeVar, TypedDict
+from typing import Optional, List, Set, Tuple, Match, TypeVar, Dict
 
 import imagehash
 import requests
@@ -707,9 +707,6 @@ class MSGHelper(TelegramGifHelper):
 
 
 class ImgurGalleryHelper(Helper):
-    class ImgurImage(TypedDict):
-        id: str
-        mp4: Optional[str]
 
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, imgur_client_id: str):
         super().__init__(database, client, worker)
@@ -736,7 +733,7 @@ class ImgurGalleryHelper(Helper):
             return [await self.send_text_reply(chat, message, "That imgur gallery contains no videos.")]
         return await asyncio.gather(*(self.send_imgur_video(chat, message, image) for image in images))
 
-    async def send_imgur_video(self, chat: Group, message: Message, image: ImgurImage) -> Message:
+    async def send_imgur_video(self, chat: Group, message: Message, image: Dict[str, str]) -> Message:
         file_url = image["mp4"]
         file_ext = file_url.split(".")[-1]
         resp = requests.get(file_url)
