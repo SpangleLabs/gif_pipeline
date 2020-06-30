@@ -6,7 +6,7 @@ from telethon import events
 from telethon.tl.custom import message
 from telethon.tl.functions.messages import MigrateChatRequest
 
-from group import ChatData
+from group import ChatData, ChannelData, WorkshopData
 from message import MessageData
 
 R = TypeVar("R")
@@ -14,7 +14,7 @@ R = TypeVar("R")
 
 def message_data_from_telegram(msg: telethon.tl.custom.message.Message) -> MessageData:
     return MessageData(
-            msg.chat_id,
+            msg.chat.id,
             msg.id,
             msg.date,
             msg.text,
@@ -39,7 +39,7 @@ class TelegramClient:
         await self.client.get_dialogs()
 
     def _save_message(self, msg: telethon.tl.custom.message.Message):
-        chat_id = msg.chat_id
+        chat_id = msg.chat.id
         message_id = msg.id
         if chat_id not in self.message_cache:
             self.message_cache[chat_id] = {}
@@ -50,9 +50,13 @@ class TelegramClient:
             return None
         return self.message_cache[chat_id].get(message_id)
 
-    async def get_chat_data(self, handle: str) -> ChatData:
+    async def get_channel_data(self, handle: str) -> ChannelData:
         entity = await self.client.get_entity(handle)
-        return ChatData(entity.id, entity.username, entity.title)
+        return ChannelData(entity.id, entity.username, entity.title)
+
+    async def get_workshop_data(self, handle: str) -> WorkshopData:
+        entity = await self.client.get_entity(handle)
+        return WorkshopData(entity.id, entity.username, entity.title)
 
     async def iter_channel_messages(self, chat_data: ChatData) -> Generator[MessageData, None, None]:
         channel_handle = chat_data.username or chat_data.chat_id
