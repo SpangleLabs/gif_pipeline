@@ -1,6 +1,5 @@
 import sqlite3
-from collections import defaultdict
-from typing import List, Dict, Set
+from typing import List
 
 import dateutil.parser
 
