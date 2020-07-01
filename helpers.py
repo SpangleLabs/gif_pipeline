@@ -144,9 +144,8 @@ class DuplicateHelper(Helper):
             return []
         message_decompose_path = f"sandbox/decompose/{message.chat_data.chat_id}-{message.message_data.message_id}/"
         # Decompose video into images
-        if not os.path.exists(message_decompose_path):
-            os.mkdir(message_decompose_path)
-            await self.decompose_video(message.message_data.file_path, message_decompose_path)
+        os.makedirs(message_decompose_path, exist_ok=True)
+        await self.decompose_video(message.message_data.file_path, message_decompose_path)
         # Hash the images
         hashes = []
         for image_file in glob.glob(f"{message_decompose_path}/*.png"):
@@ -185,7 +184,8 @@ class DuplicateHelper(Helper):
     async def decompose_video(self, video_path: str, decompose_dir_path: str):
         task = FfmpegTask(
             inputs={video_path: None},
-            outputs={f"{decompose_dir_path}/out%d.png": "-vf fps=5 -vsync 0"}
+            outputs={f"{decompose_dir_path}/out%d.png": "-vf fps=5 -vsync 0"},
+            global_options="-y"
         )
         await self.worker.await_task(task)
 
