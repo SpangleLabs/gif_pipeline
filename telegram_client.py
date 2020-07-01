@@ -62,6 +62,10 @@ class TelegramClient:
         channel_handle = chat_data.username or chat_data.chat_id
         channel_entity = await self.client.get_entity(channel_handle)
         async for msg in self.client.iter_messages(channel_entity):
+            # Skip edit photo events.
+            if msg.action.__class__.__name__ in ['MessageActionChatEditPhoto']:
+                continue
+            # Save message and yield
             self._save_message(msg)
             yield message_data_from_telegram(msg)
 
