@@ -57,7 +57,7 @@ class Helper(ABC):
         )
         message_data = message_data_from_telegram(msg)
         new_message = await Message.from_message_data(message_data, message.chat_data, self.client)
-        self.database.save_message(new_message)
+        self.database.save_message(new_message.message_data)
         chat.add_message(new_message)
         return new_message
 
