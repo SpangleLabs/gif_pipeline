@@ -44,5 +44,5 @@ create table if not exists video_hashes
             on update restrict on delete restrict
 );
 
-create index if not exists video_hashes_hash_entry_id_index
+create unique index if not exists video_hashes_hash_entry_id_uindex
 	on video_hashes (hash, entry_id);
