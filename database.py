@@ -1,5 +1,5 @@
 import sqlite3
-from typing import List, Optional
+from typing import List, Optional, Type, TypeVar
 
 import dateutil.parser
 
@@ -10,6 +10,8 @@ chat_types = {
     "channel": ChannelData,
     "workshop": WorkshopData
 }
+chat_types_inv = {v: k for k, v in chat_types.items()}
+T = TypeVar("T", bound=ChatData)
 
 
 def message_data_from_row(row: sqlite3.Row) -> MessageData:
@@ -44,8 +46,7 @@ class Database:
 
     def save_chat(self, chat_data: ChatData):
         cur = self.conn.cursor()
-        inv_dict = {v: k for k, v in chat_types.items()}
-        chat_type = inv_dict[chat_data.__class__]
+        chat_type = chat_types_inv[chat_data.__class__]
         cur.execute(
             "INSERT INTO chats (chat_id, username, title, chat_type) VALUES(?, ?, ?, ?) "
             "ON CONFLICT(chat_id) DO UPDATE SET username=excluded.username, title=excluded.title;",
@@ -53,6 +54,26 @@ class Database:
         )
         self.conn.commit()
         cur.close()
+
+    def list_chats(self, chat_type: Type[T]) -> List[T]:
+        cur = self.conn.cursor()
+        chats = []
+        for row in cur.execute(
+                "SELECT chat_id, username, title FROM chats WHERE chat_type = ?",
+                (chat_types_inv[chat_type],)
+        ):
+            chats.append(chat_type(
+                row["chat_id"],
+                row["username"],
+                row["title"]
+            ))
+        return chats
+
+    def list_channels(self) -> List[ChannelData]:
+        return self.list_chats(ChannelData)
+
+    def list_workshops(self) -> List[WorkshopData]:
+        return self.list_chats(WorkshopData)
 
     def get_chat_by_id(self, chat_id: int) -> Optional[ChatData]:
         cur = self.conn.cursor()

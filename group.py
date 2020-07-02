@@ -152,6 +152,11 @@ class Group(ABC):
     async def from_config(cls, config: 'ChatConfig', client: TelegramClient, database: 'Database'):
         pass
 
+    @classmethod
+    @abstractmethod
+    async def from_data(cls, chat_data: 'ChatData', config: 'ChatConfig', client: TelegramClient, database: 'Database'):
+        pass
+
     def message_by_id(self, message_id: int) -> Optional[Message]:
         return next(iter([msg for msg in self.messages if msg.message_data.message_id == message_id]), None)
 
@@ -164,6 +169,10 @@ class Channel(Group):
     @classmethod
     async def from_config(cls, config: 'ChatConfig', client: TelegramClient, database: 'Database') -> Channel:
         chat_data = await Group.load_chat_data(client.get_channel_data, config, client, database)
+        return await cls.from_data(chat_data, config, client, database)
+
+    @classmethod
+    async def from_data(cls, chat_data: 'ChatData', config: 'ChatConfig', client: TelegramClient, database: 'Database'):
         messages = await Group.load_messages(chat_data, config, client, database)
         return Channel(chat_data, config.queue, messages, client)
 
@@ -173,5 +182,9 @@ class WorkshopGroup(Group):
     @classmethod
     async def from_config(cls, config: 'ChatConfig', client: TelegramClient, database: 'Database') -> WorkshopGroup:
         chat_data = await Group.load_chat_data(client.get_workshop_data, config, client, database)
+        return await cls.from_data(chat_data, config, client, database)
+
+    @classmethod
+    async def from_data(cls, chat_data: 'ChatData', config: 'ChatConfig', client: TelegramClient, database: 'Database'):
         messages = await Group.load_messages(chat_data, config, client, database)
         return WorkshopGroup(chat_data, config.queue, messages, client)

@@ -30,15 +30,41 @@ class PipelineConfig:
         client = TelegramClient(self.api_id, self.api_hash)
         client.synchronise_async(client.initialise())
         logging.info("Initialising channels")
-        channels = client.synchronise_async(asyncio.gather(*[
-            Channel.from_config(conf, client, database) for conf in self.channels
-        ]))
-        workshops = client.synchronise_async(asyncio.gather(*[
-            WorkshopGroup.from_config(conf, client, database) for conf in self.workshops
-        ]))
+        channels = self.get_channels(client, database)
+        workshops = self.get_workshops(client, database)
         pipe = Pipeline(database, client, channels, workshops, self.api_keys)
         logging.info("Initialised channels")
         return pipe
+
+    def get_channels(self, client: TelegramClient, database: Database) -> List[Channel]:
+        db_channels = database.list_channels()
+        channel_inits = []
+        for conf in self.channels:
+            matching_db_chat = next(
+                (chat for chat in db_channels if chat.username == conf.handle or chat.chat_id == conf.handle),
+                None
+            )
+            if matching_db_chat:
+                channel_inits.append(Channel.from_data(matching_db_chat, conf, client, database))
+            else:
+                channel_inits.append(Channel.from_config(conf, client, database))
+        channels = client.synchronise_async(asyncio.gather(*channel_inits))
+        return channels
+
+    def get_workshops(self, client: TelegramClient, database: Database) -> List[WorkshopGroup]:
+        db_channels = database.list_workshops()
+        workshop_inits = []
+        for conf in self.workshops:
+            matching_db_chat = next(
+                (chat for chat in db_channels if chat.username == conf.handle or chat.chat_id == conf.handle),
+                None
+            )
+            if matching_db_chat:
+                workshop_inits.append(WorkshopGroup.from_data(matching_db_chat, conf, client, database))
+            else:
+                workshop_inits.append(WorkshopGroup.from_config(conf, client, database))
+        channels = client.synchronise_async(asyncio.gather(*workshop_inits))
+        return channels
 
 
 class Pipeline:
@@ -91,7 +117,8 @@ class Pipeline:
             AutoSceneSplitHelper(self.database, self.client, self.worker)
         ]
         if "imgur" in self.api_keys:
-            helpers.append(ImgurGalleryHelper(self.database, self.client, self.worker, self.api_keys["imgur"]["client_id"]))
+            helpers.append(
+                ImgurGalleryHelper(self.database, self.client, self.worker, self.api_keys["imgur"]["client_id"]))
         for helper in helpers:
             self.helpers[helper.name] = helper
         logging.info(f"Initialised {len(self.helpers)} helpers")
@@ -207,4 +234,4 @@ if __name__ == "__main__":
     pipeline_conf = PipelineConfig(CONF)
     pipeline = pipeline_conf.initialise_pipeline()
     pipeline.initialise_helpers()
-    pipeline.watch_workshop()
+    # pipeline.watch_workshop()
