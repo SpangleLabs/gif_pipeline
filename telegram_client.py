@@ -39,7 +39,8 @@ class TelegramClient:
         await self.client.get_dialogs()
 
     def _save_message(self, msg: telethon.tl.custom.message.Message):
-        chat_id = msg.chat.id
+        # UpdateShortMessage events do not contain a populated msg.chat, so use msg.chat_id sometimes.
+        chat_id = msg.chat.id if msg.chat is not None else msg.chat_id
         message_id = msg.id
         if chat_id not in self.message_cache:
             self.message_cache[chat_id] = {}
