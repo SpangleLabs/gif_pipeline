@@ -121,6 +121,7 @@ class Pipeline:
         message_data = message_data_from_telegram(event.message)
         new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
         chat.messages.append(new_message)
+        self.database.save_message(new_message.message_data)
         logging.info(f"New message initialised: {new_message}")
         # Pass to helpers
         await self.pass_message_to_handlers(chat, new_message)
