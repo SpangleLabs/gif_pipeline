@@ -141,7 +141,7 @@ class DuplicateHelper(Helper):
         return None
 
     async def create_message_hashes(self, message: Message) -> List[str]:
-        if message.message_data.file_path is None:
+        if not message.has_video():
             return []
         message_decompose_path = f"sandbox/decompose/{message.chat_data.chat_id}-{message.message_data.message_id}/"
         # Decompose video into images
