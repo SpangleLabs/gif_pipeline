@@ -13,7 +13,7 @@ from helpers import DuplicateHelper, TelegramGifHelper, VideoRotateHelper, Video
     VideoCropHelper, DownloadHelper, StabiliseHelper, QualityVideoHelper, MSGHelper, ImgurGalleryHelper, \
     AutoSceneSplitHelper
 from tasks.task_worker import TaskWorker
-from telegram_client import TelegramClient, message_data_from_telegram
+from telegram_client import TelegramClient, message_data_from_telegram, chat_id_from_telegram
 
 
 class PipelineConfig:
@@ -112,7 +112,7 @@ class Pipeline:
     async def on_new_message(self, event: Union[events.NewMessage.Event, events.MessageEdited.Event]):
         # This is called for both new messages, and edited messages
         # Get chat, check it's one we know
-        chat = self.chat_by_id(event.chat_id)
+        chat = self.chat_by_id(chat_id_from_telegram(event.message))
         if chat is None:
             logging.debug("Ignoring new message in other chat, which must have slipped through")
             return

@@ -29,6 +29,10 @@ def message_data_from_telegram(msg: telethon.tl.custom.message.Message) -> Messa
         )
 
 
+def chat_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
+    return msg.chat.id if msg.chat is not None else msg.chat_id
+
+
 class TelegramClient:
     def __init__(self, api_id: int, api_hash: str):
         self.client = telethon.TelegramClient('duplicate_checker', api_id, api_hash)
@@ -41,7 +45,7 @@ class TelegramClient:
 
     def _save_message(self, msg: telethon.tl.custom.message.Message):
         # UpdateShortMessage events do not contain a populated msg.chat, so use msg.chat_id sometimes.
-        chat_id = msg.chat.id if msg.chat is not None else msg.chat_id
+        chat_id = chat_id_from_telegram(msg)
         message_id = msg.id
         if chat_id not in self.message_cache:
             self.message_cache[chat_id] = {}
@@ -77,7 +81,7 @@ class TelegramClient:
 
     def add_message_handler(self, function: Callable, chat_ids: List[int]) -> None:
         async def function_wrapper(event: events.NewMessage.Event):
-            chat_id = event.chat.id if event.chat is not None else event.chat_id
+            chat_id = chat_id_from_telegram(event.message)
             if chat_id not in chat_ids:
                 logging.debug("Ignoring new message in other chat")
                 return
