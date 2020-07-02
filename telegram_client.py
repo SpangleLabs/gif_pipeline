@@ -65,9 +65,7 @@ class TelegramClient:
         return WorkshopData(entity.id, entity.username, entity.title)
 
     async def iter_channel_messages(self, chat_data: ChatData) -> Generator[MessageData, None, None]:
-        channel_handle = chat_data.username or chat_data.chat_id
-        channel_entity = await self.client.get_entity(channel_handle)
-        async for msg in self.client.iter_messages(channel_entity):
+        async for msg in self.client.iter_messages(chat_data.chat_id):
             # Skip edit photo events.
             if msg.action.__class__.__name__ in ['MessageActionChatEditPhoto']:
                 continue
