@@ -59,6 +59,10 @@ class MessageData:
         file_ext = self.file_mime_type.split("/")[-1]
         return f"{chat_data.directory}{self.message_id:06}.{file_ext}"
 
+    @property
+    def has_video(self) -> bool:
+        return self.has_file and (self.file_mime_type.startswith("video") or self.file_mime_type == "image/gif")
+
 
 class Message:
 
@@ -68,8 +72,7 @@ class Message:
 
     @property
     def has_video(self) -> bool:
-        return self.message_data.has_file and \
-               (self.message_data.file_mime_type.startswith("video") or self.message_data.file_mime_type == "image/gif")
+        return self.message_data.has_video
 
     @property
     def telegram_link(self) -> str:
