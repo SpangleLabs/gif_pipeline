@@ -234,4 +234,4 @@ if __name__ == "__main__":
     pipeline_conf = PipelineConfig(CONF)
     pipeline = pipeline_conf.initialise_pipeline()
     pipeline.initialise_helpers()
-    # pipeline.watch_workshop()
+    pipeline.watch_workshop()
