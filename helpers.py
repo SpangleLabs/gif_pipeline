@@ -162,10 +162,14 @@ class DuplicateHelper(Helper):
 
     async def check_hash_in_store(self, chat: Group, image_hashes: List[str], message: Message) -> Optional[Message]:
         matching_messages = set(self.database.get_messages_for_hashes(image_hashes))
-        # TODO: get family, and ignore those ones
+        # Get root parent
+        msg_history = self.database.get_message_history(message.message_data)
+        msg_family = set(self.database.get_message_family(msg_history[-1]))
+        # warning messages
+        warning_messages = matching_messages - msg_family
         warning_msg = None
-        if len(matching_messages) > 0:
-            warning_msg = await self.post_duplicate_warning(chat, message, matching_messages)
+        if len(warning_messages) > 0:
+            warning_msg = await self.post_duplicate_warning(chat, message, warning_messages)
         return warning_msg
 
     async def post_duplicate_warning(self, chat: Group, new_message: Message, potential_matches: Set[MessageData]):

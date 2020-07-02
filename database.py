@@ -144,7 +144,65 @@ class Database:
         self.conn.commit()
 
     def get_message_history(self, message: MessageData) -> List[MessageData]:
-        pass
+        """
+        Returns a list of messages, from the specified message, up to the root message, via replies.
+        :param message: the message to start climbing from
+        :return: A list of messages from the specified to the root, ordered in reverse date order
+        """
+        cur = self.conn.cursor()
+        messages = []
+        for row in cur.execute(
+                "WITH RECURSIVE parent(x) AS ("
+                "  SELECT :msg_id "
+                "    UNION ALL "
+                "  SELECT m.reply_to "
+                "  FROM messages m, parent "
+                "  WHERE m.message_id=parent.x AND m.reply_to IS NOT NULL "
+                "    AND m.chat_id = :chat_id AND m.is_scheduled = :scheduled"
+                ") "
+                "SELECT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
+                "  m.file_path, m.file_mime_type, m.reply_to, m.sender_id, m.is_scheduled "
+                "FROM parent p "
+                "LEFT JOIN messages m ON m.message_id = p.x "
+                "WHERE m.chat_id = :chat_id AND m.is_scheduled = :scheduled "
+                "ORDER BY datetime DESC;",
+                {
+                    "msg_id": message.message_id,
+                    "chat_id": message.chat_id,
+                    "scheduled": message.is_scheduled
+                }
+        ):
+            messages.append(message_data_from_row(row))
+        return messages
 
     def get_message_family(self, message: MessageData) -> List[MessageData]:
-        pass
+        """
+        List of messages in the specified message's family. I.e. messages which are replies to this one, and
+        replies to those ones, etc
+        :param message: The message to start descending the tree from
+        :return: A list of messages, in ascending datetime order
+        """
+        cur = self.conn.cursor()
+        messages = []
+        for row in cur.execute(
+                "WITH RECURSIVE children(x) AS ("
+                "  SELECT :msg_id "
+                "    UNION ALL "
+                "  SELECT m.message_id "
+                "  FROM messages m, children "
+                "  WHERE m.reply_to = children.x AND m.chat_id = :chat_id AND m.is_scheduled = :scheduled"
+                ") "
+                "SELECT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward,"
+                "  m.file_path, m.file_mime_type, m.reply_to, m.sender_id, m.is_scheduled "
+                "FROM children c "
+                "LEFT JOIN messages m ON m.message_id = c.x "
+                "WHERE m.chat_id = :chat_id AND m.is_scheduled = :scheduled "
+                "ORDER BY m.datetime;",
+                {
+                    "msg_id": message.message_id,
+                    "chat_id": message.chat_id,
+                    "scheduled": message.is_scheduled
+                }
+        ):
+            messages.append(message_data_from_row(row))
+        return messages
