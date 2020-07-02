@@ -96,10 +96,11 @@ class Message:
         return Message(message_data, chat_data)
 
     def delete(self, database: 'Database') -> None:
-        try:
-            os.remove(self.message_data.file_path)
-        except OSError:
-            pass
+        if self.message_data.file_path:
+            try:
+                os.remove(self.message_data.file_path)
+            except OSError:
+                pass
         database.remove_message(self.message_data)
 
     def __repr__(self) -> str:
