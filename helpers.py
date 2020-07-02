@@ -173,7 +173,10 @@ class DuplicateHelper(Helper):
         return warning_msg
 
     async def post_duplicate_warning(self, chat: Group, new_message: Message, potential_matches: Set[MessageData]):
-        message_links = [chat.chat_data.telegram_link_for_message(message) for message in potential_matches]
+        message_links = []
+        for message in potential_matches:
+            chat_data = self.database.get_chat_by_id(message.chat_id) or chat.chat_data
+            message_links.append(chat_data.telegram_link_for_message(message))
         warning_message = "This video might be a duplicate of:\n" + "\n".join(message_links)
         await self.send_text_reply(chat, new_message, warning_message)
 

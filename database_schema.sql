@@ -5,7 +5,8 @@ create table if not exists chats
         constraint chats_pk
             primary key,
     username text,
-    title    text
+    title    text,
+    chat_type text not null
 );
 
 create unique index if not exists chats_chat_id_uindex
