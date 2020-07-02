@@ -145,7 +145,7 @@ class Group(ABC):
         return f"{self.__class__.__name__}({self.chat_data.title})"
 
     def remove_message(self, message_data: MessageData) -> None:
-        self.messages = [msg for msg in self.messages if msg.message_data == message_data]
+        self.messages = [msg for msg in self.messages if msg.message_data != message_data]
 
     @classmethod
     @abstractmethod
