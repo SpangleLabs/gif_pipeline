@@ -93,6 +93,7 @@ class Helper(ABC):
         finally:
             await self.client.delete_message(msg.message_data)
             chat.remove_message(msg.message_data)
+            msg.delete(self.database)
 
     @abstractmethod
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
@@ -196,7 +197,8 @@ class DuplicateHelper(Helper):
             return
         if message.message_data.file_path is None:
             return
-        async with self.progress_message(chat, message, "Checking whether this video has been seen before"):
+        progress_text = "Checking whether this video has been seen before"
+        async with self.progress_message(chat, message, progress_text):
             hashes = await self.get_or_create_message_hashes(message)
             warning_msg = await self.check_hash_in_store(chat, hashes, message)
         if warning_msg is not None:
@@ -774,7 +776,8 @@ class AutoSceneSplitHelper(VideoCutHelper):
             scene_list = await loop.run_in_executor(None, self.calculate_scene_list, video, threshold)
         if len(scene_list) == 1:
             return [await self.send_text_reply(chat, message, "This video contains only 1 scene.")]
-        async with self.progress_message(chat, message, f"Splitting video into {len(scene_list)} scenes"):
+        progress_text = f"Splitting video into {len(scene_list)} scenes"
+        async with self.progress_message(chat, message, progress_text):
             return await self.split_scenes(chat, message, video, scene_list)
 
     @staticmethod
