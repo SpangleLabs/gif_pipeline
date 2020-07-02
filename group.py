@@ -153,7 +153,7 @@ class Group(ABC):
         pass
 
     def message_by_id(self, message_id: int) -> Optional[Message]:
-        return next([msg for msg in self.messages if msg.message_data.message_id == message_id], None)
+        return next(iter([msg for msg in self.messages if msg.message_data.message_id == message_id]), None)
 
     def add_message(self, message: Message) -> None:
         self.messages.append(message)
