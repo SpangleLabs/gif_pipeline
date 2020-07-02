@@ -185,7 +185,7 @@ class DuplicateHelper(Helper):
     async def decompose_video(self, video_path: str, decompose_dir_path: str):
         task = FfmpegTask(
             inputs={video_path: None},
-            outputs={f"{decompose_dir_path}/out%d.png": "-vf fps=5 -vsync 0"},
+            outputs={f"{decompose_dir_path}/out%d.png": "-r 0.2"},
             global_options="-y"
         )
         await self.worker.await_task(task)
