@@ -65,6 +65,10 @@ class Pipeline:
             channels.append(workshop)
         return channels
 
+    @property
+    def all_chat_ids(self) -> List[int]:
+        return [chat.chat_data.chat_id for chat in self.all_chats]
+
     def chat_by_id(self, chat_id: int) -> Optional[Group]:
         for chat in self.all_chats:
             if chat.chat_data.chat_id == chat_id:
@@ -101,7 +105,7 @@ class Pipeline:
 
     def watch_workshop(self) -> None:
         logging.info("Watching workshop")
-        self.client.add_message_handler(self.on_new_message)
+        self.client.add_message_handler(self.on_new_message, self.all_chat_ids)
         self.client.add_delete_handler(self.on_deleted_message)
         self.client.client.run_until_disconnected()
 
@@ -110,7 +114,7 @@ class Pipeline:
         # Get chat, check it's one we know
         chat = self.chat_by_id(event.chat_id)
         if chat is None:
-            logging.debug("Ignoring new message in other chat")
+            logging.debug("Ignoring new message in other chat, which must have slipped through")
             return
         # Convert to our custom Message object. This will update message data, but not the video, for edited messages
         logging.info(f"New message in chat: {chat}")

@@ -1,5 +1,6 @@
+import logging
 from asyncio import Future
-from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any
+from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any, List
 
 import telethon
 from telethon import events
@@ -74,8 +75,12 @@ class TelegramClient:
         msg = self._get_message(chat_id, message_id)
         return await self.client.download_media(message=msg, file=path)
 
-    def add_message_handler(self, function: Callable) -> None:
+    def add_message_handler(self, function: Callable, chat_ids: List[int]) -> None:
         async def function_wrapper(event: events.NewMessage.Event):
+            chat_id = event.chat.id if event.chat is not None else event.chat_id
+            if chat_id not in chat_ids:
+                logging.debug("Ignoring new message in other chat")
+                return
             self._save_message(event.message)
             await function(event)
 
