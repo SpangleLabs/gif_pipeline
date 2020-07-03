@@ -5,8 +5,9 @@ from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any
 import telethon
 from telethon import events, utils
 from telethon.tl.custom import message
-from telethon.tl.functions.channels import InviteToChannelRequest
+from telethon.tl.functions.channels import EditAdminRequest
 from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
+from telethon.tl.types import ChatAdminRights
 
 from group import ChatData, ChannelData, WorkshopData
 from message import MessageData
@@ -156,15 +157,20 @@ class TelegramClient:
     async def invite_bot_to_chat(self, chat_data: ChatData) -> None:
         if self.bot_client == self.client:
             return
-        bot_user = await self.bot_client.get_me()
-        bot_handle = bot_user.username
         users = await self.client.get_participants(chat_data.chat_id)
-        user_handles = [user.username for user in users if user.username is not None]
-        if bot_handle in user_handles:
+        user_ids = [user.id for user in users if user.username is not None]
+        if self.bot_id in user_ids:
             return
-        # chat_entity = await self.client.get_entity(chat_data.chat_id)
-        await self.client(InviteToChannelRequest(
+        bot_entity = await self.bot_client.get_me()
+        bot_username = bot_entity.username
+        await self.client(EditAdminRequest(
             chat_data.chat_id,
-            [bot_handle]
+            bot_username,
+            ChatAdminRights(
+                post_messages=True,
+                edit_messages=True,
+                delete_messages=True
+            ),
+            "Helpful bot"
         ))
 
