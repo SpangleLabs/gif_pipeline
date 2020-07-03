@@ -110,43 +110,38 @@ class Helper(ABC):
 class DuplicateHelper(Helper):
 
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
-        # Initialise, get all channels, get all videos, decompose all, add to the master hash
         super().__init__(database, client, worker)
 
-    async def initialise_hashes(self, channels: List[Channel], workshops: List[WorkshopGroup]):
-        await asyncio.wait([self.create_channel_hashes(channel) for channel in channels])
-        for workshop in workshops:
-            workshop_messages = list(workshop.messages)
-            for message in workshop_messages:
-                existing_hashes = self.get_message_hashes(message)
-                if existing_hashes is not None:
-                    continue
-                new_hashes = await self.create_message_hashes(message)
+    async def initialise_hashes(self, workshops: List[WorkshopGroup]):
+        # Initialise, get all channels, get all videos, decompose all, add to the master hash
+        workshop_ids = {workshop.chat_data.chat_id: workshop for workshop in workshops}
+        messages_needing_hashes = self.database.get_messages_needing_hashing()
+        for message_data in messages_needing_hashes:
+            new_hashes = await self.create_message_hashes(message_data)
+            if message_data.chat_id in workshop_ids:
+                workshop = workshop_ids[message_data.chat_id]
+                message = workshop.message_by_id(message_data.message_id)
                 await self.check_hash_in_store(workshop, new_hashes, message)
 
-    async def create_channel_hashes(self, channel: Channel):
-        for message in list(channel.messages):
-            await self.get_or_create_message_hashes(message)
-
-    async def get_or_create_message_hashes(self, message: Message) -> List[str]:
-        existing_hashes = self.get_message_hashes(message)
+    async def get_or_create_message_hashes(self, message_data: MessageData) -> List[str]:
+        existing_hashes = self.get_message_hashes(message_data)
         if existing_hashes is not None:
             return existing_hashes
-        return await self.create_message_hashes(message)
+        return await self.create_message_hashes(message_data)
 
-    def get_message_hashes(self, message: Message) -> Optional[List[str]]:
-        hashes = self.database.get_hashes_for_message(message.message_data)
+    def get_message_hashes(self, message_data: MessageData) -> Optional[List[str]]:
+        hashes = self.database.get_hashes_for_message(message_data)
         if hashes:
             return hashes
         return None
 
-    async def create_message_hashes(self, message: Message) -> List[str]:
-        if not message.has_video:
+    async def create_message_hashes(self, message_data: MessageData) -> List[str]:
+        if not message_data.has_video:
             return []
-        message_decompose_path = f"sandbox/decompose/{message.chat_data.chat_id}-{message.message_data.message_id}/"
+        message_decompose_path = f"sandbox/decompose/{message_data.chat_id}-{message_data.message_id}/"
         # Decompose video into images
         os.makedirs(message_decompose_path, exist_ok=True)
-        await self.decompose_video(message.message_data.file_path, message_decompose_path)
+        await self.decompose_video(message_data.file_path, message_decompose_path)
         # Hash the images
         hashes = []
         for image_file in glob.glob(f"{message_decompose_path}/*.png"):
@@ -156,7 +151,7 @@ class DuplicateHelper(Helper):
         # Delete the images
         shutil.rmtree(message_decompose_path)
         # Save hashes
-        self.database.save_hashes(message.message_data, hashes)
+        self.database.save_hashes(message_data, hashes)
         # Return hashes
         return hashes
 
@@ -200,13 +195,13 @@ class DuplicateHelper(Helper):
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         # If message has a video, decompose it if necessary, then check images against master hash
         if isinstance(chat, Channel):
-            await self.get_or_create_message_hashes(message)
+            await self.get_or_create_message_hashes(message.message_data)
             return
         if message.message_data.file_path is None:
             return
         progress_text = "Checking whether this video has been seen before"
         async with self.progress_message(chat, message, progress_text):
-            hashes = await self.get_or_create_message_hashes(message)
+            hashes = await self.get_or_create_message_hashes(message.message_data)
             warning_msg = await self.check_hash_in_store(chat, hashes, message)
         if warning_msg is not None:
             return [warning_msg]

@@ -138,6 +138,19 @@ class Database:
                 hashes.append(row["hash"])
         return hashes
 
+    def get_messages_needing_hashing(self) -> List[MessageData]:
+        cur = self.conn.cursor()
+        messages = []
+        for row in cur.execute(
+                "SELECT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
+                "m.file_path, m.file_mime_type, m.reply_to, m.sender_id, m.is_scheduled "
+                "FROM messages m "
+                "LEFT JOIN video_hashes vh ON m.entry_id = vh.entry_id "
+                "WHERE vh.hash IS NULL AND m.file_path IS NOT NULL"
+        ):
+            messages.append(message_data_from_row(row))
+        return messages
+
     def get_messages_for_hashes(self, image_hashes: List[str]) -> List[MessageData]:
         cur = self.conn.cursor()
         messages = []
