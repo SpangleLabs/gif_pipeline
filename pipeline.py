@@ -126,7 +126,7 @@ class Pipeline:
     async def initialise_duplicate_detector(self) -> DuplicateHelper:
         helper = DuplicateHelper(self.database, self.client, self.worker)
         logging.info("Initialising DuplicateHelper")
-        await helper.initialise_hashes(self.channels, self.workshops)
+        await helper.initialise_hashes(self.workshops)
         logging.info("Initialised DuplicateHelper")
         return helper
 
