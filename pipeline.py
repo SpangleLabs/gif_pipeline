@@ -23,11 +23,12 @@ class PipelineConfig:
         self.workshops = [WorkshopConfig.from_json(x) for x in config["workshop_groups"]]
         self.api_id = config["api_id"]
         self.api_hash = config["api_hash"]
+        self.bot_token = config.get("bot_token")
         self.api_keys = config.get("api_keys", {})
 
     def initialise_pipeline(self) -> 'Pipeline':
         database = Database()
-        client = TelegramClient(self.api_id, self.api_hash)
+        client = TelegramClient(self.api_id, self.api_hash, self.bot_token)
         client.synchronise_async(client.initialise())
         logging.info("Initialising channels")
         channels = self.get_channels(client, database)

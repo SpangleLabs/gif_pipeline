@@ -105,6 +105,8 @@ class Group(ABC):
         chat_data = await getter(config.handle)
         # Ensure chat is in database
         database.save_chat(chat_data)
+        # Ensure bot is in chat
+        await client.invite_bot_to_chat(chat_data)
         # Create directory
         os.makedirs(chat_data.directory, exist_ok=True)
         return chat_data

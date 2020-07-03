@@ -5,6 +5,7 @@ from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any
 import telethon
 from telethon import events, utils
 from telethon.tl.custom import message
+from telethon.tl.functions.channels import InviteToChannelRequest
 from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
 
 from group import ChatData, ChannelData, WorkshopData
@@ -42,14 +43,21 @@ def sender_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
 
 
 class TelegramClient:
-    def __init__(self, api_id: int, api_hash: str):
+    def __init__(self, api_id: int, api_hash: str, bot_token: str = None):
         self.client = telethon.TelegramClient('duplicate_checker', api_id, api_hash)
         self.client.start()
+        self.bot_client = self.client
+        if bot_token:
+            self.bot_client = telethon.TelegramClient('duplicate_checker_bot', api_id, api_hash)
+            self.bot_client.start(bot_token=bot_token)
+        self.bot_id = None
         self.message_cache = {}
 
     async def initialise(self) -> None:
         # Get dialogs list, to ensure entities are initialised in library
         await self.client.get_dialogs()
+        bot_user = await self.bot_client.get_me()
+        self.bot_id = bot_user.id
 
     def _save_message(self, msg: telethon.tl.custom.message.Message):
         # UpdateShortMessage events do not contain a populated msg.chat, so use msg.chat_id sometimes.
@@ -103,6 +111,10 @@ class TelegramClient:
             if chat_id not in chat_ids:
                 logging.debug("Ignoring new message in other chat")
                 return
+            sender_id = sender_id_from_telegram(event.message)
+            if sender_id == self.bot_id:
+                logging.debug("Ignoring new message from bot")
+                return
             self._save_message(event.message)
             await function(event)
 
@@ -114,7 +126,7 @@ class TelegramClient:
             await function(event)
             # We don't need to delete from cache, and trying to do so is tough without chat id
 
-        self.client.add_event_handler(function_wrapper, events.MessageDeleted())
+        self.bot_client.add_event_handler(function_wrapper, events.MessageDeleted())
 
     async def send_text_message(
             self,
@@ -123,12 +135,12 @@ class TelegramClient:
             *,
             reply_to_msg_id: int = None
     ) -> telethon.tl.custom.message.Message:
-        return await self.client.send_message(chat_id, text, reply_to=reply_to_msg_id)
+        return await self.bot_client.send_message(chat_id, text, reply_to=reply_to_msg_id)
 
     async def send_video_message(
             self, chat_id: int, video_path: str, text: str = None, *, reply_to_msg_id: int = None
     ) -> telethon.tl.custom.message.Message:
-        return await self.client.send_file(
+        return await self.bot_client.send_file(
             chat_id, video_path, caption=text, reply_to=reply_to_msg_id, allow_cache=False
         )
 
@@ -140,3 +152,19 @@ class TelegramClient:
 
     async def upgrade_chat_to_supergroup(self, chat_id: int) -> None:
         await self.client(MigrateChatRequest(chat_id=chat_id))
+
+    async def invite_bot_to_chat(self, chat_data: ChatData) -> None:
+        if self.bot_client == self.client:
+            return
+        bot_user = await self.bot_client.get_me()
+        bot_handle = bot_user.username
+        users = await self.client.get_participants(chat_data.chat_id)
+        user_handles = [user.username for user in users if user.username is not None]
+        if bot_handle in user_handles:
+            return
+        # chat_entity = await self.client.get_entity(chat_data.chat_id)
+        await self.client(InviteToChannelRequest(
+            chat_data.chat_id,
+            [bot_handle]
+        ))
+
