@@ -128,7 +128,8 @@ class Group(ABC):
         for message in channel_messages:
             new_message = await Message.from_message_data(message, chat_data, client)
             messages.append(new_message)
-            database.save_message(new_message.message_data)
+            if message.file_path != new_message.message_data.file_path:
+                database.save_message(new_message.message_data)
         # Check for extra files which need removing
         dir_files = os.listdir(chat_data.directory)
         msg_files = [msg.message_data.file_path for msg in messages]
