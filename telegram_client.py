@@ -3,9 +3,9 @@ from asyncio import Future
 from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any, List
 
 import telethon
-from telethon import events
+from telethon import events, utils
 from telethon.tl.custom import message
-from telethon.tl.functions.messages import MigrateChatRequest
+from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
 
 from group import ChatData, ChannelData, WorkshopData
 from message import MessageData
@@ -13,9 +13,11 @@ from message import MessageData
 R = TypeVar("R")
 
 
-def message_data_from_telegram(msg: telethon.tl.custom.message.Message) -> MessageData:
+def message_data_from_telegram(msg: telethon.tl.custom.message.Message, scheduled: bool = False) -> MessageData:
+    chat_id = chat_id_from_telegram(msg)
+    sender_id = sender_id_from_telegram(msg)
     return MessageData(
-            msg.chat.id,
+            chat_id,
             msg.id,
             msg.date,
             msg.text,
@@ -24,13 +26,19 @@ def message_data_from_telegram(msg: telethon.tl.custom.message.Message) -> Messa
             None,
             (msg.file or None) and msg.file.mime_type,
             msg.reply_to_msg_id,
-            msg.sender.id,
-            False
+            sender_id,
+            scheduled
         )
 
 
 def chat_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
-    return msg.chat.id if msg.chat is not None else msg.chat_id
+    chat_id, _ = utils.resolve_id(msg.chat_id)
+    return chat_id
+
+
+def sender_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
+    sender_id, _ = utils.resolve_id(msg.sender_id)
+    return sender_id
 
 
 class TelegramClient:
@@ -72,6 +80,18 @@ class TelegramClient:
             # Save message and yield
             self._save_message(msg)
             yield message_data_from_telegram(msg)
+        async for msg_data in self.iter_scheduled_channel_messages(chat_data):
+            yield msg_data
+
+    async def iter_scheduled_channel_messages(self, chat_data: ChatData) -> Generator[MessageData, None, None]:
+        # noinspection PyTypeChecker
+        messages = await self.client(GetScheduledHistoryRequest(
+            peer=chat_data.chat_id,
+            hash=0
+        ))
+        for msg in messages.messages:
+            self._save_message(msg)
+            yield message_data_from_telegram(msg, scheduled=True)
 
     async def download_media(self, chat_id: int, message_id: int, path: str) -> Optional[str]:
         msg = self._get_message(chat_id, message_id)

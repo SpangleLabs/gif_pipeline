@@ -57,7 +57,8 @@ class MessageData:
 
     def expected_file_path(self, chat_data: ChatData):
         file_ext = self.file_mime_type.split("/")[-1]
-        return f"{chat_data.directory}{self.message_id:06}.{file_ext}"
+        file_name = f"{'scheduled-' if self.is_scheduled else ''}{self.message_id:06}.{file_ext}"
+        return f"{chat_data.directory}{file_name}"
 
     @property
     def has_video(self) -> bool:
