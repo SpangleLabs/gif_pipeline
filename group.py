@@ -64,7 +64,7 @@ class ChannelData(ChatData):
 
     @property
     def directory(self) -> str:
-        return f"store/channels/{self.username}/"
+        return f"store/channels/{self.username or self.chat_id}/"
 
     def telegram_link_for_message(self, message_data: 'MessageData') -> str:
         return f"https://t.me/{self.username}/{message_data.message_id}"
