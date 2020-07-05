@@ -1,3 +1,4 @@
+import shutil
 from typing import Optional, List, Union
 
 from telethon import Button
@@ -7,7 +8,7 @@ from group import Group, Channel
 from helpers.helpers import Helper, find_video_for_message
 from message import Message
 from tasks.task_worker import TaskWorker
-from telegram_client import TelegramClient
+from telegram_client import TelegramClient, message_data_from_telegram
 
 
 class GifSendHelper(Helper):
@@ -32,13 +33,13 @@ class GifSendHelper(Helper):
         destination = text_clean[4:].strip()
         if "<->" in destination:
             destinations = destination.split("<->", 1)
-            return await self.send_two_way_forward(video, destinations[0], destinations[1])
+            return await self.send_two_way_forward(chat, message, video, destinations[0], destinations[1])
         if "->" in destination:
             destinations = destination.split("->", 1)
-            return await self.send_forward(video, destinations[0], destinations[1])
+            return await self.send_forward(chat, message, video, destinations[0], destinations[1])
         if "<-" in destination:
             destinations = destination.split("<-", 1)
-            return await self.send_forward(video, destinations[1], destinations[0])
+            return await self.send_forward(chat, message, video, destinations[1], destinations[0])
         return await self.send_video(chat, video, destination)
 
     async def on_callback_query(self, chat: Group, callback_query: bytes) -> Optional[List[Message]]:
@@ -59,11 +60,41 @@ class GifSendHelper(Helper):
         self.send_menu = menu_msg
         return [menu_msg]
 
-    async def send_two_way_forward(self, video: Message, destination1: str, destination2: str) -> List[Message]:
-        raise NotImplementedError()
+    async def send_two_way_forward(
+            self,
+            chat: Group,
+            cmd_message: Message,
+            video: Message,
+            destination1: str,
+            destination2: str
+    ) -> List[Message]:
+        messages = []
+        messages += await self.send_forward(chat, cmd_message, video, destination1, destination2),
+        messages += await self.send_forward(chat, cmd_message, video, destination2, destination1)
+        return messages
 
-    async def send_forward(self, video: Message, destination_from: str, destination_to: str) -> List[Message]:
-        raise NotImplementedError()
+    async def send_forward(
+            self,
+            chat: Group,
+            cmd_message: Message,
+            video: Message,
+            destination_from: str,
+            destination_to: str
+    ) -> List[Message]:
+        chat_from = self.get_destination_from_name(destination_from)
+        if chat_from is None:
+            return [await self.send_text_reply(chat, cmd_message, f"Unrecognised destination from: {destination_from}")]
+        chat_to = self.get_destination_from_name(destination_to)
+        if chat_to is None:
+            return [await self.send_text_reply(chat, cmd_message, f"Unrecognised destination to: {destination_to}")]
+        initial_message = await self.send_message(chat_from, video_path=video.message_data.file_path)
+        # Forward message
+        new_message = await self.forward_message(chat_to, initial_message)
+        # Delete initial message
+        await self.client.delete_message(initial_message.message_data)
+        # Remove menu
+        await self.clear_menu()
+        return [new_message]
 
     async def send_video(self, chat: Group, video: Message, destination_id: Union[str, int]) -> List[Message]:
         destination = self.get_destination_from_name(destination_id)
@@ -96,3 +127,17 @@ class GifSendHelper(Helper):
         if latest_command is not None and latest_command.strip().lower() == "gif":
             return True
         return False
+
+    async def forward_message(self, destination: Group, message: Message) -> Message:
+        msg = self.client.forward_message(destination.chat_data, message.message_data)
+        message_data = message_data_from_telegram(msg)
+        if message.has_video:
+            # Copy file
+            new_path = message_data.expected_file_path(destination.chat_data)
+            shutil.copyfile(message.message_data.file_path, new_path)
+            message_data.file_path = new_path
+        # Set up message object
+        new_message = await Message.from_message_data(message_data, destination.chat_data, self.client)
+        self.database.save_message(new_message.message_data)
+        destination.add_message(new_message)
+        return new_message

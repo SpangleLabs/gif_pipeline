@@ -52,6 +52,14 @@ class Helper(ABC):
             buttons=buttons
         )
 
+    async def send_video_reply(self, chat: Group, message: Message, video_path: str, text: str = None) -> Message:
+        return await self.send_message(
+            chat,
+            video_path=video_path,
+            reply_to_msg=message,
+            text=text
+        )
+
     async def send_message(
             self,
             chat: Group,
@@ -90,14 +98,6 @@ class Helper(ABC):
         self.database.save_message(new_message.message_data)
         chat.add_message(new_message)
         return new_message
-
-    async def send_video_reply(self, chat: Group, message: Message, video_path: str, text: str = None) -> Message:
-        return await self.send_message(
-            chat,
-            video_path=video_path,
-            reply_to_msg=message,
-            text=text
-        )
 
     @asynccontextmanager
     async def progress_message(self, chat: Group, message: Message, text: str = None):

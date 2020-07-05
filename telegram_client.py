@@ -1,6 +1,6 @@
 import logging
 from asyncio import Future
-from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any, List
+from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any, List, Sequence
 
 import telethon
 from telethon import events, utils, Button
@@ -160,6 +160,10 @@ class TelegramClient:
 
     async def delete_message(self, message_data: MessageData) -> None:
         await self.client.delete_messages(message_data.chat_id, message_data.message_id)
+
+    async def forward_message(self, chat: ChatData, message_data: MessageData) -> telethon.tl.custom.message.Message:
+        list_msg = await self.bot_client.forward_messages(chat.chat_id, message_data.message_id)
+        return list_msg[0]
 
     def synchronise_async(self, future: Union[Future, Coroutine]) -> Any:
         return self.client.loop.run_until_complete(future)
