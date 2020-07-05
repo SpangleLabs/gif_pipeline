@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Union
 
 from telethon import Button
 
@@ -38,12 +38,21 @@ class GifSendHelper(Helper):
         if "<-" in destination:
             destinations = destination.split("<-", 1)
             return await self.send_forward(video, destinations[1], destinations[0])
-        return await self.send_video(video, destination)
+        return await self.send_video(chat, video, destination)
+
+    async def on_callback_query(self, chat: Group, callback_query: bytes) -> Optional[List[Message]]:
+        split_data = callback_query.decode().split(":")
+        if split_data[0] != "send":
+            return
+        chat_id = split_data[2]
+        message = chat.message_by_id(int(split_data[1]))
+        return await self.send_video(chat, message, chat_id)
 
     async def destination_menu(self, chat: Group, video: Message) -> List[Message]:
         menu = []
         for channel in self.channels:
-            menu.append([Button.inline(channel.chat_data.title, channel.chat_data.chat_id)])
+            button_data = f"send:{video.message_data.message_id}:{channel.chat_data.chat_id}"
+            menu.append([Button.inline(channel.chat_data.title, button_data)])
         return [await self.send_text_reply(chat, video, "Which channel should this video be sent to?", buttons=menu)]
 
     async def send_two_way_forward(self, video: Message, destination1: str, destination2: str) -> List[Message]:
@@ -52,8 +61,18 @@ class GifSendHelper(Helper):
     async def send_forward(self, video: Message, destination_from: str, destination_to: str) -> List[Message]:
         raise NotImplementedError()
 
-    async def send_video(self, video: Message, destination: str):
-        raise NotImplementedError()
+    async def send_video(self, chat: Group, video: Message, destination_id: Union[str, int]) -> List[Message]:
+        destination = None
+        for channel in self.channels:
+            if channel.chat_data.username == destination_id:
+                destination = channel
+                break
+            if str(channel.chat_data.chat_id) == str(destination_id):
+                destination = channel
+                break
+        if destination is None:
+            return [await self.send_text_reply(chat, video, f"Unrecognised destination: {chat_id}")]
+        return [await self.client.send_video_message(destination.chat_data.chat_id, video.message_data.file_path)]
 
     def get_destination_from_name(self, destination_name: str) -> Optional[Group]:
         raise NotImplementedError()

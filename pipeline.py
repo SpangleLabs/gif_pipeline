@@ -145,6 +145,7 @@ class Pipeline:
         logging.info("Watching workshop")
         self.client.add_message_handler(self.on_new_message, self.all_chat_ids)
         self.client.add_delete_handler(self.on_deleted_message)
+        self.client.add_callback_query_handler(self.on_callback_query)
         self.client.client.run_until_disconnected()
 
     async def on_new_message(self, event: Union[events.NewMessage.Event, events.MessageEdited.Event]):
@@ -215,6 +216,28 @@ class Pipeline:
         if chat is None:
             return []
         return [message for message in chat.messages if message.message_data.message_id in deleted_ids]
+
+    async def on_callback_query(self, event: events.CallbackQuery.Event):
+        # Get chat, check it's one we know
+        chat = self.chat_by_id(chat_id_from_telegram(event))
+        if chat is None:
+            logging.debug("Ignoring new message in other chat, which must have slipped through")
+            return
+        # Hand callback queries to helpers
+        helper_results = await asyncio.gather(
+            *(helper.on_callback_query(chat, event.data) for helper in self.helpers.values()),
+            return_exceptions=True
+        )
+        results_dict = dict(zip(self.helpers.keys(), helper_results))
+        for helper, result in results_dict.items():
+            if isinstance(result, Exception):
+                logging.error(
+                    f"Helper {helper} threw an exception trying to handle callback query {event}.",
+                    exc_info=result
+                )
+            elif result:
+                for reply_message in result:
+                    await self.pass_message_to_handlers(chat, reply_message)
 
 
 def setup_logging() -> None:

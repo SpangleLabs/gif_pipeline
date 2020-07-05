@@ -97,6 +97,9 @@ class Helper(ABC):
     async def on_deleted_message(self, chat: Group, message: Message) -> None:
         pass
 
+    async def on_callback_query(self, chat: Group, callback_query: bytes) -> Optional[List[Message]]:
+        pass
+
     @property
     def name(self) -> str:
         return self.__class__.__name__

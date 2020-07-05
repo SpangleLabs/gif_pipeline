@@ -129,6 +129,12 @@ class TelegramClient:
 
         self.bot_client.add_event_handler(function_wrapper, events.MessageDeleted())
 
+    def add_callback_query_handler(self, function: Callable) -> None:
+        async def function_wrapper(event: events.CallbackQuery.Event):
+            await function(event)
+
+        self.bot_client.add_event_handler(function_wrapper, events.CallbackQuery())
+
     async def send_text_message(
             self,
             chat_id: int,
