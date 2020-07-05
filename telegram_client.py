@@ -146,10 +146,16 @@ class TelegramClient:
         return await self.bot_client.send_message(chat_id, text, reply_to=reply_to_msg_id, buttons=buttons)
 
     async def send_video_message(
-            self, chat_id: int, video_path: str, text: str = None, *, reply_to_msg_id: int = None
+            self,
+            chat_id: int,
+            video_path: str,
+            text: str = None,
+            *,
+            reply_to_msg_id: int = None,
+            buttons: Optional[List[List[Button]]] = None
     ) -> telethon.tl.custom.message.Message:
         return await self.bot_client.send_file(
-            chat_id, video_path, caption=text, reply_to=reply_to_msg_id, allow_cache=False
+            chat_id, video_path, caption=text, reply_to=reply_to_msg_id, allow_cache=False, buttons=buttons
         )
 
     async def delete_message(self, message_data: MessageData) -> None:
