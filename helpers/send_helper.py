@@ -28,27 +28,49 @@ class GifSendHelper(Helper):
         video = find_video_for_message(chat, message)
         if video is None:
             return [await self.send_text_reply(chat, message, "I'm not sure which video you want to video.")]
-        if text_clean == "send":
-            return await self.destination_menu(chat, video)
-        destination = text_clean[4:].strip()
-        if "<->" in destination:
-            destinations = destination.split("<->", 1)
-            return await self.send_two_way_forward(chat, message, video, destinations[0], destinations[1])
-        if "->" in destination:
-            destinations = destination.split("->", 1)
-            return await self.send_forward(chat, message, video, destinations[0], destinations[1])
-        if "<-" in destination:
-            destinations = destination.split("<-", 1)
-            return await self.send_forward(chat, message, video, destinations[1], destinations[0])
-        return await self.send_video(chat, video, destination)
+        dest_str = text_clean[4:].strip()
+        if not self.was_giffed(video):
+            return await self.send_gif_warning_menu(chat, message, video, dest_str)
+        return await self.handle_dest_str(chat, message, video, dest_str)
 
     async def on_callback_query(self, chat: Group, callback_query: bytes) -> Optional[List[Message]]:
         split_data = callback_query.decode().split(":")
+        if split_data[0] == "clear_menu":
+            await self.clear_menu()
+            return
         if split_data[0] != "send":
             return
         chat_id = split_data[2]
         message = chat.message_by_id(int(split_data[1]))
+        if chat_id == "s":
+            return await self.handle_dest_str(chat, message, message, split_data[3])
         return await self.send_video(chat, message, chat_id)
+
+    async def handle_dest_str(self, chat: Group, cmd: Message, video: Message, dest_str: str) -> List[Message]:
+        if dest_str == "":
+            return await self.destination_menu(chat, video)
+        if "<->" in dest_str:
+            destinations = dest_str.split("<->", 1)
+            return await self.send_two_way_forward(chat, cmd, video, destinations[0], destinations[1])
+        if "->" in dest_str:
+            destinations = dest_str.split("->", 1)
+            return await self.send_forward(chat, cmd, video, destinations[0], destinations[1])
+        if "<-" in dest_str:
+            destinations = dest_str.split("<-", 1)
+            return await self.send_forward(chat, cmd, video, destinations[1], destinations[0])
+        return await self.send_video(chat, video, dest_str)
+
+    async def send_gif_warning_menu(self, chat: Group, cmd: Message, video: Message, dest_str: str) -> List[Message]:
+        await self.clear_menu()
+        button_data = f"send:{video.message_data.message_id}:s:{dest_str}"
+        menu = [
+            [Button.inline("Yes, I am sure", button_data)],
+            [Button.inline("No thanks!", "clear_menu")]
+        ]
+        menu_text = "It looks like this video has not been giffed. Are you sure you want to send it?"
+        menu_msg = await self.send_text_reply(chat, cmd, menu_text, buttons=menu)
+        self.send_menu = menu_msg
+        return [menu_msg]
 
     async def destination_menu(self, chat: Group, video: Message) -> List[Message]:
         await self.clear_menu()
@@ -121,7 +143,7 @@ class GifSendHelper(Helper):
                 break
         return destination
 
-    def check_giffed(self, video: Message) -> bool:
+    def was_giffed(self, video: Message) -> bool:
         message_history = self.database.get_message_history(video.message_data)
         latest_command = message_history[1].text
         if latest_command is not None and latest_command.strip().lower() == "gif":
