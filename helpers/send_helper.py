@@ -66,14 +66,7 @@ class GifSendHelper(Helper):
         raise NotImplementedError()
 
     async def send_video(self, chat: Group, video: Message, destination_id: Union[str, int]) -> List[Message]:
-        destination = None
-        for channel in self.channels:
-            if channel.chat_data.username == destination_id:
-                destination = channel
-                break
-            if str(channel.chat_data.chat_id) == str(destination_id):
-                destination = channel
-                break
+        destination = self.get_destination_from_name(destination_id)
         if destination is None:
             return [await self.send_text_reply(chat, video, f"Unrecognised destination: {destination_id}")]
         new_message = await self.send_message(destination, video_path=video.message_data.file_path)
@@ -86,8 +79,16 @@ class GifSendHelper(Helper):
             await self.client.delete_message(self.send_menu.message_data)
             self.send_menu = None
 
-    def get_destination_from_name(self, destination_name: str) -> Optional[Group]:
-        raise NotImplementedError()
+    def get_destination_from_name(self, destination_id: Union[str, int]) -> Optional[Group]:
+        destination = None
+        for channel in self.channels:
+            if channel.chat_data.username == destination_id:
+                destination = channel
+                break
+            if str(channel.chat_data.chat_id) == str(destination_id):
+                destination = channel
+                break
+        return destination
 
     def check_giffed(self, video: Message) -> bool:
         message_history = self.database.get_message_history(video.message_data)
