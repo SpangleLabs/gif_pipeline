@@ -7,7 +7,7 @@ from tasks.ffmpeg_task import FfmpegTask
 from tasks.ffmprobe_task import FFprobeTask
 
 
-class QualityVideoHelper(Helper):
+class VideoHelper(Helper):
 
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         text_clean = message.text.lower().strip()
