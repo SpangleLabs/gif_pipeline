@@ -1,4 +1,5 @@
 import os
+import shutil
 import uuid
 from abc import ABC, abstractmethod
 from typing import Optional, List
@@ -44,35 +45,59 @@ class Helper(ABC):
             *,
             buttons: Optional[List[List[Button]]] = None
     ) -> Message:
-        msg = await self.client.send_text_message(
-            chat.chat_data.chat_id,
-            text,
-            reply_to_msg_id=message.message_data.message_id,
+        return await self.send_message(
+            chat,
+            text=text,
+            reply_to_msg=message,
             buttons=buttons
         )
+
+    async def send_message(
+            self,
+            chat: Group,
+            *,
+            text: Optional[str] = None,
+            video_path: Optional[str] = None,
+            reply_to_msg: Optional[Message] = None,
+            buttons: Optional[List[List[Button]]] = None
+    ) -> Message:
+        reply_id = None
+        if reply_to_msg is not None:
+            reply_id = reply_to_msg.message_data.message_id
+        if video_path is None:
+            msg = await self.client.send_text_message(
+                chat.chat_data.chat_id,
+                text,
+                reply_to_msg_id=reply_id,
+                buttons=buttons
+            )
+        else:
+            msg = await self.client.send_video_message(
+                chat.chat_data.chat_id,
+                video_path,
+                text,
+                reply_to_msg_id=reply_id,
+                buttons=buttons
+            )
         message_data = message_data_from_telegram(msg)
-        new_message = await Message.from_message_data(message_data, message.chat_data, self.client)
+        if video_path is not None:
+            # Copy file
+            new_path = message_data.expected_file_path(chat.chat_data)
+            shutil.copyfile(video_path, new_path)
+            message_data.file_path = new_path
+        # Set up message object
+        new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
         self.database.save_message(new_message.message_data)
         chat.add_message(new_message)
         return new_message
 
     async def send_video_reply(self, chat: Group, message: Message, video_path: str, text: str = None) -> Message:
-        msg = await self.client.send_video_message(
-            chat.chat_data.chat_id, video_path, text,
-            reply_to_msg_id=message.message_data.message_id
+        return await self.send_message(
+            chat,
+            video_path=video_path,
+            reply_to_msg=message,
+            text=text
         )
-        message_data = message_data_from_telegram(msg)
-        # Copy file
-        new_path = message_data.expected_file_path(message.chat_data)
-        os.rename(video_path, new_path)
-        message_data.file_path = new_path
-        # Create message object
-        new_message = await Message.from_message_data(message_data, message.chat_data, self.client)
-        # Save to database
-        self.database.save_message(new_message.message_data)
-        # Add to channel
-        chat.add_message(new_message)
-        return new_message
 
     @asynccontextmanager
     async def progress_message(self, chat: Group, message: Message, text: str = None):
