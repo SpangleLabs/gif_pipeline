@@ -15,6 +15,7 @@ class GifSendHelper(Helper):
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, channels: List[Channel]):
         super().__init__(database, client, worker)
         self.channels = channels
+        self.send_menu = None
 
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         # If a message says to send to a channel, and replies to a gif, then forward to that channel
@@ -49,11 +50,14 @@ class GifSendHelper(Helper):
         return await self.send_video(chat, message, chat_id)
 
     async def destination_menu(self, chat: Group, video: Message) -> List[Message]:
+        await self.clear_menu()
         menu = []
         for channel in self.channels:
             button_data = f"send:{video.message_data.message_id}:{channel.chat_data.chat_id}"
             menu.append([Button.inline(channel.chat_data.title, button_data)])
-        return [await self.send_text_reply(chat, video, "Which channel should this video be sent to?", buttons=menu)]
+        menu_msg = await self.send_text_reply(chat, video, "Which channel should this video be sent to?", buttons=menu)
+        self.send_menu = menu_msg
+        return [menu_msg]
 
     async def send_two_way_forward(self, video: Message, destination1: str, destination2: str) -> List[Message]:
         raise NotImplementedError()
@@ -71,8 +75,16 @@ class GifSendHelper(Helper):
                 destination = channel
                 break
         if destination is None:
-            return [await self.send_text_reply(chat, video, f"Unrecognised destination: {chat_id}")]
-        return [await self.client.send_video_message(destination.chat_data.chat_id, video.message_data.file_path)]
+            return [await self.send_text_reply(chat, video, f"Unrecognised destination: {destination_id}")]
+        new_message = await self.send_message(destination, video_path=video.message_data.file_path)
+        # Remove menu
+        await self.clear_menu()
+        return [new_message]
+
+    async def clear_menu(self) -> None:
+        if self.send_menu is not None:
+            await self.client.delete_message(self.send_menu.message_data)
+            self.send_menu = None
 
     def get_destination_from_name(self, destination_name: str) -> Optional[Group]:
         raise NotImplementedError()
