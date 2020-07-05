@@ -3,7 +3,7 @@ from asyncio import Future
 from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any, List
 
 import telethon
-from telethon import events, utils
+from telethon import events, utils, Button
 from telethon.tl.custom import message
 from telethon.tl.functions.channels import EditAdminRequest
 from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
@@ -134,9 +134,10 @@ class TelegramClient:
             chat_id: int,
             text: str,
             *,
-            reply_to_msg_id: int = None
+            reply_to_msg_id: Optional[int] = None,
+            buttons: Optional[List[List[Button]]] = None
     ) -> telethon.tl.custom.message.Message:
-        return await self.bot_client.send_message(chat_id, text, reply_to=reply_to_msg_id)
+        return await self.bot_client.send_message(chat_id, text, reply_to=reply_to_msg_id, buttons=buttons)
 
     async def send_video_message(
             self, chat_id: int, video_path: str, text: str = None, *, reply_to_msg_id: int = None

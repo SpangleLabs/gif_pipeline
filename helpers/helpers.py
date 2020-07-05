@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, List
 
 from async_generator import asynccontextmanager
+from telethon import Button
 
 from database import Database
 from group import Group
@@ -35,11 +36,19 @@ class Helper(ABC):
         self.client = client
         self.worker = worker
 
-    async def send_text_reply(self, chat: Group, message: Message, text: str) -> Message:
+    async def send_text_reply(
+            self,
+            chat: Group,
+            message: Message,
+            text: str,
+            *,
+            buttons: Optional[List[List[Button]]] = None
+    ) -> Message:
         msg = await self.client.send_text_message(
             chat.chat_data.chat_id,
             text,
-            reply_to_msg_id=message.message_data.message_id
+            reply_to_msg_id=message.message_data.message_id,
+            buttons=buttons
         )
         message_data = message_data_from_telegram(msg)
         new_message = await Message.from_message_data(message_data, message.chat_data, self.client)
@@ -91,18 +100,6 @@ class Helper(ABC):
     @property
     def name(self) -> str:
         return self.__class__.__name__
-
-
-class GifSendHelper(Helper):
-
-    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
-        super().__init__(database, client, worker)
-
-    async def on_new_message(self, chat: Group, message: Message):
-        # If a message says to send to a channel, and replies to a gif, then forward to that channel
-        # `send deergifs`, `send cowgifs->deergifs`
-        # Needs to handle queueing too?
-        pass
 
 
 class ArchiveHelper(Helper):

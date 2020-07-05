@@ -13,6 +13,7 @@ from helpers.duplicate_helper import DuplicateHelper
 from helpers.imgur_gallery_helper import ImgurGalleryHelper
 from helpers.msg_helper import MSGHelper
 from helpers.scene_split_helper import SceneSplitHelper
+from helpers.send_helper import GifSendHelper
 from helpers.stabilise_helper import StabiliseHelper
 from helpers.telegram_gif_helper import TelegramGifHelper
 from helpers.video_crop_helper import VideoCropHelper
@@ -123,7 +124,8 @@ class Pipeline:
             StabiliseHelper(self.database, self.client, self.worker),
             VideoHelper(self.database, self.client, self.worker),
             MSGHelper(self.database, self.client, self.worker),
-            SceneSplitHelper(self.database, self.client, self.worker)
+            SceneSplitHelper(self.database, self.client, self.worker),
+            GifSendHelper(self.database, self.client, self.worker, self.channels)
         ]
         if "imgur" in self.api_keys:
             helpers.append(
