@@ -1,7 +1,7 @@
 import glob
 import os
 import shutil
-from typing import Optional, List, Set, TypeVar
+from typing import Optional, List, Set
 
 import imagehash
 from PIL import Image
@@ -13,8 +13,6 @@ from message import Message, MessageData
 from tasks.ffmpeg_task import FfmpegTask
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient
-
-T = TypeVar('T')
 
 
 class DuplicateHelper(Helper):

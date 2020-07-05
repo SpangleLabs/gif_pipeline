@@ -1,7 +1,7 @@
 import asyncio
 import os
 import re
-from typing import Optional, List, TypeVar
+from typing import Optional, List
 
 import requests
 
@@ -13,8 +13,6 @@ from tasks.ffmpeg_task import FfmpegTask
 from tasks.ffmprobe_task import FFprobeTask
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient
-
-T = TypeVar('T')
 
 
 class TelegramGifHelper(Helper):
