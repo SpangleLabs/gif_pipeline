@@ -27,7 +27,7 @@ class GifSendHelper(Helper):
             return
         video = find_video_for_message(chat, message)
         if video is None:
-            return [await self.send_text_reply(chat, message, "I'm not sure which video you want to video.")]
+            return [await self.send_text_reply(chat, message, "I'm not sure which gif you want to send.")]
         dest_str = text_clean[4:].strip()
         if not self.was_giffed(video):
             return await self.send_gif_warning_menu(chat, message, video, dest_str)
