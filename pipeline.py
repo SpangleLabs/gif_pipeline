@@ -8,6 +8,7 @@ from telethon import events
 
 from database import Database
 from group import Group, Channel, WorkshopGroup, ChannelConfig, WorkshopConfig
+from helpers.delete_helper import DeleteHelper
 from helpers.download_helper import DownloadHelper
 from helpers.duplicate_helper import DuplicateHelper
 from helpers.imgur_gallery_helper import ImgurGalleryHelper
@@ -125,7 +126,8 @@ class Pipeline:
             VideoHelper(self.database, self.client, self.worker),
             MSGHelper(self.database, self.client, self.worker),
             SceneSplitHelper(self.database, self.client, self.worker),
-            GifSendHelper(self.database, self.client, self.worker, self.channels)
+            GifSendHelper(self.database, self.client, self.worker, self.channels),
+            DeleteHelper(self.database, self.client, self.worker)
         ]
         if "imgur" in self.api_keys:
             helpers.append(

@@ -135,16 +135,6 @@ class ArchiveHelper(Helper):
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 
-    async def on_new_message(self, chat: Group, message: Message):
+    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         # If a message says to archive, move to archive channel
-        pass
-
-
-class DeleteHelper(Helper):
-
-    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
-        super().__init__(database, client, worker)
-
-    async def on_new_message(self, chat: Group, message: Message):
-        # If a message says to delete, delete it and delete local files
         pass
