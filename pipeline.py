@@ -163,9 +163,11 @@ class Pipeline:
         self.database.save_message(new_message.message_data)
         logging.info(f"New message initialised: {new_message}")
         # Pass to helpers
-        await self.pass_message_to_handlers(chat, new_message)
+        await self.pass_message_to_handlers(new_message, chat)
 
-    async def pass_message_to_handlers(self, chat: Group, new_message: Message):
+    async def pass_message_to_handlers(self, new_message: Message, chat: Group = None):
+        if chat is None:
+            chat = self.chat_by_id(new_message.chat_data.chat_id)
         helper_results = await asyncio.gather(
             *(helper.on_new_message(chat, new_message) for helper in self.helpers.values()),
             return_exceptions=True
@@ -179,7 +181,7 @@ class Pipeline:
                 )
             elif result:
                 for reply_message in result:
-                    await self.pass_message_to_handlers(chat, reply_message)
+                    await self.pass_message_to_handlers(reply_message)
 
     async def on_deleted_message(self, event: events.MessageDeleted.Event):
         # Get messages
@@ -237,7 +239,7 @@ class Pipeline:
                 )
             elif result:
                 for reply_message in result:
-                    await self.pass_message_to_handlers(chat, reply_message)
+                    await self.pass_message_to_handlers(reply_message)
 
 
 def setup_logging() -> None:
