@@ -74,14 +74,14 @@ class Helper(ABC):
             reply_id = reply_to_msg.message_data.message_id
         if video_path is None:
             msg = await self.client.send_text_message(
-                chat.chat_data.chat_id,
+                chat.chat_data,
                 text,
                 reply_to_msg_id=reply_id,
                 buttons=buttons
             )
         else:
             msg = await self.client.send_video_message(
-                chat.chat_data.chat_id,
+                chat.chat_data,
                 video_path,
                 text,
                 reply_to_msg_id=reply_id,
