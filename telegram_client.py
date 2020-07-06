@@ -1,9 +1,9 @@
 import logging
 from asyncio import Future
-from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any, List, Sequence
+from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any, List
 
 import telethon
-from telethon import events, utils, Button
+from telethon import events, Button
 from telethon.tl.custom import message
 from telethon.tl.functions.channels import EditAdminRequest
 from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
@@ -34,13 +34,11 @@ def message_data_from_telegram(msg: telethon.tl.custom.message.Message, schedule
 
 
 def chat_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
-    chat_id, _ = utils.resolve_id(msg.chat_id)
-    return chat_id
+    return msg.chat_id
 
 
 def sender_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
-    sender_id, _ = utils.resolve_id(msg.sender_id)
-    return sender_id
+    return msg.sender_id
 
 
 class TelegramClient:
@@ -75,11 +73,13 @@ class TelegramClient:
 
     async def get_channel_data(self, handle: str) -> ChannelData:
         entity = await self.client.get_entity(handle)
-        return ChannelData(entity.id, entity.username, entity.title)
+        peer_id = telethon.utils.get_peer_id(entity)
+        return ChannelData(peer_id, entity.username, entity.title)
 
     async def get_workshop_data(self, handle: str) -> WorkshopData:
         entity = await self.client.get_entity(handle)
-        return WorkshopData(entity.id, entity.username, entity.title)
+        peer_id = telethon.utils.get_peer_id(entity)
+        return WorkshopData(peer_id, entity.username, entity.title)
 
     async def iter_channel_messages(self, chat_data: ChatData) -> Generator[MessageData, None, None]:
         async for msg in self.client.iter_messages(chat_data.chat_id):
