@@ -114,6 +114,7 @@ class GifSendHelper(Helper):
         new_message = await self.forward_message(chat_to, initial_message)
         # Delete initial message
         await self.client.delete_message(initial_message.message_data)
+        initial_message.delete(self.database)
         confirm_text = f"This gif has been sent to {chat_to.chat_data.title} via {chat_from.chat_data.title}"
         confirm_message = await self.send_text_reply(chat, video, confirm_text)
         # Remove menu
@@ -134,6 +135,7 @@ class GifSendHelper(Helper):
     async def clear_menu(self) -> None:
         if self.send_menu is not None:
             await self.client.delete_message(self.send_menu.message_data)
+            self.send_menu.delete(self.database)
             self.send_menu = None
 
     def get_destination_from_name(self, destination_id: Union[str, int]) -> Optional[Group]:
