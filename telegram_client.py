@@ -19,18 +19,18 @@ def message_data_from_telegram(msg: telethon.tl.custom.message.Message, schedule
     chat_id = chat_id_from_telegram(msg)
     sender_id = sender_id_from_telegram(msg)
     return MessageData(
-            chat_id,
-            msg.id,
-            msg.date,
-            msg.text,
-            msg.forward is not None,
-            msg.file is not None,
-            None,
-            (msg.file or None) and msg.file.mime_type,
-            msg.reply_to_msg_id,
-            sender_id,
-            scheduled
-        )
+        chat_id,
+        msg.id,
+        msg.date,
+        msg.text,
+        msg.forward is not None,
+        msg.file is not None,
+        None,
+        (msg.file or None) and msg.file.mime_type,
+        msg.reply_to_msg_id,
+        sender_id,
+        scheduled
+    )
 
 
 def chat_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
@@ -164,6 +164,15 @@ class TelegramClient:
     async def forward_message(self, chat: ChatData, message_data: MessageData) -> telethon.tl.custom.message.Message:
         return await self.bot_client.forward_messages(chat.chat_id, message_data.message_id, message_data.chat_id)
 
+    async def edit_message(
+            self,
+            chat: ChatData,
+            message_data: MessageData,
+            new_text: str,
+            new_buttons: Optional[List[List[Button]]] = None
+    ):
+        return await self.bot_client.edit_message(chat.chat_id, message_data.message_id, new_text, buttons=new_buttons)
+
     def synchronise_async(self, future: Union[Future, Coroutine]) -> Any:
         return self.client.loop.run_until_complete(future)
 
@@ -189,4 +198,3 @@ class TelegramClient:
             ),
             "Helpful bot"
         ))
-

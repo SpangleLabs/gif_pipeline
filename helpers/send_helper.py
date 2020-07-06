@@ -17,6 +17,8 @@ class GifSendHelper(Helper):
         super().__init__(database, client, worker)
         self.channels = channels
         self.send_menu = None
+        self.delete_menu = None
+        self.delete_menu_text = None
 
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         # If a message says to send to a channel, and replies to a gif, then forward to that channel
@@ -37,6 +39,9 @@ class GifSendHelper(Helper):
         split_data = callback_query.decode().split(":")
         if split_data[0] == "clear_menu":
             await self.clear_menu()
+            return
+        if split_data[0] == "clear_delete_menu":
+            await self.clear_delete_menu()
             return
         if split_data[0] != "send":
             return
@@ -116,7 +121,7 @@ class GifSendHelper(Helper):
         await self.client.delete_message(initial_message.message_data)
         initial_message.delete(self.database)
         confirm_text = f"This gif has been sent to {chat_to.chat_data.title} via {chat_from.chat_data.title}"
-        confirm_message = await self.send_text_reply(chat, video, confirm_text)
+        confirm_message = await self.send_confirmation_message(chat, video, confirm_text)
         # Remove menu
         await self.clear_menu()
         return [new_message, confirm_message]
@@ -127,7 +132,7 @@ class GifSendHelper(Helper):
             return [await self.send_text_reply(chat, video, f"Unrecognised destination: {destination_id}")]
         new_message = await self.send_message(destination, video_path=video.message_data.file_path)
         confirm_text = f"This gif has been sent to {destination.chat_data.title}."
-        confirm_message = await self.send_text_reply(chat, video, confirm_text)
+        confirm_message = await self.send_confirmation_message(chat, video, confirm_text)
         # Remove menu
         await self.clear_menu()
         return [new_message, confirm_message]
@@ -169,3 +174,25 @@ class GifSendHelper(Helper):
         self.database.save_message(new_message.message_data)
         destination.add_message(new_message)
         return new_message
+
+    async def send_confirmation_message(self, chat: Group, reply_to: Message, text: str) -> Message:
+        full_text = text + "\nWould you like to delete the message family?"
+        menu = [
+            [Button.inline("Yes please", f"delete:{reply_to.message_data.message_id}")],
+            [Button.inline("No thanks", f"clear_delete_menu")]
+        ]
+        message = await self.send_text_reply(chat, reply_to, full_text, buttons=menu)
+        self.delete_menu_text = text
+        self.delete_menu = message
+        return message
+
+    async def clear_delete_menu(self) -> None:
+        if self.delete_menu is not None:
+            await self.client.edit_message(
+                self.delete_menu.chat_data,
+                self.delete_menu.message_data,
+                self.delete_menu_text,
+                new_buttons=None
+            )
+            self.delete_menu.delete(self.database)
+            self.delete_menu = None
