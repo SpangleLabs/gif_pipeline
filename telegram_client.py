@@ -162,8 +162,7 @@ class TelegramClient:
         await self.client.delete_messages(message_data.chat_id, message_data.message_id)
 
     async def forward_message(self, chat: ChatData, message_data: MessageData) -> telethon.tl.custom.message.Message:
-        list_msg = await self.bot_client.forward_messages(chat.chat_id, message_data.message_id)
-        return list_msg[0]
+        return await self.bot_client.forward_messages(chat.chat_id, message_data.message_id, message_data.chat_id)
 
     def synchronise_async(self, future: Union[Future, Coroutine]) -> Any:
         return self.client.loop.run_until_complete(future)

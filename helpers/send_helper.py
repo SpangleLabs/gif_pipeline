@@ -151,7 +151,7 @@ class GifSendHelper(Helper):
         return False
 
     async def forward_message(self, destination: Group, message: Message) -> Message:
-        msg = self.client.forward_message(destination.chat_data, message.message_data)
+        msg = await self.client.forward_message(destination.chat_data, message.message_data)
         message_data = message_data_from_telegram(msg)
         if message.has_video:
             # Copy file
