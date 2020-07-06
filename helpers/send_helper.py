@@ -114,18 +114,22 @@ class GifSendHelper(Helper):
         new_message = await self.forward_message(chat_to, initial_message)
         # Delete initial message
         await self.client.delete_message(initial_message.message_data)
+        confirm_text = f"This gif has been sent to {chat_to.chat_data.title} via {chat_from.chat_data.title}"
+        confirm_message = await self.send_text_reply(chat, video, confirm_text)
         # Remove menu
         await self.clear_menu()
-        return [new_message]
+        return [new_message, confirm_message]
 
     async def send_video(self, chat: Group, video: Message, destination_id: Union[str, int]) -> List[Message]:
         destination = self.get_destination_from_name(destination_id)
         if destination is None:
             return [await self.send_text_reply(chat, video, f"Unrecognised destination: {destination_id}")]
         new_message = await self.send_message(destination, video_path=video.message_data.file_path)
+        confirm_text = f"This gif has been sent to {destination.chat_data.title}."
+        confirm_message = await self.send_text_reply(chat, video, confirm_text)
         # Remove menu
         await self.clear_menu()
-        return [new_message]
+        return [new_message, confirm_message]
 
     async def clear_menu(self) -> None:
         if self.send_menu is not None:
