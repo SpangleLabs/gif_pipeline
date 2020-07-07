@@ -33,12 +33,16 @@ class PipelineConfig:
         self.workshops = [WorkshopConfig.from_json(x) for x in config["workshop_groups"]]
         self.api_id = config["api_id"]
         self.api_hash = config["api_hash"]
-        self.bot_token = config.get("bot_token")
+        # Pipeline bot, handles video editing and sending to channels
+        self.pipeline_bot_token = config.get("pipeline_bot_token")
+        # Public bot, handles public queries for gifs and searches
+        self.public_bot_token = config.get("public_bot_token")
+        # API keys for external services
         self.api_keys = config.get("api_keys", {})
 
     def initialise_pipeline(self) -> 'Pipeline':
         database = Database()
-        client = TelegramClient(self.api_id, self.api_hash, self.bot_token)
+        client = TelegramClient(self.api_id, self.api_hash, self.pipeline_bot_token, self.public_bot_token)
         client.synchronise_async(client.initialise())
         logging.info("Initialising channels")
         channels = self.get_channels(client, database)

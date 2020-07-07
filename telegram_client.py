@@ -42,21 +42,25 @@ def sender_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
 
 
 class TelegramClient:
-    def __init__(self, api_id: int, api_hash: str, bot_token: str = None):
+    def __init__(self, api_id: int, api_hash: str, pipeline_bot_token: str = None, public_bot_token: str = None):
         self.client = telethon.TelegramClient('duplicate_checker', api_id, api_hash)
         self.client.start()
-        self.bot_client = self.client
-        if bot_token:
-            self.bot_client = telethon.TelegramClient('duplicate_checker_bot', api_id, api_hash)
-            self.bot_client.start(bot_token=bot_token)
-        self.bot_id = None
+        self.pipeline_bot_id = None
+        self.pipeline_bot_token = self.client
+        if pipeline_bot_token:
+            self.pipeline_bot_client = telethon.TelegramClient("duplicate_checker_pipeline_bot", api_id, api_hash)
+            self.pipeline_bot_client.start(bot_token=pipeline_bot_token)
+        self.public_bot_client = self.client
+        if public_bot_token:
+            self.public_bot_client = telethon.TelegramClient('duplicate_checker_public_bot', api_id, api_hash)
+            self.public_bot_client.start(bot_token=public_bot_token)
         self.message_cache = {}
 
     async def initialise(self) -> None:
         # Get dialogs list, to ensure entities are initialised in library
         await self.client.get_dialogs()
-        bot_user = await self.bot_client.get_me()
-        self.bot_id = bot_user.id
+        pipeline_bot_user = await self.pipeline_bot_token.get_me()
+        self.pipeline_bot_id = pipeline_bot_user.id
 
     def _save_message(self, msg: telethon.tl.custom.message.Message):
         # UpdateShortMessage events do not contain a populated msg.chat, so use msg.chat_id sometimes.
@@ -113,7 +117,7 @@ class TelegramClient:
                 logging.debug("Ignoring new message in other chat")
                 return
             sender_id = sender_id_from_telegram(event.message)
-            if sender_id == self.bot_id:
+            if sender_id == self.pipeline_bot_id:
                 logging.debug("Ignoring new message from bot")
                 return
             self._save_message(event.message)
@@ -127,13 +131,13 @@ class TelegramClient:
             await function(event)
             # We don't need to delete from cache, and trying to do so is tough without chat id
 
-        self.bot_client.add_event_handler(function_wrapper, events.MessageDeleted())
+        self.pipeline_bot_token.add_event_handler(function_wrapper, events.MessageDeleted())
 
     def add_callback_query_handler(self, function: Callable) -> None:
         async def function_wrapper(event: events.CallbackQuery.Event):
             await function(event)
 
-        self.bot_client.add_event_handler(function_wrapper, events.CallbackQuery())
+        self.pipeline_bot_token.add_event_handler(function_wrapper, events.CallbackQuery())
 
     async def send_text_message(
             self,
@@ -143,7 +147,7 @@ class TelegramClient:
             reply_to_msg_id: Optional[int] = None,
             buttons: Optional[List[List[Button]]] = None
     ) -> telethon.tl.custom.message.Message:
-        return await self.bot_client.send_message(chat.chat_id, text, reply_to=reply_to_msg_id, buttons=buttons)
+        return await self.pipeline_bot_token.send_message(chat.chat_id, text, reply_to=reply_to_msg_id, buttons=buttons)
 
     async def send_video_message(
             self,
@@ -154,7 +158,7 @@ class TelegramClient:
             reply_to_msg_id: int = None,
             buttons: Optional[List[List[Button]]] = None
     ) -> telethon.tl.custom.message.Message:
-        return await self.bot_client.send_file(
+        return await self.pipeline_bot_token.send_file(
             chat.chat_id, video_path, caption=text, reply_to=reply_to_msg_id, allow_cache=False, buttons=buttons
         )
 
@@ -162,7 +166,11 @@ class TelegramClient:
         await self.client.delete_messages(message_data.chat_id, message_data.message_id)
 
     async def forward_message(self, chat: ChatData, message_data: MessageData) -> telethon.tl.custom.message.Message:
-        return await self.bot_client.forward_messages(chat.chat_id, message_data.message_id, message_data.chat_id)
+        return await self.pipeline_bot_token.forward_messages(
+            chat.chat_id,
+            message_data.message_id,
+            message_data.chat_id
+        )
 
     async def edit_message(
             self,
@@ -171,7 +179,12 @@ class TelegramClient:
             new_text: str,
             new_buttons: Optional[List[List[Button]]] = None
     ):
-        return await self.bot_client.edit_message(chat.chat_id, message_data.message_id, new_text, buttons=new_buttons)
+        return await self.pipeline_bot_token.edit_message(
+            chat.chat_id,
+            message_data.message_id,
+            new_text,
+            buttons=new_buttons
+        )
 
     def synchronise_async(self, future: Union[Future, Coroutine]) -> Any:
         return self.client.loop.run_until_complete(future)
@@ -179,18 +192,17 @@ class TelegramClient:
     async def upgrade_chat_to_supergroup(self, chat_id: int) -> None:
         await self.client(MigrateChatRequest(chat_id=chat_id))
 
-    async def invite_bot_to_chat(self, chat_data: ChatData) -> None:
-        if self.bot_client == self.client:
+    async def invite_pipeline_bot_to_chat(self, chat_data: ChatData) -> None:
+        if self.pipeline_bot_token == self.client:
             return
         users = await self.client.get_participants(chat_data.chat_id)
         user_ids = [user.id for user in users if user.username is not None]
-        if self.bot_id in user_ids:
+        if self.pipeline_bot_id in user_ids:
             return
-        bot_entity = await self.bot_client.get_me()
-        bot_username = bot_entity.username
+        pipeline_bot_entity = await self.pipeline_bot_token.get_me()
         await self.client(EditAdminRequest(
             chat_data.chat_id,
-            bot_username,
+            pipeline_bot_entity.username,
             ChatAdminRights(
                 post_messages=True,
                 edit_messages=True,
