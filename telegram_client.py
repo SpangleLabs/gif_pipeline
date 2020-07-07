@@ -46,7 +46,7 @@ class TelegramClient:
         self.client = telethon.TelegramClient('duplicate_checker', api_id, api_hash)
         self.client.start()
         self.pipeline_bot_id = None
-        self.pipeline_bot_token = self.client
+        self.pipeline_bot_client = self.client
         if pipeline_bot_token:
             self.pipeline_bot_client = telethon.TelegramClient("duplicate_checker_pipeline_bot", api_id, api_hash)
             self.pipeline_bot_client.start(bot_token=pipeline_bot_token)
@@ -59,7 +59,7 @@ class TelegramClient:
     async def initialise(self) -> None:
         # Get dialogs list, to ensure entities are initialised in library
         await self.client.get_dialogs()
-        pipeline_bot_user = await self.pipeline_bot_token.get_me()
+        pipeline_bot_user = await self.pipeline_bot_client.get_me()
         self.pipeline_bot_id = pipeline_bot_user.id
 
     def _save_message(self, msg: telethon.tl.custom.message.Message):
@@ -131,13 +131,13 @@ class TelegramClient:
             await function(event)
             # We don't need to delete from cache, and trying to do so is tough without chat id
 
-        self.pipeline_bot_token.add_event_handler(function_wrapper, events.MessageDeleted())
+        self.pipeline_bot_client.add_event_handler(function_wrapper, events.MessageDeleted())
 
     def add_callback_query_handler(self, function: Callable) -> None:
         async def function_wrapper(event: events.CallbackQuery.Event):
             await function(event)
 
-        self.pipeline_bot_token.add_event_handler(function_wrapper, events.CallbackQuery())
+        self.pipeline_bot_client.add_event_handler(function_wrapper, events.CallbackQuery())
 
     async def send_text_message(
             self,
@@ -147,7 +147,7 @@ class TelegramClient:
             reply_to_msg_id: Optional[int] = None,
             buttons: Optional[List[List[Button]]] = None
     ) -> telethon.tl.custom.message.Message:
-        return await self.pipeline_bot_token.send_message(chat.chat_id, text, reply_to=reply_to_msg_id, buttons=buttons)
+        return await self.pipeline_bot_client.send_message(chat.chat_id, text, reply_to=reply_to_msg_id, buttons=buttons)
 
     async def send_video_message(
             self,
@@ -158,7 +158,7 @@ class TelegramClient:
             reply_to_msg_id: int = None,
             buttons: Optional[List[List[Button]]] = None
     ) -> telethon.tl.custom.message.Message:
-        return await self.pipeline_bot_token.send_file(
+        return await self.pipeline_bot_client.send_file(
             chat.chat_id, video_path, caption=text, reply_to=reply_to_msg_id, allow_cache=False, buttons=buttons
         )
 
@@ -166,7 +166,7 @@ class TelegramClient:
         await self.client.delete_messages(message_data.chat_id, message_data.message_id)
 
     async def forward_message(self, chat: ChatData, message_data: MessageData) -> telethon.tl.custom.message.Message:
-        return await self.pipeline_bot_token.forward_messages(
+        return await self.pipeline_bot_client.forward_messages(
             chat.chat_id,
             message_data.message_id,
             message_data.chat_id
@@ -179,7 +179,7 @@ class TelegramClient:
             new_text: str,
             new_buttons: Optional[List[List[Button]]] = None
     ):
-        return await self.pipeline_bot_token.edit_message(
+        return await self.pipeline_bot_client.edit_message(
             chat.chat_id,
             message_data.message_id,
             new_text,
@@ -193,13 +193,13 @@ class TelegramClient:
         await self.client(MigrateChatRequest(chat_id=chat_id))
 
     async def invite_pipeline_bot_to_chat(self, chat_data: ChatData) -> None:
-        if self.pipeline_bot_token == self.client:
+        if self.pipeline_bot_client == self.client:
             return
         users = await self.client.get_participants(chat_data.chat_id)
         user_ids = [user.id for user in users if user.username is not None]
         if self.pipeline_bot_id in user_ids:
             return
-        pipeline_bot_entity = await self.pipeline_bot_token.get_me()
+        pipeline_bot_entity = await self.pipeline_bot_client.get_me()
         await self.client(EditAdminRequest(
             chat_data.chat_id,
             pipeline_bot_entity.username,
