@@ -57,7 +57,10 @@ class DuplicateHelper(Helper):
             image_hash = str(imagehash.dhash(image))
             hashes.append(image_hash)
         # Delete the images
-        shutil.rmtree(message_decompose_path)
+        try:
+            shutil.rmtree(message_decompose_path)
+        except FileNotFoundError:
+            pass
         # Save hashes
         self.database.save_hashes(message_data, hashes)
         # Return hashes

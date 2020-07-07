@@ -55,18 +55,22 @@ class ChatData(ABC):
     def directory(self) -> str:
         pass
 
-    @abstractmethod
     def telegram_link_for_message(self, message_data: 'MessageData') -> str:
-        pass
+        handle = abs(self.chat_id)
+        if str(self.chat_id).startswith("-100"):
+            handle = str(self.chat_id)[4:]
+        return f"https://t.me/c/{handle}/{message_data.message_id}"
 
 
 class ChannelData(ChatData):
 
     @property
     def directory(self) -> str:
-        return f"store/channels/{self.username}/"
+        return f"store/channels/{self.username or self.chat_id}/"
 
     def telegram_link_for_message(self, message_data: 'MessageData') -> str:
+        if self.username is None:
+            return super().telegram_link_for_message(message_data)
         return f"https://t.me/{self.username}/{message_data.message_id}"
 
 
@@ -75,10 +79,6 @@ class WorkshopData(ChatData):
     @property
     def directory(self) -> str:
         return f"store/workshop/{self.chat_id}/"
-
-    def telegram_link_for_message(self, message_data: 'MessageData') -> str:
-        handle = abs(self.chat_id)
-        return f"https://t.me/c/{handle}/{message_data.message_id}"
 
 
 class Group(ABC):

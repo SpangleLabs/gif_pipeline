@@ -8,11 +8,13 @@ from telethon import events
 
 from database import Database
 from group import Group, Channel, WorkshopGroup, ChannelConfig, WorkshopConfig
+from helpers.delete_helper import DeleteHelper
 from helpers.download_helper import DownloadHelper
 from helpers.duplicate_helper import DuplicateHelper
 from helpers.imgur_gallery_helper import ImgurGalleryHelper
 from helpers.msg_helper import MSGHelper
 from helpers.scene_split_helper import SceneSplitHelper
+from helpers.send_helper import GifSendHelper
 from helpers.stabilise_helper import StabiliseHelper
 from helpers.telegram_gif_helper import TelegramGifHelper
 from helpers.video_crop_helper import VideoCropHelper
@@ -123,7 +125,9 @@ class Pipeline:
             StabiliseHelper(self.database, self.client, self.worker),
             VideoHelper(self.database, self.client, self.worker),
             MSGHelper(self.database, self.client, self.worker),
-            SceneSplitHelper(self.database, self.client, self.worker)
+            SceneSplitHelper(self.database, self.client, self.worker),
+            GifSendHelper(self.database, self.client, self.worker, self.channels),
+            DeleteHelper(self.database, self.client, self.worker)
         ]
         if "imgur" in self.api_keys:
             helpers.append(
@@ -143,6 +147,7 @@ class Pipeline:
         logging.info("Watching workshop")
         self.client.add_message_handler(self.on_new_message, self.all_chat_ids)
         self.client.add_delete_handler(self.on_deleted_message)
+        self.client.add_callback_query_handler(self.on_callback_query)
         self.client.client.run_until_disconnected()
 
     async def on_new_message(self, event: Union[events.NewMessage.Event, events.MessageEdited.Event]):
@@ -160,9 +165,11 @@ class Pipeline:
         self.database.save_message(new_message.message_data)
         logging.info(f"New message initialised: {new_message}")
         # Pass to helpers
-        await self.pass_message_to_handlers(chat, new_message)
+        await self.pass_message_to_handlers(new_message, chat)
 
-    async def pass_message_to_handlers(self, chat: Group, new_message: Message):
+    async def pass_message_to_handlers(self, new_message: Message, chat: Group = None):
+        if chat is None:
+            chat = self.chat_by_id(new_message.chat_data.chat_id)
         helper_results = await asyncio.gather(
             *(helper.on_new_message(chat, new_message) for helper in self.helpers.values()),
             return_exceptions=True
@@ -176,7 +183,7 @@ class Pipeline:
                 )
             elif result:
                 for reply_message in result:
-                    await self.pass_message_to_handlers(chat, reply_message)
+                    await self.pass_message_to_handlers(reply_message)
 
     async def on_deleted_message(self, event: events.MessageDeleted.Event):
         # Get messages
@@ -213,6 +220,28 @@ class Pipeline:
         if chat is None:
             return []
         return [message for message in chat.messages if message.message_data.message_id in deleted_ids]
+
+    async def on_callback_query(self, event: events.CallbackQuery.Event):
+        # Get chat, check it's one we know
+        chat = self.chat_by_id(chat_id_from_telegram(event))
+        if chat is None:
+            logging.debug("Ignoring new message in other chat, which must have slipped through")
+            return
+        # Hand callback queries to helpers
+        helper_results = await asyncio.gather(
+            *(helper.on_callback_query(chat, event.data) for helper in self.helpers.values()),
+            return_exceptions=True
+        )
+        results_dict = dict(zip(self.helpers.keys(), helper_results))
+        for helper, result in results_dict.items():
+            if isinstance(result, Exception):
+                logging.error(
+                    f"Helper {helper} threw an exception trying to handle callback query {event}.",
+                    exc_info=result
+                )
+            elif result:
+                for reply_message in result:
+                    await self.pass_message_to_handlers(reply_message)
 
 
 def setup_logging() -> None:

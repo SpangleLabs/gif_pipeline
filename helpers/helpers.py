@@ -1,9 +1,11 @@
 import os
+import shutil
 import uuid
 from abc import ABC, abstractmethod
 from typing import Optional, List
 
 from async_generator import asynccontextmanager
+from telethon import Button
 
 from database import Database
 from group import Group
@@ -35,33 +37,65 @@ class Helper(ABC):
         self.client = client
         self.worker = worker
 
-    async def send_text_reply(self, chat: Group, message: Message, text: str) -> Message:
-        msg = await self.client.send_text_message(
-            chat.chat_data.chat_id,
-            text,
-            reply_to_msg_id=message.message_data.message_id
+    async def send_text_reply(
+            self,
+            chat: Group,
+            message: Message,
+            text: str,
+            *,
+            buttons: Optional[List[List[Button]]] = None
+    ) -> Message:
+        return await self.send_message(
+            chat,
+            text=text,
+            reply_to_msg=message,
+            buttons=buttons
         )
-        message_data = message_data_from_telegram(msg)
-        new_message = await Message.from_message_data(message_data, message.chat_data, self.client)
-        self.database.save_message(new_message.message_data)
-        chat.add_message(new_message)
-        return new_message
 
     async def send_video_reply(self, chat: Group, message: Message, video_path: str, text: str = None) -> Message:
-        msg = await self.client.send_video_message(
-            chat.chat_data.chat_id, video_path, text,
-            reply_to_msg_id=message.message_data.message_id
+        return await self.send_message(
+            chat,
+            video_path=video_path,
+            reply_to_msg=message,
+            text=text
         )
+
+    async def send_message(
+            self,
+            chat: Group,
+            *,
+            text: Optional[str] = None,
+            video_path: Optional[str] = None,
+            reply_to_msg: Optional[Message] = None,
+            buttons: Optional[List[List[Button]]] = None
+    ) -> Message:
+        reply_id = None
+        if reply_to_msg is not None:
+            reply_id = reply_to_msg.message_data.message_id
+        if video_path is None:
+            msg = await self.client.send_text_message(
+                chat.chat_data,
+                text,
+                reply_to_msg_id=reply_id,
+                buttons=buttons
+            )
+        else:
+            msg = await self.client.send_video_message(
+                chat.chat_data,
+                video_path,
+                text,
+                reply_to_msg_id=reply_id,
+                buttons=buttons
+            )
         message_data = message_data_from_telegram(msg)
-        # Copy file
-        new_path = message_data.expected_file_path(message.chat_data)
-        os.rename(video_path, new_path)
-        message_data.file_path = new_path
-        # Create message object
-        new_message = await Message.from_message_data(message_data, message.chat_data, self.client)
-        # Save to database
+        if video_path is not None:
+            # Copy file
+            new_path = message_data.expected_file_path(chat.chat_data)
+            shutil.copyfile(video_path, new_path)
+            message_data.file_path = new_path
+        # Set up message object
+        new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
         self.database.save_message(new_message.message_data)
-        # Add to channel
         chat.add_message(new_message)
         return new_message
 
@@ -88,21 +122,12 @@ class Helper(ABC):
     async def on_deleted_message(self, chat: Group, message: Message) -> None:
         pass
 
+    async def on_callback_query(self, chat: Group, callback_query: bytes) -> Optional[List[Message]]:
+        pass
+
     @property
     def name(self) -> str:
         return self.__class__.__name__
-
-
-class GifSendHelper(Helper):
-
-    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
-        super().__init__(database, client, worker)
-
-    async def on_new_message(self, chat: Group, message: Message):
-        # If a message says to send to a channel, and replies to a gif, then forward to that channel
-        # `send deergifs`, `send cowgifs->deergifs`
-        # Needs to handle queueing too?
-        pass
 
 
 class ArchiveHelper(Helper):
@@ -110,16 +135,6 @@ class ArchiveHelper(Helper):
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 
-    async def on_new_message(self, chat: Group, message: Message):
+    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         # If a message says to archive, move to archive channel
-        pass
-
-
-class DeleteHelper(Helper):
-
-    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
-        super().__init__(database, client, worker)
-
-    async def on_new_message(self, chat: Group, message: Message):
-        # If a message says to delete, delete it and delete local files
         pass

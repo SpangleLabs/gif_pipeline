@@ -3,7 +3,7 @@ from asyncio import Future
 from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any, List
 
 import telethon
-from telethon import events, utils
+from telethon import events, Button
 from telethon.tl.custom import message
 from telethon.tl.functions.channels import EditAdminRequest
 from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
@@ -19,28 +19,26 @@ def message_data_from_telegram(msg: telethon.tl.custom.message.Message, schedule
     chat_id = chat_id_from_telegram(msg)
     sender_id = sender_id_from_telegram(msg)
     return MessageData(
-            chat_id,
-            msg.id,
-            msg.date,
-            msg.text,
-            msg.forward is not None,
-            msg.file is not None,
-            None,
-            (msg.file or None) and msg.file.mime_type,
-            msg.reply_to_msg_id,
-            sender_id,
-            scheduled
-        )
+        chat_id,
+        msg.id,
+        msg.date,
+        msg.text,
+        msg.forward is not None,
+        msg.file is not None,
+        None,
+        (msg.file or None) and msg.file.mime_type,
+        msg.reply_to_msg_id,
+        sender_id,
+        scheduled
+    )
 
 
 def chat_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
-    chat_id, _ = utils.resolve_id(msg.chat_id)
-    return chat_id
+    return msg.chat_id
 
 
 def sender_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
-    sender_id, _ = utils.resolve_id(msg.sender_id)
-    return sender_id
+    return msg.sender_id
 
 
 class TelegramClient:
@@ -75,11 +73,13 @@ class TelegramClient:
 
     async def get_channel_data(self, handle: str) -> ChannelData:
         entity = await self.client.get_entity(handle)
-        return ChannelData(entity.id, entity.username, entity.title)
+        peer_id = telethon.utils.get_peer_id(entity)
+        return ChannelData(peer_id, entity.username, entity.title)
 
     async def get_workshop_data(self, handle: str) -> WorkshopData:
         entity = await self.client.get_entity(handle)
-        return WorkshopData(entity.id, entity.username, entity.title)
+        peer_id = telethon.utils.get_peer_id(entity)
+        return WorkshopData(peer_id, entity.username, entity.title)
 
     async def iter_channel_messages(self, chat_data: ChatData) -> Generator[MessageData, None, None]:
         async for msg in self.client.iter_messages(chat_data.chat_id):
@@ -129,24 +129,49 @@ class TelegramClient:
 
         self.bot_client.add_event_handler(function_wrapper, events.MessageDeleted())
 
+    def add_callback_query_handler(self, function: Callable) -> None:
+        async def function_wrapper(event: events.CallbackQuery.Event):
+            await function(event)
+
+        self.bot_client.add_event_handler(function_wrapper, events.CallbackQuery())
+
     async def send_text_message(
             self,
-            chat_id: int,
+            chat: ChatData,
             text: str,
             *,
-            reply_to_msg_id: int = None
+            reply_to_msg_id: Optional[int] = None,
+            buttons: Optional[List[List[Button]]] = None
     ) -> telethon.tl.custom.message.Message:
-        return await self.bot_client.send_message(chat_id, text, reply_to=reply_to_msg_id)
+        return await self.bot_client.send_message(chat.chat_id, text, reply_to=reply_to_msg_id, buttons=buttons)
 
     async def send_video_message(
-            self, chat_id: int, video_path: str, text: str = None, *, reply_to_msg_id: int = None
+            self,
+            chat: ChatData,
+            video_path: str,
+            text: str = None,
+            *,
+            reply_to_msg_id: int = None,
+            buttons: Optional[List[List[Button]]] = None
     ) -> telethon.tl.custom.message.Message:
         return await self.bot_client.send_file(
-            chat_id, video_path, caption=text, reply_to=reply_to_msg_id, allow_cache=False
+            chat.chat_id, video_path, caption=text, reply_to=reply_to_msg_id, allow_cache=False, buttons=buttons
         )
 
     async def delete_message(self, message_data: MessageData) -> None:
         await self.client.delete_messages(message_data.chat_id, message_data.message_id)
+
+    async def forward_message(self, chat: ChatData, message_data: MessageData) -> telethon.tl.custom.message.Message:
+        return await self.bot_client.forward_messages(chat.chat_id, message_data.message_id, message_data.chat_id)
+
+    async def edit_message(
+            self,
+            chat: ChatData,
+            message_data: MessageData,
+            new_text: str,
+            new_buttons: Optional[List[List[Button]]] = None
+    ):
+        return await self.bot_client.edit_message(chat.chat_id, message_data.message_id, new_text, buttons=new_buttons)
 
     def synchronise_async(self, future: Union[Future, Coroutine]) -> Any:
         return self.client.loop.run_until_complete(future)
@@ -173,4 +198,3 @@ class TelegramClient:
             ),
             "Helpful bot"
         ))
-

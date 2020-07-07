@@ -159,7 +159,7 @@ class Database:
                 "m.file_path, m.file_mime_type, m.reply_to, m.sender_id, m.is_scheduled "
                 "FROM video_hashes v "
                 "LEFT JOIN messages m on v.entry_id = m.entry_id "
-                f"WHERE v.hash IN ({','.join('?' * len(image_hashes))})",
+                f"WHERE v.hash IN ({','.join('?' * len(image_hashes))}) AND m.datetime IS NOT NULL",
                 image_hashes
         ):
             messages.append(message_data_from_row(row))
