@@ -57,6 +57,8 @@ class ChatData(ABC):
 
     def telegram_link_for_message(self, message_data: 'MessageData') -> str:
         handle = abs(self.chat_id)
+        if str(self.chat_id).startswith("-100"):
+            handle = str(self.chat_id)[4:]
         return f"https://t.me/c/{handle}/{message_data.message_id}"
 
 
@@ -68,7 +70,7 @@ class ChannelData(ChatData):
 
     def telegram_link_for_message(self, message_data: 'MessageData') -> str:
         if self.username is None:
-            super().telegram_link_for_message(message_data)
+            return super().telegram_link_for_message(message_data)
         return f"https://t.me/{self.username}/{message_data.message_id}"
 
 
