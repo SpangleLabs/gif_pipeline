@@ -8,10 +8,18 @@ from telethon import events
 
 from database import Database
 from group import Group, Channel, WorkshopGroup, ChannelConfig, WorkshopConfig
+from helpers.download_helper import DownloadHelper
+from helpers.duplicate_helper import DuplicateHelper
+from helpers.imgur_gallery_helper import ImgurGalleryHelper
+from helpers.msg_helper import MSGHelper
+from helpers.scene_split_helper import SceneSplitHelper
+from helpers.stabilise_helper import StabiliseHelper
+from helpers.telegram_gif_helper import TelegramGifHelper
+from helpers.video_crop_helper import VideoCropHelper
+from helpers.video_cut_helper import VideoCutHelper
+from helpers.video_helper import VideoHelper
+from helpers.video_rotate_helper import VideoRotateHelper
 from message import Message
-from helpers import DuplicateHelper, TelegramGifHelper, VideoRotateHelper, VideoCutHelper, \
-    VideoCropHelper, DownloadHelper, StabiliseHelper, QualityVideoHelper, MSGHelper, ImgurGalleryHelper, \
-    AutoSceneSplitHelper
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient, message_data_from_telegram, chat_id_from_telegram
 
@@ -113,9 +121,9 @@ class Pipeline:
             VideoCropHelper(self.database, self.client, self.worker),
             DownloadHelper(self.database, self.client, self.worker),
             StabiliseHelper(self.database, self.client, self.worker),
-            QualityVideoHelper(self.database, self.client, self.worker),
+            VideoHelper(self.database, self.client, self.worker),
             MSGHelper(self.database, self.client, self.worker),
-            AutoSceneSplitHelper(self.database, self.client, self.worker)
+            SceneSplitHelper(self.database, self.client, self.worker)
         ]
         if "imgur" in self.api_keys:
             helpers.append(
