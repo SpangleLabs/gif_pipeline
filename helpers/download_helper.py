@@ -37,8 +37,8 @@ class DownloadHelper(Helper):
     async def on_new_message(self, chat: Group, message: Message):
         if not message.text:
             return
-        # TODO: something not awful
-        if "Could not download video from link" in message.text:
+        # Ignore messages the bot has sent.
+        if message.message_data.sender_id == self.client.pipeline_bot_id:
             return
         matches = re.findall(DownloadHelper.LINK_REGEX, message.text, re.IGNORECASE)
         # Remove gif links, TelegramGifHelper handles those
