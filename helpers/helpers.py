@@ -107,7 +107,7 @@ class Helper(ABC):
             new_text: Optional[str] = None,
             new_buttons: Optional[List[List[Button]]] = None
     ) -> Message:
-        msg = self.client.edit_message(chat.chat_data, message.message_data, new_text, new_buttons)
+        msg = await self.client.edit_message(chat.chat_data, message.message_data, new_text, new_buttons)
         message_data = message_data_from_telegram(msg)
         new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
         chat.remove_message(message_data)
