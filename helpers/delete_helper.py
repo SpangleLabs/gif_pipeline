@@ -19,7 +19,12 @@ class DeleteHelper(Helper):
         if text_clean == "delete family":
             return await self.delete_family(chat, message)
         if text_clean == "delete branch":
-            return await self.delete_branch(chat, message.message_data)
+            if message.message_data.reply_to is None:
+                return [
+                    await self.send_text_reply(chat, message, "You need to reply to the message you want to delete.")
+                ]
+            reply_to = chat.message_by_id(message.message_data.reply_to)
+            return await self.delete_branch(chat, reply_to.message_data)
         return None
 
     async def delete_family(self, chat: Group, message: Message) -> Optional[List[Message]]:
