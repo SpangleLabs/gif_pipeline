@@ -13,10 +13,13 @@ class SceneSplitHelper(VideoCutHelper):
 
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         text_clean = message.text.strip().lower()
-        key_word = "split scenes"
-        if not text_clean.startswith(key_word):
+        key_words = ["split scenes", "scenesplit", "scene split"]
+        args = None
+        for key_word in key_words:
+            if text_clean.startswith(key_word):
+                args = text_clean[len(key_word):].strip()
+        if args is None:
             return None
-        args = text_clean[len(key_word):].strip()
         if len(args) == 0:
             threshold = 30
         else:
