@@ -3,7 +3,7 @@ from typing import Optional, List
 from database import Database
 from group import Group
 from helpers.helpers import Helper
-from message import Message
+from message import Message, MessageData
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient
 
@@ -16,12 +16,20 @@ class DeleteHelper(Helper):
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         # If a message says to delete, delete it and delete local files
         text_clean = message.text.strip().lower()
-        if text_clean != "delete family":
-            return None
+        if text_clean == "delete family":
+            return await self.delete_family(chat, message)
+        if text_clean == "delete branch":
+            return await self.delete_branch(chat, message.message_data)
+        return None
+
+    async def delete_family(self, chat: Group, message: Message) -> Optional[List[Message]]:
         message_history = self.database.get_message_history(message.message_data)
         if len(message_history) == 1:
             return [await self.send_text_reply(chat, message, "I'm not sure which message you want to delete.")]
-        message_family = self.database.get_message_family(message_history[-1])
+        return await self.delete_branch(chat, message_history[-1])
+
+    async def delete_branch(self, chat: Group, message: MessageData) -> Optional[List[Message]]:
+        message_family = self.database.get_message_family(message)
         for msg_data in message_family:
             msg = chat.message_by_id(msg_data.message_id)
             await self.client.delete_message(msg_data)
