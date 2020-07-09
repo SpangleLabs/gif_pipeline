@@ -68,9 +68,11 @@ class DuplicateHelper(Helper):
         return hashes
 
     async def check_hash_in_store(self, chat: Group, image_hashes: Set[str], message: Message) -> Optional[Message]:
+        if not image_hashes:
+            return None
         has_blank_frame = self.blank_frame_hash in image_hashes
         if has_blank_frame:
-            image_hashes = image_hashes.remove(self.blank_frame_hash)
+            image_hashes.remove(self.blank_frame_hash)
         matching_messages = set(self.database.get_messages_for_hashes(image_hashes))
         # Get root parent
         msg_history = self.database.get_message_history(message.message_data)

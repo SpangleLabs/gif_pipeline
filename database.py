@@ -160,7 +160,7 @@ class Database:
                 "FROM video_hashes v "
                 "LEFT JOIN messages m on v.entry_id = m.entry_id "
                 f"WHERE v.hash IN ({','.join('?' * len(image_hashes))}) AND m.datetime IS NOT NULL",
-                image_hashes
+                list(image_hashes)
         ):
             messages.append(message_data_from_row(row))
         return messages
