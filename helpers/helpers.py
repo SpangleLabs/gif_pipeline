@@ -99,6 +99,22 @@ class Helper(ABC):
         chat.add_message(new_message)
         return new_message
 
+    async def edit_message(
+            self,
+            chat: Group,
+            message: Message,
+            *,
+            new_text: Optional[str] = None,
+            new_buttons: Optional[List[List[Button]]] = None
+    ) -> Message:
+        msg = self.client.edit_message(chat.chat_data, message.message_data, new_text, new_buttons)
+        message_data = message_data_from_telegram(msg)
+        new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
+        chat.remove_message(message_data)
+        chat.add_message(new_message)
+        self.database.save_message(new_message.message_data)
+        return new_message
+
     @asynccontextmanager
     async def progress_message(self, chat: Group, message: Message, text: str = None):
         if text is None:

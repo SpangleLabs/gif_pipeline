@@ -102,14 +102,14 @@ class GifSendHelper(Helper):
     async def confirmation_menu(self, chat: Group, message_id: str, destination_id: str) -> List[Message]:
         destination = self.get_destination_from_name(destination_id)
         menu = [
-            Button.inline("I am sure", f"send:{message_id}:{destination_id}"),
-            Button.inline("No thanks", "clear_confirmation")
+            [Button.inline("I am sure", f"send:{message_id}:{destination_id}")],
+            [Button.inline("No thanks", "clear_confirmation")]
         ]
         menu_text = f"Are you sure you want to send this video to {destination.chat_data.title}?"
-        menu_msg = await self.client.edit_message(
-            chat.chat_data,
-            self.destination_menu_msg.message_data,
-            menu_text,
+        menu_msg = await self.edit_message(
+            chat,
+            self.destination_menu_msg,
+            new_text=menu_text,
             new_buttons=menu
         )
         self.destination_menu_msg = menu_msg
