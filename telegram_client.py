@@ -124,6 +124,20 @@ class TelegramClient:
             await function(event)
 
         self.client.add_event_handler(function_wrapper, events.NewMessage())
+
+    def add_edit_handler(self, function: Callable, chat_ids: List[int]) -> None:
+        async def function_wrapper(event: events.NewMessage.Event):
+            chat_id = chat_id_from_telegram(event.message)
+            if chat_id not in chat_ids:
+                logging.debug("Ignoring new message in other chat")
+                return
+            sender_id = sender_id_from_telegram(event.message)
+            if sender_id == self.pipeline_bot_id:
+                logging.debug("Ignoring new message from bot")
+                return
+            self._save_message(event.message)
+            await function(event)
+
         self.client.add_event_handler(function_wrapper, events.MessageEdited())
 
     def add_delete_handler(self, function: Callable) -> None:

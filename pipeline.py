@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import sys
-from typing import Dict, List, Union, Iterator, Optional
+from typing import Dict, List, Iterator, Optional
 
 from telethon import events
 
@@ -150,12 +150,28 @@ class Pipeline:
     def watch_workshop(self) -> None:
         logging.info("Watching workshop")
         self.client.add_message_handler(self.on_new_message, self.all_chat_ids)
+        self.client.edit_message_hndler(self.on_edit_message, self.all_chat_ids)
         self.client.add_delete_handler(self.on_deleted_message)
         self.client.add_callback_query_handler(self.on_callback_query)
         self.client.client.run_until_disconnected()
 
-    async def on_new_message(self, event: Union[events.NewMessage.Event, events.MessageEdited.Event]):
-        # This is called for both new messages, and edited messages
+    async def on_edit_message(self, event: events.MessageEdited.Event):
+        # Get chat, check it's one we know
+        chat = self.chat_by_id(chat_id_from_telegram(event.message))
+        if chat is None:
+            logging.debug("Ignoring edited message in other chat, which must have slipped through")
+            return
+        # Convert to our custom Message object. This will update message data, but not the video, for edited messages
+        logging.info(f"Edited message in chat: {chat}")
+        message_data = message_data_from_telegram(event.message)
+        new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
+        chat.remove_message(message_data)
+        chat.add_message(new_message)
+        self.database.save_message(new_message.message_data)
+        logging.info(f"Edited message initialised: {new_message}")
+
+    async def on_new_message(self, event: events.NewMessage.Event):
+        # This is called just for new messages
         # Get chat, check it's one we know
         chat = self.chat_by_id(chat_id_from_telegram(event.message))
         if chat is None:
@@ -165,7 +181,7 @@ class Pipeline:
         logging.info(f"New message in chat: {chat}")
         message_data = message_data_from_telegram(event.message)
         new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
-        chat.messages.append(new_message)
+        chat.add_message(new_message)
         self.database.save_message(new_message.message_data)
         logging.info(f"New message initialised: {new_message}")
         # Pass to helpers
