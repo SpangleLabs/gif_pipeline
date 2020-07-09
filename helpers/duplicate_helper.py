@@ -90,7 +90,7 @@ class DuplicateHelper(Helper):
             new_message: Message,
             potential_matches: Set[MessageData],
             has_blank_frame: bool
-    ):
+    ) -> Message:
         warning_messages = []
         if has_blank_frame:
             warning_messages.append("This video contains at least one blank frame.")
@@ -100,7 +100,7 @@ class DuplicateHelper(Helper):
                 chat_data = self.database.get_chat_by_id(message.chat_id) or chat.chat_data
                 message_links.append(chat_data.telegram_link_for_message(message))
             warning_messages.append("This video might be a duplicate of:\n" + "\n".join(message_links))
-        await self.send_text_reply(chat, new_message, "\n".join(warning_messages))
+        return await self.send_text_reply(chat, new_message, "\n".join(warning_messages))
 
     @staticmethod
     def get_image_hashes(decompose_directory: str):
