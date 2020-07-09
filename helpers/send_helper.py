@@ -38,7 +38,7 @@ class GifSendHelper(Helper):
 
     async def on_callback_query(self, chat: Group, callback_query: bytes) -> Optional[List[Message]]:
         split_data = callback_query.decode().split(":")
-        if split_data[0] == "clear_menu":
+        if split_data[0] == "clear_dest_menu":
             await self.clear_destination_menu()
             return
         if split_data[0] == "clear_delete_menu":
@@ -68,7 +68,7 @@ class GifSendHelper(Helper):
         button_data = f"send:{video.message_data.message_id}:s:{dest_str}"
         menu = [
             [Button.inline("Yes, I am sure", button_data)],
-            [Button.inline("No thanks!", "clear_menu")]
+            [Button.inline("No thanks!", "clear_dest_menu")]
         ]
         menu_text = "It looks like this video has not been giffed. Are you sure you want to send it?"
         menu_msg = await self.send_text_reply(chat, cmd, menu_text, buttons=menu)
@@ -103,7 +103,7 @@ class GifSendHelper(Helper):
         destination = self.get_destination_from_name(destination_id)
         menu = [
             [Button.inline("I am sure", f"send:{message_id}:{destination_id}")],
-            [Button.inline("No thanks", "clear_confirmation")]
+            [Button.inline("No thanks", "clear_dest_menu")]
         ]
         menu_text = f"Are you sure you want to send this video to {destination.chat_data.title}?"
         menu_msg = await self.edit_message(
