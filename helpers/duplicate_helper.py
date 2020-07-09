@@ -16,6 +16,7 @@ from telegram_client import TelegramClient
 
 
 class DuplicateHelper(Helper):
+    blank_frame_hash = "0000000000000000"
 
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
@@ -31,10 +32,10 @@ class DuplicateHelper(Helper):
                 message = workshop.message_by_id(message_data.message_id)
                 await self.check_hash_in_store(workshop, new_hashes, message)
 
-    async def get_or_create_message_hashes(self, message_data: MessageData) -> List[str]:
+    async def get_or_create_message_hashes(self, message_data: MessageData) -> Set[str]:
         existing_hashes = self.get_message_hashes(message_data)
         if existing_hashes is not None:
-            return existing_hashes
+            return set(existing_hashes)
         return await self.create_message_hashes(message_data)
 
     def get_message_hashes(self, message_data: MessageData) -> Optional[List[str]]:
@@ -43,19 +44,19 @@ class DuplicateHelper(Helper):
             return hashes
         return None
 
-    async def create_message_hashes(self, message_data: MessageData) -> List[str]:
+    async def create_message_hashes(self, message_data: MessageData) -> Set[str]:
         if not message_data.has_video:
-            return []
+            return set()
         message_decompose_path = f"sandbox/decompose/{message_data.chat_id}-{message_data.message_id}/"
         # Decompose video into images
         os.makedirs(message_decompose_path, exist_ok=True)
         await self.decompose_video(message_data.file_path, message_decompose_path)
         # Hash the images
-        hashes = []
+        hashes = set()
         for image_file in glob.glob(f"{message_decompose_path}/*.png"):
             image = Image.open(image_file)
             image_hash = str(imagehash.dhash(image))
-            hashes.append(image_hash)
+            hashes.add(image_hash)
         # Delete the images
         try:
             shutil.rmtree(message_decompose_path)
@@ -66,7 +67,10 @@ class DuplicateHelper(Helper):
         # Return hashes
         return hashes
 
-    async def check_hash_in_store(self, chat: Group, image_hashes: List[str], message: Message) -> Optional[Message]:
+    async def check_hash_in_store(self, chat: Group, image_hashes: Set[str], message: Message) -> Optional[Message]:
+        has_blank_frame = self.blank_frame_hash in image_hashes
+        if has_blank_frame:
+            image_hashes = image_hashes.remove(self.blank_frame_hash)
         matching_messages = set(self.database.get_messages_for_hashes(image_hashes))
         # Get root parent
         msg_history = self.database.get_message_history(message.message_data)
@@ -74,17 +78,27 @@ class DuplicateHelper(Helper):
         # warning messages
         warning_messages = matching_messages - msg_family
         warning_msg = None
-        if len(warning_messages) > 0:
-            warning_msg = await self.post_duplicate_warning(chat, message, warning_messages)
+        if len(warning_messages) > 0 or has_blank_frame:
+            warning_msg = await self.post_duplicate_warning(chat, message, warning_messages, has_blank_frame)
         return warning_msg
 
-    async def post_duplicate_warning(self, chat: Group, new_message: Message, potential_matches: Set[MessageData]):
-        message_links = []
-        for message in potential_matches:
-            chat_data = self.database.get_chat_by_id(message.chat_id) or chat.chat_data
-            message_links.append(chat_data.telegram_link_for_message(message))
-        warning_message = "This video might be a duplicate of:\n" + "\n".join(message_links)
-        await self.send_text_reply(chat, new_message, warning_message)
+    async def post_duplicate_warning(
+            self,
+            chat: Group,
+            new_message: Message,
+            potential_matches: Set[MessageData],
+            has_blank_frame: bool
+    ):
+        warning_messages = []
+        if has_blank_frame:
+            warning_messages.append("This video contains at least one blank frame.")
+        if potential_matches:
+            message_links = []
+            for message in potential_matches:
+                chat_data = self.database.get_chat_by_id(message.chat_id) or chat.chat_data
+                message_links.append(chat_data.telegram_link_for_message(message))
+            warning_messages.append("This video might be a duplicate of:\n" + "\n".join(message_links))
+        await self.send_text_reply(chat, new_message, "\n".join(warning_messages))
 
     @staticmethod
     def get_image_hashes(decompose_directory: str):

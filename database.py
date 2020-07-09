@@ -1,5 +1,5 @@
 import sqlite3
-from typing import List, Optional, Type, TypeVar
+from typing import List, Optional, Type, TypeVar, Set
 
 import dateutil.parser
 
@@ -151,7 +151,7 @@ class Database:
             messages.append(message_data_from_row(row))
         return messages
 
-    def get_messages_for_hashes(self, image_hashes: List[str]) -> List[MessageData]:
+    def get_messages_for_hashes(self, image_hashes: Set[str]) -> List[MessageData]:
         cur = self.conn.cursor()
         messages = []
         for row in cur.execute(
@@ -165,7 +165,7 @@ class Database:
             messages.append(message_data_from_row(row))
         return messages
 
-    def save_hashes(self, message: MessageData, hashes: List[str]) -> None:
+    def save_hashes(self, message: MessageData, hashes: Set[str]) -> None:
         cur = self.conn.cursor()
         cur.execute(
             "SELECT entry_id FROM messages WHERE chat_id = ? AND message_id = ? AND is_scheduled = ?",
