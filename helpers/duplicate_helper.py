@@ -125,6 +125,18 @@ class DuplicateHelper(Helper):
             await self.get_or_create_message_hashes(message.message_data)
             return
         if message.message_data.file_path is None:
+            if message.message_data.text.strip().lower() == "check":
+                reply_to = chat.message_by_id(message.message_data.reply_to)
+                if reply_to is None:
+                    return [await self.send_text_reply(chat, message, "I can't check a message without a video")]
+                async with self.progress_message(chat, message, "Checking whether that video has been seen before"):
+                    hashes = await self.get_or_create_message_hashes(reply_to.message_data)
+                    warning_msg = await self.check_hash_in_store(chat, hashes, reply_to)
+                    if warning_msg is None:
+                        return [
+                            await self.send_text_reply(chat, message, "That video does not match any other videos.")
+                        ]
+                    return [warning_msg]
             return
         progress_text = "Checking whether this video has been seen before"
         async with self.progress_message(chat, message, progress_text):
