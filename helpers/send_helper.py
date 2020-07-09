@@ -56,6 +56,8 @@ class GifSendHelper(Helper):
 
     def was_giffed(self, video: Message) -> bool:
         message_history = self.database.get_message_history(video.message_data)
+        if len(message_history) < 2:
+            return False
         latest_command = message_history[1].text
         if latest_command is not None and latest_command.strip().lower() == "gif":
             return True
