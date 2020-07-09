@@ -150,7 +150,7 @@ class Pipeline:
     def watch_workshop(self) -> None:
         logging.info("Watching workshop")
         self.client.add_message_handler(self.on_new_message, self.all_chat_ids)
-        self.client.edit_message_hndler(self.on_edit_message, self.all_chat_ids)
+        self.client.add_edit_handler(self.on_edit_message, self.all_chat_ids)
         self.client.add_delete_handler(self.on_deleted_message)
         self.client.add_callback_query_handler(self.on_callback_query)
         self.client.client.run_until_disconnected()
