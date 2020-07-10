@@ -19,14 +19,7 @@ class VideoHelper(Helper):
         output_path = random_sandbox_video_path()
         async with self.progress_message(chat, message, "Converting video into video"):
             if not await self.video_has_audio_track(video):
-                task = FfmpegTask(
-                    global_options=["-f lavfi"],
-                    inputs={
-                        "aevalsrc=0": None,
-                        video.message_data.file_path: None
-                    },
-                    outputs={output_path: "-qscale:v 0 -acodec aac -map 0:0 -map 1:0 -shortest"}
-                )
+                task = add_audio_track_task(video.message_data.file_path, output_path)
             else:
                 task = FfmpegTask(
                     inputs={video.message_data.file_path: None},
@@ -35,9 +28,24 @@ class VideoHelper(Helper):
             await self.worker.await_task(task)
             return [await self.send_video_reply(chat, message, output_path)]
 
-    async def video_has_audio_track(self, video: Message):
-        task = FFprobeTask(
-            global_options=["-v error"],
-            inputs={video.message_data.file_path: "-show_streams -select_streams a -loglevel error"}
-        )
-        return len(await self.worker.await_task(task))
+    async def video_has_audio_track(self, video: Message) -> bool:
+        task = video_has_audio_track_task(video.message_data.file_path)
+        return bool(len(await self.worker.await_task(task)))
+
+
+def video_has_audio_track_task(input_path: str) -> FFprobeTask:
+    return FFprobeTask(
+        global_options=["-v error"],
+        inputs={input_path: "-show_streams -select_streams a -loglevel error"}
+    )
+
+
+def add_audio_track_task(input_path: str, output_path: str) -> FfmpegTask:
+    return FfmpegTask(
+        global_options=["-f lavfi"],
+        inputs={
+            "aevalsrc=0": None,
+            input_path: None
+        },
+        outputs={output_path: "-qscale:v 0 -acodec aac -map 0:0 -map 1:0 -shortest"}
+    )

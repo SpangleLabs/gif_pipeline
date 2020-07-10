@@ -4,6 +4,7 @@ from typing import Optional, List, Tuple
 
 from group import Group
 from helpers.helpers import Helper, random_sandbox_video_path
+from helpers.video_helper import video_has_audio_track_task, add_audio_track_task
 from message import Message
 from tasks.ffmpeg_task import FfmpegTask
 from tasks.ffmprobe_task import FFprobeTask
@@ -118,9 +119,11 @@ class MergeHelper(Helper):
         dimensions = await self.get_video_dimensions(first)
         rescaled = await asyncio.gather(*[self.scale_and_pad_to_dimensions(path, dimensions) for path in the_rest])
         same_dimension_paths = [first] + rescaled
+        # Add audio tracks if necessary
+        with_audio = await asyncio.gather(*[self.with_audio_track(path) for path in same_dimension_paths])
         # Handle duplicate file paths. Copy them to sandbox files
         output_paths = []
-        for path in same_dimension_paths:
+        for path in with_audio:
             if path in output_paths:
                 new_path = random_sandbox_video_path(path.split(".")[-1])
                 shutil.copyfile(path, new_path)
@@ -148,3 +151,11 @@ class MergeHelper(Helper):
         )
         await self.worker.await_task(task)
         return output_path
+
+    async def with_audio_track(self, file_path: str) -> str:
+        audio_check_task = video_has_audio_track_task(file_path)
+        if not await self.worker.await_task(audio_check_task):
+            output_path = random_sandbox_video_path()
+            await self.worker.await_task(add_audio_track_task(file_path, output_path))
+            return output_path
+        return file_path
