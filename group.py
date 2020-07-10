@@ -164,6 +164,9 @@ class Group(ABC):
     def message_by_id(self, message_id: int) -> Optional[Message]:
         return next(iter([msg for msg in self.messages if msg.message_data.message_id == message_id]), None)
 
+    def message_by_link(self, link: str) -> Optional[Message]:
+        return next(iter([msg for msg in self.messages if msg.telegram_link == link]), None)
+
     def add_message(self, message: Message) -> None:
         self.messages.append(message)
 
