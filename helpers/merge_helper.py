@@ -44,7 +44,7 @@ class MergeHelper(Helper):
         messages_to_merge = []
         reply_to = chat.message_by_id(message.message_data.reply_to)
         if reply_to is None:
-            error_text = "Append command needs to be in reply to another message."
+            error_text = "The append command needs to be in reply to another message."
             return [await self.send_text_reply(chat, message, error_text)]
         if not reply_to.has_video:
             error_text = "Cannot append to the message you're replying to, as it doesn't have a video."
@@ -76,7 +76,7 @@ class MergeHelper(Helper):
             messages_to_merge.append(msg)
         reply_to = chat.message_by_id(message.message_data.reply_to)
         if reply_to is None:
-            error_text = "Prepend command needs to be in reply to another message."
+            error_text = "The prepend command needs to be in reply to another message."
             return [await self.send_text_reply(chat, message, error_text)]
         if not reply_to.has_video:
             error_text = "Cannot merge the message you're replying to, as it doesn't have a video."
