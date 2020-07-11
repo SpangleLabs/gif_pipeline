@@ -7,7 +7,7 @@ import imagehash
 from PIL import Image
 
 from database import Database
-from group import Channel, WorkshopGroup, Group
+from group import WorkshopGroup, Group
 from helpers.helpers import Helper
 from message import Message, MessageData
 from tasks.ffmpeg_task import FfmpegTask
@@ -26,9 +26,14 @@ class DuplicateHelper(Helper):
         workshop_ids = {workshop.chat_data.chat_id: workshop for workshop in workshops}
         messages_needing_hashes = self.database.get_messages_needing_hashing()
         for message_data in messages_needing_hashes:
+            # Skip any messages in workshops which are disabled
+            workshop = workshop_ids.get(message_data.chat_id)
+            if workshop is not None and not workshop.config.duplicate_detection:
+                continue
+            # Create hashes for message
             new_hashes = await self.create_message_hashes(message_data)
-            if message_data.chat_id in workshop_ids:
-                workshop = workshop_ids[message_data.chat_id]
+            # Send alerts for workshop messages
+            if workshop is not None:
                 message = workshop.message_by_id(message_data.message_id)
                 await self.check_hash_in_store(workshop, new_hashes, message)
 
@@ -67,7 +72,12 @@ class DuplicateHelper(Helper):
         # Return hashes
         return hashes
 
-    async def check_hash_in_store(self, chat: Group, image_hashes: Set[str], message: Message) -> Optional[Message]:
+    async def check_hash_in_store(
+            self,
+            chat: WorkshopGroup,
+            image_hashes: Set[str],
+            message: Message
+    ) -> Optional[Message]:
         if not image_hashes:
             return None
         has_blank_frame = self.blank_frame_hash in image_hashes
@@ -121,8 +131,11 @@ class DuplicateHelper(Helper):
 
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         # If message has a video, decompose it if necessary, then check images against master hash
-        if isinstance(chat, Channel):
+        if not isinstance(chat, WorkshopGroup):
             await self.get_or_create_message_hashes(message.message_data)
+            return
+        # Ignore messages in workshops with duplicate detection off
+        if not chat.config.duplicate_detection:
             return
         if message.message_data.file_path is None:
             if message.message_data.text.strip().lower() == "check":
