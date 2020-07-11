@@ -187,7 +187,10 @@ class GifSendHelper(Helper):
         confirm_message = await self.after_send_delete_menu(chat, video, confirm_text, sender_id)
         # Remove menu
         await self.clear_destination_menu()
-        return [new_message, confirm_message]
+        messages = [new_message]
+        if confirm_message:
+            messages.append(confirm_message)
+        return messages
 
     async def send_video(
             self,
@@ -207,7 +210,10 @@ class GifSendHelper(Helper):
         confirm_message = await self.after_send_delete_menu(chat, video, confirm_text, sender_id)
         # Remove menu
         await self.clear_destination_menu()
-        return [new_message, confirm_message]
+        messages = [new_message]
+        if confirm_message:
+            messages.append(confirm_message)
+        return messages
 
     def get_destination_from_name(self, destination_id: Union[str, int]) -> Optional[Group]:
         destination = None
@@ -234,7 +240,16 @@ class GifSendHelper(Helper):
         destination.add_message(new_message)
         return new_message
 
-    async def after_send_delete_menu(self, chat: Group, reply_to: Message, text: str, sender_id: int) -> Message:
+    async def after_send_delete_menu(
+            self,
+            chat: Group,
+            reply_to: Message,
+            text: str,
+            sender_id: int
+    ) -> Optional[Message]:
+        admin_ids = await self.client.list_authorized_to_delete(chat.chat_data)
+        if sender_id not in admin_ids:
+            return None
         full_text = text + "\nWould you like to delete the message family?"
         menu = [
             [Button.inline("Yes please", f"delete:{reply_to.message_data.message_id}")],
