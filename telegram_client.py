@@ -7,7 +7,7 @@ from telethon import events, Button
 from telethon.tl.custom import message
 from telethon.tl.functions.channels import EditAdminRequest
 from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
-from telethon.tl.types import ChatAdminRights
+from telethon.tl.types import ChatAdminRights, ChannelParticipantsAdmins, ChannelParticipantCreator
 
 from group import ChatData, ChannelData, WorkshopData
 from message import MessageData
@@ -161,7 +161,8 @@ class TelegramClient:
             reply_to_msg_id: Optional[int] = None,
             buttons: Optional[List[List[Button]]] = None
     ) -> telethon.tl.custom.message.Message:
-        return await self.pipeline_bot_client.send_message(chat.chat_id, text, reply_to=reply_to_msg_id, buttons=buttons)
+        return await self.pipeline_bot_client.send_message(chat.chat_id, text, reply_to=reply_to_msg_id,
+                                                           buttons=buttons)
 
     async def send_video_message(
             self,
@@ -224,3 +225,10 @@ class TelegramClient:
             ),
             "Helpful bot"
         ))
+
+    async def list_authorized_channel_posters(self, chat_data: ChatData) -> List[int]:
+        allowed_ids = []
+        async for admin in self.client.iter_participants(chat_data.chat_id, filter=ChannelParticipantsAdmins()):
+            if isinstance(admin.participant, ChannelParticipantCreator) or admin.participant.admin_rights.post_messages:
+                allowed_ids.append(admin.id)
+        return allowed_ids

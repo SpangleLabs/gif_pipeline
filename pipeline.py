@@ -251,7 +251,7 @@ class Pipeline:
             return
         # Hand callback queries to helpers
         helper_results = await asyncio.gather(
-            *(helper.on_callback_query(chat, event.data) for helper in self.helpers.values()),
+            *(helper.on_callback_query(chat, event.data, event.sender_id) for helper in self.helpers.values()),
             return_exceptions=True
         )
         results_dict = dict(zip(self.helpers.keys(), helper_results))

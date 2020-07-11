@@ -41,7 +41,7 @@ class DeleteHelper(Helper):
             msg.delete(self.database)
         return []
 
-    async def on_callback_query(self, chat: Group, callback_query: bytes) -> Optional[List[Message]]:
+    async def on_callback_query(self, chat: Group, callback_query: bytes, sender_id: int) -> Optional[List[Message]]:
         query_split = callback_query.decode().split(":")
         if query_split[0] != "delete":
             return None

@@ -154,6 +154,7 @@ class Database:
     def get_messages_for_hashes(self, image_hashes: Set[str]) -> List[MessageData]:
         cur = self.conn.cursor()
         messages = []
+        # TODO: can fail if there are too many hashes
         for row in cur.execute(
                 "SELECT DISTINCT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
                 "m.file_path, m.file_mime_type, m.reply_to, m.sender_id, m.is_scheduled "

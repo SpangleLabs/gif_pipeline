@@ -34,9 +34,9 @@ class GifSendHelper(Helper):
         dest_str = text_clean[4:].strip()
         if not self.was_giffed(video):
             return await self.not_giffed_warning_menu(chat, message, video, dest_str)
-        return await self.handle_dest_str(chat, message, video, dest_str)
+        return await self.handle_dest_str(chat, message, video, dest_str, message.message_data.sender_id)
 
-    async def on_callback_query(self, chat: Group, callback_query: bytes) -> Optional[List[Message]]:
+    async def on_callback_query(self, chat: Group, callback_query: bytes, sender_id: int) -> Optional[List[Message]]:
         split_data = callback_query.decode().split(":")
         if split_data[0] == "clear_dest_menu":
             await self.clear_destination_menu()
@@ -51,8 +51,9 @@ class GifSendHelper(Helper):
         chat_id = split_data[2]
         message = chat.message_by_id(int(split_data[1]))
         if chat_id == "s":
-            return await self.handle_dest_str(chat, message, message, split_data[3])
-        return await self.send_video(chat, message, chat_id)
+            cmd_message = chat.message_by_id(int(split_data[3]))
+            return await self.handle_dest_str(chat, cmd_message, message, split_data[4], sender_id)
+        return await self.send_video(chat, message, chat_id, sender_id)
 
     def was_giffed(self, video: Message) -> bool:
         message_history = self.database.get_message_history(video.message_data)
@@ -65,7 +66,7 @@ class GifSendHelper(Helper):
 
     async def not_giffed_warning_menu(self, chat: Group, cmd: Message, video: Message, dest_str: str) -> List[Message]:
         await self.clear_destination_menu()
-        button_data = f"send:{video.message_data.message_id}:s:{dest_str}"
+        button_data = button_data_send_str(video, cmd.message_data.sender_id, dest_str)
         menu = [
             [Button.inline("Yes, I am sure", button_data)],
             [Button.inline("No thanks!", "clear_dest_menu")]
@@ -75,34 +76,47 @@ class GifSendHelper(Helper):
         self.destination_menu_msg = menu_msg
         return [menu_msg]
 
-    async def handle_dest_str(self, chat: Group, cmd: Message, video: Message, dest_str: str) -> List[Message]:
+    async def handle_dest_str(
+            self,
+            chat: Group,
+            cmd: Message,
+            video: Message,
+            dest_str: str,
+            sender_id: int
+    ) -> List[Message]:
         if dest_str == "":
-            return await self.destination_menu(chat, video)
+            return await self.destination_menu(chat, cmd, video, sender_id)
         if "<->" in dest_str:
             destinations = dest_str.split("<->", 1)
-            return await self.send_two_way_forward(chat, cmd, video, destinations[0], destinations[1])
+            return await self.send_two_way_forward(chat, cmd, video, destinations[0], destinations[1], sender_id)
         if "->" in dest_str:
             destinations = dest_str.split("->", 1)
-            return await self.send_forward(chat, cmd, video, destinations[0], destinations[1])
+            return await self.send_forward(chat, cmd, video, destinations[0], destinations[1], sender_id)
         if "<-" in dest_str:
             destinations = dest_str.split("<-", 1)
-            return await self.send_forward(chat, cmd, video, destinations[1], destinations[0])
-        return await self.send_video(chat, video, dest_str)
+            return await self.send_forward(chat, cmd, video, destinations[1], destinations[0], sender_id)
+        return await self.send_video(chat, video, dest_str, sender_id)
 
-    async def destination_menu(self, chat: Group, video: Message) -> List[Message]:
+    async def destination_menu(self, chat: Group, cmd: Message, video: Message, sender_id: int) -> List[Message]:
         await self.clear_destination_menu()
         menu = []
         for channel in self.channels:
-            button_data = f"confirm_send:{video.message_data.message_id}:{channel.chat_data.chat_id}"
-            menu.append([Button.inline(channel.chat_data.title, button_data)])
-        menu_msg = await self.send_text_reply(chat, video, "Which channel should this video be sent to?", buttons=menu)
-        self.destination_menu_msg = menu_msg
-        return [menu_msg]
+            admin_ids = await self.client.list_authorized_channel_posters(channel.chat_data)
+            if sender_id in admin_ids:
+                button_data = button_data_confirm_send(video, channel)
+                menu.append([Button.inline(channel.chat_data.title, button_data)])
+        if menu:
+            menu_text = "Which channel should this video be sent to?"
+            menu_msg = await self.send_text_reply(chat, video, menu_text, buttons=menu)
+            self.destination_menu_msg = menu_msg
+            return [menu_msg]
+        return [await self.send_text_reply(chat, cmd, "You do not have permission to send to any available channels.")]
 
-    async def confirmation_menu(self, chat: Group, message_id: str, destination_id: str) -> List[Message]:
+    async def confirmation_menu(self, chat: Group, video_id: str, destination_id: str) -> List[Message]:
         destination = self.get_destination_from_name(destination_id)
+        button_data = button_data_send(int(video_id), destination.chat_data.chat_id)
         menu = [
-            [Button.inline("I am sure", f"send:{message_id}:{destination_id}")],
+            [Button.inline("I am sure", button_data)],
             [Button.inline("No thanks", "clear_dest_menu")]
         ]
         menu_text = f"Are you sure you want to send this video to {destination.chat_data.title}?"
@@ -121,11 +135,12 @@ class GifSendHelper(Helper):
             cmd_message: Message,
             video: Message,
             destination1: str,
-            destination2: str
+            destination2: str,
+            sender_id: int
     ) -> List[Message]:
         messages = []
-        messages += await self.send_forward(chat, cmd_message, video, destination1, destination2),
-        messages += await self.send_forward(chat, cmd_message, video, destination2, destination1)
+        messages += await self.send_forward(chat, cmd_message, video, destination1, destination2, sender_id),
+        messages += await self.send_forward(chat, cmd_message, video, destination2, destination1, sender_id)
         return messages
 
     async def send_forward(
@@ -134,7 +149,8 @@ class GifSendHelper(Helper):
             cmd_message: Message,
             video: Message,
             destination_from: str,
-            destination_to: str
+            destination_to: str,
+            sender_id: int
     ) -> List[Message]:
         chat_from = self.get_destination_from_name(destination_from)
         if chat_from is None:
@@ -142,6 +158,13 @@ class GifSendHelper(Helper):
         chat_to = self.get_destination_from_name(destination_to)
         if chat_to is None:
             return [await self.send_text_reply(chat, cmd_message, f"Unrecognised destination to: {destination_to}")]
+        # Check permissions in both groups
+        from_admin_ids = await self.client.list_authorized_channel_posters(chat_from.chat_data)
+        to_admin_ids = await self.client.list_authorized_channel_posters(chat_to.chat_data)
+        if sender_id not in from_admin_ids or sender_id not in to_admin_ids:
+            error_text = f"You need to be an admin of both channels to send a forwarded video."
+            return [await self.send_text_reply(chat, cmd_message, error_text)]
+        # Send initial message
         initial_message = await self.send_message(chat_from, video_path=video.message_data.file_path)
         # Forward message
         new_message = await self.forward_message(chat_to, initial_message)
@@ -154,10 +177,19 @@ class GifSendHelper(Helper):
         await self.clear_destination_menu()
         return [new_message, confirm_message]
 
-    async def send_video(self, chat: Group, video: Message, destination_id: Union[str, int]) -> List[Message]:
+    async def send_video(
+            self,
+            chat: Group,
+            video: Message,
+            destination_id: Union[str, int],
+            sender_id: int
+    ) -> List[Message]:
         destination = self.get_destination_from_name(destination_id)
         if destination is None:
             return [await self.send_text_reply(chat, video, f"Unrecognised destination: {destination_id}")]
+        dest_admin_ids = await self.client.list_authorized_channel_posters(destination.chat_data)
+        if sender_id not in dest_admin_ids:
+            return [await self.send_text_reply(chat, video, "You do not have permission to post in that channel.")]
         new_message = await self.send_message(destination, video_path=video.message_data.file_path)
         confirm_text = f"This gif has been sent to {destination.chat_data.title}."
         confirm_message = await self.after_send_delete_menu(chat, video, confirm_text)
@@ -223,3 +255,15 @@ class GifSendHelper(Helper):
             )
             self.delete_menu_msg.delete(self.database)
             self.delete_menu_msg = None
+
+
+def button_data_send_str(video: Message, sender_id: int, dest_str: str) -> str:
+    return f"send:{video.message_data.message_id}:s:{sender_id}:{dest_str}"
+
+
+def button_data_send(video_id: int, dest_id: int) -> str:
+    return f"send:{video_id}:{dest_id}"
+
+
+def button_data_confirm_send(video: Message, channel: Channel) -> str:
+    return f"confirm_send:{video.message_data.message_id}:{channel.chat_data.chat_id}"
