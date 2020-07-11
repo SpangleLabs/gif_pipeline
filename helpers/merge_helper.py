@@ -100,7 +100,7 @@ class MergeHelper(Helper):
                 "Please reply to a message, and provide telegram links to the other messages"
             return [await self.send_text_reply(chat, cmd_message, error_text)]
         num_files = len(messages_to_merge)
-        filter_args = " ".join([f"[{x}:v] [{x}:a]" for x in range(num_files)]) + " concat=n={num_files}:v=1:a=1 [v] [a]"
+        filter_args = "".join([f"[{x}:v][{x}:a]" for x in range(num_files)]) + f" concat=n={num_files}:v=1:a=1 [v] [a]"
         output_args = f"-filter_complex \"{filter_args}\" -map \"[v]\" -map \"[a]\" -vsync 2"
         async with self.progress_message(chat, cmd_message, "Merging videos"):
             file_paths = await self.align_video_dimensions([m.message_data.file_path for m in messages_to_merge])
