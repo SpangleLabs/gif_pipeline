@@ -254,6 +254,7 @@ class Pipeline:
         # Check button was pressed by the person who requested the menu
         if event.sender_id != self.menu_cache.get_sender_for_message(event.chat_id, event.message_id):
             logging.info("User tried to press a button on a menu that wasn't theirs")
+            await event.answer("This is not your menu, you are not authorised to use it.")
             return
         # Hand callback queries to helpers
         helper_results = await asyncio.gather(
