@@ -17,9 +17,10 @@ C = TypeVar('C', bound='ChatData')
 
 
 class ChatConfig(ABC):
-    def __init__(self, handle: Union[str, int], queue: bool = False):
+    def __init__(self, handle: Union[str, int], *, queue: bool = False, duplicate_detection: bool = True):
         self.handle = handle
         self.queue = queue
+        self.duplicate_detection = duplicate_detection
 
     @staticmethod
     @abstractmethod
@@ -34,14 +35,14 @@ class ChannelConfig(ChatConfig):
 
     @staticmethod
     def from_json(json_dict) -> 'ChannelConfig':
-        return ChannelConfig(json_dict['handle'], json_dict['queue'])
+        return ChannelConfig(json_dict['handle'], queue=json_dict['queue'])
 
 
 class WorkshopConfig(ChatConfig):
 
     @staticmethod
     def from_json(json_dict) -> 'WorkshopConfig':
-        return WorkshopConfig(json_dict['handle'])
+        return WorkshopConfig(json_dict['handle'], duplicate_detection=json_dict.get("duplicate_detection", True))
 
 
 class ChatData(ABC):
@@ -85,12 +86,12 @@ class Group(ABC):
     def __init__(
             self,
             chat_data: ChatData,
-            queue: bool,
+            config: ChatConfig,
             messages: List[Message],
             client: TelegramClient
     ):
         self.chat_data = chat_data
-        self.queue = queue
+        self.config = config
         self.messages = messages
         self.client = client
 
@@ -181,7 +182,7 @@ class Channel(Group):
     @classmethod
     async def from_data(cls, chat_data: 'ChatData', config: 'ChatConfig', client: TelegramClient, database: 'Database'):
         messages = await Group.load_messages(chat_data, config, client, database)
-        return Channel(chat_data, config.queue, messages, client)
+        return Channel(chat_data, config, messages, client)
 
 
 class WorkshopGroup(Group):
@@ -194,4 +195,4 @@ class WorkshopGroup(Group):
     @classmethod
     async def from_data(cls, chat_data: 'ChatData', config: 'ChatConfig', client: TelegramClient, database: 'Database'):
         messages = await Group.load_messages(chat_data, config, client, database)
-        return WorkshopGroup(chat_data, config.queue, messages, client)
+        return WorkshopGroup(chat_data, config, messages, client)
