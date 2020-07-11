@@ -119,7 +119,7 @@ class GifSendHelper(Helper):
             menu_text = "Which channel should this video be sent to?"
             menu_msg = await self.send_text_reply(chat, video, menu_text, buttons=menu)
             self.destination_menu_msg = menu_msg
-            self.menu_cache.add_menu_msg(menu_msg, cmd.message_data.sender_id)
+            self.menu_cache.add_menu_msg(menu_msg, sender_id)
             return [menu_msg]
         return [await self.send_text_reply(chat, cmd, "You do not have permission to send to any available channels.")]
 
