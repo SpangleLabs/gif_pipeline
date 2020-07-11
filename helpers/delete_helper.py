@@ -16,13 +16,19 @@ class DeleteHelper(Helper):
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         # If a message says to delete, delete it and delete local files
         text_clean = message.text.strip().lower()
+        if not text_clean.startswith("delete"):
+            return None
+        admin_ids = await self.client.list_authorized_to_delete(chat.chat_data)
         if text_clean == "delete family":
+            if message.message_data.sender_id not in admin_ids:
+                return None
             return await self.delete_family(chat, message)
         if text_clean == "delete branch":
+            if message.message_data.sender_id not in admin_ids:
+                return None
             if message.message_data.reply_to is None:
-                return [
-                    await self.send_text_reply(chat, message, "You need to reply to the message you want to delete.")
-                ]
+                error_text = "You need to reply to the message you want to delete."
+                return [await self.send_text_reply(chat, message, error_text)]
             reply_to = chat.message_by_id(message.message_data.reply_to)
             return await self.delete_branch(chat, reply_to.message_data)
         return None
@@ -44,6 +50,9 @@ class DeleteHelper(Helper):
     async def on_callback_query(self, chat: Group, callback_query: bytes, sender_id: int) -> Optional[List[Message]]:
         query_split = callback_query.decode().split(":")
         if query_split[0] != "delete":
+            return None
+        admin_ids = await self.client.list_authorized_to_delete(chat.chat_data)
+        if sender_id not in admin_ids:
             return None
         message_id = int(query_split[1])
         message = chat.message_by_id(message_id)

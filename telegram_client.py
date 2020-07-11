@@ -232,3 +232,13 @@ class TelegramClient:
             if isinstance(admin.participant, ChannelParticipantCreator) or admin.participant.admin_rights.post_messages:
                 allowed_ids.append(admin.id)
         return allowed_ids
+
+    async def list_authorized_to_delete(self, chat_data: ChatData) -> List[int]:
+        allowed_ids = []
+        async for admin in self.client.iter_participants(chat_data.chat_id, filter=ChannelParticipantsAdmins()):
+            if (
+                    isinstance(admin.participant, ChannelParticipantCreator)
+                    or admin.participant.admin_rights.delete_messages
+            ):
+                allowed_ids.append(admin.id)
+        return allowed_ids
