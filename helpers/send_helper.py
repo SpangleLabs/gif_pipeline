@@ -6,6 +6,7 @@ from telethon import Button
 from database import Database
 from group import Group, Channel
 from helpers.helpers import Helper, find_video_for_message
+from menu_cache import MenuCache
 from message import Message
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient, message_data_from_telegram
@@ -13,13 +14,21 @@ from telegram_client import TelegramClient, message_data_from_telegram
 
 class GifSendHelper(Helper):
 
-    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, channels: List[Channel]):
+    def __init__(
+            self,
+            database: Database,
+            client: TelegramClient,
+            worker: TaskWorker,
+            channels: List[Channel],
+            menu_cache: MenuCache
+    ):
         super().__init__(database, client, worker)
         self.channels = channels
         self.destination_menu_msg = None
         self.confirmation_menu_msg = None
         self.delete_menu_msg = None
         self.delete_menu_text = None
+        self.menu_cache = menu_cache
 
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         # If a message says to send to a channel, and replies to a gif, then forward to that channel
@@ -45,7 +54,7 @@ class GifSendHelper(Helper):
             await self.clear_delete_menu()
             return
         if split_data[0] == "confirm_send":
-            return await self.confirmation_menu(chat, split_data[1], split_data[2])
+            return await self.confirmation_menu(chat, split_data[1], split_data[2], sender_id)
         if split_data[0] != "send":
             return
         chat_id = split_data[2]
@@ -74,6 +83,7 @@ class GifSendHelper(Helper):
         menu_text = "It looks like this video has not been giffed. Are you sure you want to send it?"
         menu_msg = await self.send_text_reply(chat, cmd, menu_text, buttons=menu)
         self.destination_menu_msg = menu_msg
+        self.menu_cache.add_menu_msg(menu_msg, cmd.message_data.sender_id)
         return [menu_msg]
 
     async def handle_dest_str(
@@ -109,10 +119,11 @@ class GifSendHelper(Helper):
             menu_text = "Which channel should this video be sent to?"
             menu_msg = await self.send_text_reply(chat, video, menu_text, buttons=menu)
             self.destination_menu_msg = menu_msg
+            self.menu_cache.add_menu_msg(menu_msg, cmd.message_data.sender_id)
             return [menu_msg]
         return [await self.send_text_reply(chat, cmd, "You do not have permission to send to any available channels.")]
 
-    async def confirmation_menu(self, chat: Group, video_id: str, destination_id: str) -> List[Message]:
+    async def confirmation_menu(self, chat: Group, video_id: str, destination_id: str, sender_id: int) -> List[Message]:
         destination = self.get_destination_from_name(destination_id)
         button_data = button_data_send(int(video_id), destination.chat_data.chat_id)
         menu = [
@@ -127,6 +138,7 @@ class GifSendHelper(Helper):
             new_buttons=menu
         )
         self.destination_menu_msg = menu_msg
+        self.menu_cache.add_menu_msg(menu_msg, sender_id)
         return [menu_msg]
 
     async def send_two_way_forward(
@@ -172,7 +184,7 @@ class GifSendHelper(Helper):
         await self.client.delete_message(initial_message.message_data)
         initial_message.delete(self.database)
         confirm_text = f"This gif has been sent to {chat_to.chat_data.title} via {chat_from.chat_data.title}"
-        confirm_message = await self.after_send_delete_menu(chat, video, confirm_text)
+        confirm_message = await self.after_send_delete_menu(chat, video, confirm_text, sender_id)
         # Remove menu
         await self.clear_destination_menu()
         return [new_message, confirm_message]
@@ -192,7 +204,7 @@ class GifSendHelper(Helper):
             return [await self.send_text_reply(chat, video, "You do not have permission to post in that channel.")]
         new_message = await self.send_message(destination, video_path=video.message_data.file_path)
         confirm_text = f"This gif has been sent to {destination.chat_data.title}."
-        confirm_message = await self.after_send_delete_menu(chat, video, confirm_text)
+        confirm_message = await self.after_send_delete_menu(chat, video, confirm_text, sender_id)
         # Remove menu
         await self.clear_destination_menu()
         return [new_message, confirm_message]
@@ -222,7 +234,7 @@ class GifSendHelper(Helper):
         destination.add_message(new_message)
         return new_message
 
-    async def after_send_delete_menu(self, chat: Group, reply_to: Message, text: str) -> Message:
+    async def after_send_delete_menu(self, chat: Group, reply_to: Message, text: str, sender_id: int) -> Message:
         full_text = text + "\nWould you like to delete the message family?"
         menu = [
             [Button.inline("Yes please", f"delete:{reply_to.message_data.message_id}")],
@@ -231,6 +243,7 @@ class GifSendHelper(Helper):
         message = await self.send_text_reply(chat, reply_to, full_text, buttons=menu)
         self.delete_menu_text = text
         self.delete_menu_msg = message
+        self.menu_cache.add_menu_msg(message, sender_id)
         return message
 
     async def clear_destination_menu(self) -> None:

@@ -8,6 +8,7 @@ from database import Database
 from group import Group
 from helpers.helpers import find_video_for_message
 from helpers.video_cut_helper import VideoCutHelper
+from menu_cache import MenuCache
 from message import Message
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient
@@ -15,10 +16,11 @@ from telegram_client import TelegramClient
 
 class SceneSplitHelper(VideoCutHelper):
 
-    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
+    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, menu_cache: MenuCache):
         super().__init__(database, client, worker)
         self.confirmation_menu_msg = None
         self.confirmation_menu_scene_list = None
+        self.menu_cache = menu_cache
 
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         text_clean = message.text.strip().lower()
@@ -106,6 +108,7 @@ class SceneSplitHelper(VideoCutHelper):
         menu_msg = await self.send_text_reply(chat, message, menu_text, buttons=menu)
         self.confirmation_menu_msg = menu_msg
         self.confirmation_menu_scene_list = scene_list
+        self.menu_cache.add_menu_msg(menu_msg, message.message_data.sender_id)
         return menu_msg
 
     async def split_scenes(

@@ -22,6 +22,7 @@ from helpers.video_crop_helper import VideoCropHelper
 from helpers.video_cut_helper import VideoCutHelper
 from helpers.video_helper import VideoHelper
 from helpers.video_rotate_helper import VideoRotateHelper
+from menu_cache import MenuCache
 from message import Message
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient, message_data_from_telegram, chat_id_from_telegram
@@ -99,6 +100,7 @@ class Pipeline:
         self.api_keys = api_keys
         self.worker = TaskWorker(3)
         self.helpers = {}
+        self.menu_cache = MenuCache()
 
     @property
     def all_chats(self) -> List[Group]:
@@ -130,8 +132,8 @@ class Pipeline:
             StabiliseHelper(self.database, self.client, self.worker),
             VideoHelper(self.database, self.client, self.worker),
             MSGHelper(self.database, self.client, self.worker),
-            SceneSplitHelper(self.database, self.client, self.worker),
-            GifSendHelper(self.database, self.client, self.worker, self.channels),
+            SceneSplitHelper(self.database, self.client, self.worker, self.menu_cache),
+            GifSendHelper(self.database, self.client, self.worker, self.channels, self.menu_cache),
             DeleteHelper(self.database, self.client, self.worker),
             MergeHelper(self.database, self.client, self.worker)
         ]
@@ -248,6 +250,10 @@ class Pipeline:
         chat = self.chat_by_id(chat_id_from_telegram(event))
         if chat is None:
             logging.debug("Ignoring new message in other chat, which must have slipped through")
+            return
+        # Check button was pressed by the person who requested the menu
+        if event.sender_id != self.menu_cache.get_sender_for_message(event.chat_id, event.message_id):
+            logging.info("User tried to press a button on a menu that wasn't theirs")
             return
         # Hand callback queries to helpers
         helper_results = await asyncio.gather(
