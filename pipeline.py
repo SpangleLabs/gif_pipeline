@@ -14,6 +14,7 @@ from helpers.duplicate_helper import DuplicateHelper
 from helpers.imgur_gallery_helper import ImgurGalleryHelper
 from helpers.merge_helper import MergeHelper
 from helpers.msg_helper import MSGHelper
+from helpers.reverse_helper import ReverseHelper
 from helpers.scene_split_helper import SceneSplitHelper
 from helpers.send_helper import GifSendHelper
 from helpers.stabilise_helper import StabiliseHelper
@@ -135,7 +136,8 @@ class Pipeline:
             SceneSplitHelper(self.database, self.client, self.worker, self.menu_cache),
             GifSendHelper(self.database, self.client, self.worker, self.channels, self.menu_cache),
             DeleteHelper(self.database, self.client, self.worker),
-            MergeHelper(self.database, self.client, self.worker)
+            MergeHelper(self.database, self.client, self.worker),
+            ReverseHelper(self.database, self.client, self.worker)
         ]
         if "imgur" in self.api_keys:
             helpers.append(
