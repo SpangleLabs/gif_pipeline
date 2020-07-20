@@ -11,6 +11,7 @@ from group import Group, Channel, WorkshopGroup, ChannelConfig, WorkshopConfig
 from helpers.delete_helper import DeleteHelper
 from helpers.download_helper import DownloadHelper
 from helpers.duplicate_helper import DuplicateHelper
+from helpers.fa_helper import FAHelper
 from helpers.imgur_gallery_helper import ImgurGalleryHelper
 from helpers.merge_helper import MergeHelper
 from helpers.msg_helper import MSGHelper
@@ -133,6 +134,7 @@ class Pipeline:
             StabiliseHelper(self.database, self.client, self.worker),
             VideoHelper(self.database, self.client, self.worker),
             MSGHelper(self.database, self.client, self.worker),
+            FAHelper(self.database, self.client, self.worker),
             SceneSplitHelper(self.database, self.client, self.worker, self.menu_cache),
             GifSendHelper(self.database, self.client, self.worker, self.channels, self.menu_cache),
             DeleteHelper(self.database, self.client, self.worker),
