@@ -16,8 +16,10 @@ from telegram_client import TelegramClient
 
 
 class TelegramGifHelper(Helper):
+    DEFAULT_WIDTH = 1280
+    DEFAULT_HEIGHT = 720
     FFMPEG_OPTIONS = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
-                     "-vf \"scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_" \
+                     "-vf \"scale='min({0},iw)':'min({1},ih)':force_original_aspect_" \
                      "ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2\" -profile:v baseline -level 3.0 -vsync vfr"
     CRF_OPTION = " -crf 18"
     TARGET_SIZE_MB = 8
@@ -33,11 +35,15 @@ class TelegramGifHelper(Helper):
                 return await asyncio.gather(*(self.convert_gif_link(chat, message, gif_link) for gif_link in gif_links))
         # If a message has text saying gif, and is a reply to a video, convert that video
         clean_text = message.text.strip().lower()
-        if clean_text == "gif":
+        if clean_text.startswith("gif"):
+            args = clean_text[3:].strip()
+            width, height = TelegramGifHelper.DEFAULT_WIDTH, TelegramGifHelper.DEFAULT_HEIGHT
+            if len(args.split("x")) == 2:
+                width, height = [int(x) for x in args.split("x")]
             video = find_video_for_message(chat, message)
             if video is not None:
                 async with self.progress_message(chat, message, "Converting video to telegram gif"):
-                    new_path = await self.convert_video_to_telegram_gif(video.message_data.file_path)
+                    new_path = await self.convert_video_to_telegram_gif(video.message_data.file_path, width, height)
                     video_reply = await self.send_video_reply(chat, message, new_path)
                 return [video_reply]
             reply = await self.send_text_reply(
@@ -58,12 +64,17 @@ class TelegramGifHelper(Helper):
         new_path = await self.convert_video_to_telegram_gif(gif_path)
         return await self.send_video_reply(chat, message, new_path)
 
-    async def convert_video_to_telegram_gif(self, video_path: str) -> str:
+    async def convert_video_to_telegram_gif(
+            self, video_path: str, width: int = None, height: int = None
+    ) -> str:
         first_pass_filename = random_sandbox_video_path()
         # first pass
+        width = width or TelegramGifHelper.DEFAULT_WIDTH
+        height = height or TelegramGifHelper.DEFAULT_HEIGHT
+        ffmpeg_args = TelegramGifHelper.FFMPEG_OPTIONS.format(width, height) + TelegramGifHelper.CRF_OPTION
         task = FfmpegTask(
             inputs={video_path: None},
-            outputs={first_pass_filename: TelegramGifHelper.FFMPEG_OPTIONS + TelegramGifHelper.CRF_OPTION}
+            outputs={first_pass_filename: ffmpeg_args}
         )
         await self.worker.await_task(task)
         # Check file size
@@ -79,16 +90,18 @@ class TelegramGifHelper(Helper):
         duration = float(await self.worker.await_task(probe_task))
         # 2 pass run
         bitrate = TelegramGifHelper.TARGET_SIZE_MB / duration * 1000000 * 8
+        t1_args = TelegramGifHelper.FFMPEG_OPTIONS.format(width, height) + " -b:v " + str(bitrate) + " -pass 1 -f mp4"
         task1 = FfmpegTask(
             global_options=["-y"],
             inputs={video_path: None},
-            outputs={os.devnull: TelegramGifHelper.FFMPEG_OPTIONS + " -b:v " + str(bitrate) + " -pass 1 -f mp4"}
+            outputs={os.devnull: t1_args}
         )
         await self.worker.await_task(task1)
+        t2_args = TelegramGifHelper.FFMPEG_OPTIONS.format(width, height) + " -b:v " + str(bitrate) + " -pass 2"
         task2 = FfmpegTask(
             global_options=["-y"],
             inputs={video_path: None},
-            outputs={two_pass_filename: TelegramGifHelper.FFMPEG_OPTIONS + " -b:v " + str(bitrate) + " -pass 2"}
+            outputs={two_pass_filename: t2_args}
         )
         await self.worker.await_task(task2)
         return two_pass_filename
