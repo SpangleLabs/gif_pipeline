@@ -30,6 +30,10 @@ class GifSendHelper(Helper):
         self.delete_menu_text = None
         self.menu_cache = menu_cache
 
+    @property
+    def writable_channels(self) -> List[Channel]:
+        return [channel for channel in self.channels if not channel.config.read_only]
+
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         # If a message says to send to a channel, and replies to a gif, then forward to that channel
         # `send deergifs`, `send cowgifs->deergifs`
@@ -110,7 +114,7 @@ class GifSendHelper(Helper):
     async def destination_menu(self, chat: Group, cmd: Message, video: Message, sender_id: int) -> List[Message]:
         await self.clear_destination_menu()
         menu = []
-        for channel in self.channels:
+        for channel in self.writable_channels:
             admin_ids = await self.client.list_authorized_channel_posters(channel.chat_data)
             if sender_id in admin_ids:
                 button_data = button_data_confirm_send(video, channel)
@@ -217,7 +221,7 @@ class GifSendHelper(Helper):
 
     def get_destination_from_name(self, destination_id: Union[str, int]) -> Optional[Group]:
         destination = None
-        for channel in self.channels:
+        for channel in self.writable_channels:
             if channel.chat_data.username == destination_id:
                 destination = channel
                 break
