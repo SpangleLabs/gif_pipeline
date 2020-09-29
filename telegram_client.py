@@ -85,7 +85,11 @@ class TelegramClient:
         peer_id = telethon.utils.get_peer_id(entity)
         return WorkshopData(peer_id, entity.username, entity.title)
 
-    async def iter_channel_messages(self, chat_data: ChatData) -> Generator[MessageData, None, None]:
+    async def iter_channel_messages(
+            self,
+            chat_data: ChatData,
+            and_scheduled: bool = True
+    ) -> Generator[MessageData, None, None]:
         async for msg in self.client.iter_messages(chat_data.chat_id):
             # Skip edit photo events.
             if msg.action.__class__.__name__ in ['MessageActionChatEditPhoto']:
@@ -93,8 +97,9 @@ class TelegramClient:
             # Save message and yield
             self._save_message(msg)
             yield message_data_from_telegram(msg)
-        async for msg_data in self.iter_scheduled_channel_messages(chat_data):
-            yield msg_data
+        if and_scheduled:
+            async for msg_data in self.iter_scheduled_channel_messages(chat_data):
+                yield msg_data
 
     async def iter_scheduled_channel_messages(self, chat_data: ChatData) -> Generator[MessageData, None, None]:
         # noinspection PyTypeChecker

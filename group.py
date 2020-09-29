@@ -17,10 +17,17 @@ C = TypeVar('C', bound='ChatData')
 
 
 class ChatConfig(ABC):
-    def __init__(self, handle: Union[str, int], *, queue: bool = False, duplicate_detection: bool = True):
+    def __init__(
+            self,
+            handle: Union[str, int],
+            *,
+            queue: bool = False,
+            duplicate_detection: bool = True
+    ):
         self.handle = handle
         self.queue = queue
         self.duplicate_detection = duplicate_detection
+        self.read_only = False
 
     @staticmethod
     @abstractmethod
@@ -33,9 +40,24 @@ class ChatConfig(ABC):
 
 class ChannelConfig(ChatConfig):
 
+    def __init__(
+            self,
+            handle: Union[str, int],
+            *,
+            queue: bool = False,
+            duplicate_detection: bool = True,
+            read_only: bool = False
+    ):
+        super().__init__(handle, queue=queue, duplicate_detection=duplicate_detection)
+        self.read_only = read_only
+
     @staticmethod
     def from_json(json_dict) -> 'ChannelConfig':
-        return ChannelConfig(json_dict['handle'], queue=json_dict['queue'])
+        return ChannelConfig(
+            json_dict['handle'],
+            queue=json_dict['queue'],
+            read_only=json_dict.get("read_only", False)
+        )
 
 
 class WorkshopConfig(ChatConfig):
@@ -116,10 +138,11 @@ class Group(ABC):
     ) -> List[Message]:
         logging.info(f"Initialising channel: {config}")
         # Ensure bot is in chat
-        await client.invite_pipeline_bot_to_chat(chat_data)
+        if not config.read_only:
+            await client.invite_pipeline_bot_to_chat(chat_data)
         # Get messages from database and channel, ensure they match
         database_messages = database.list_messages_for_chat(chat_data)
-        channel_messages = [m async for m in client.iter_channel_messages(chat_data)]
+        channel_messages = [m async for m in client.iter_channel_messages(chat_data, not config.read_only)]
         new_messages = set(channel_messages) - set(database_messages)
         removed_messages = set(database_messages) - set(channel_messages)
         for message_data in new_messages:
