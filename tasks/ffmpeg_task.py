@@ -1,9 +1,11 @@
+import subprocess
+
 import ffmpy3
 
 from tasks.task import Task
 
 
-class FfmpegTask(Task[None]):
+class FfmpegTask(Task[str]):
 
     def __init__(self, *, global_options=None, inputs=None, outputs=None):
         self.global_options = global_options
@@ -16,5 +18,8 @@ class FfmpegTask(Task[None]):
             inputs=self.inputs,
             outputs=self.outputs
         )
-        await ff.run_async()
+        ff_process = await ff.run_async(stdout=subprocess.PIPE)
+        ff_out = await ff_process.communicate()
         await ff.wait()
+        output = ff_out[0].decode('utf-8').strip()
+        return output
