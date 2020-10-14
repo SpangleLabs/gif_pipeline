@@ -28,7 +28,14 @@ class VideoCropHelper(Helper):
         text_clean = message.text.lower().strip()
         if not text_clean.startswith("crop"):
             return
-        crop_string = self.parse_crop_input(text_clean[len("crop"):].strip())
+        video = find_video_for_message(chat, message)
+        if video is None:
+            return [await self.send_text_reply(chat, message, "I'm not sure which video you would like to crop.")]
+        crop_args = text_clean[len("crop"):].strip()
+        if crop_args.lower() == "auto":
+            crop_string = await self.detect_crop(video.message_data.file_path)
+            return [await self.send_text_reply(chat, message, crop_string)]
+        crop_string = self.parse_crop_input(crop_args)
         if crop_string is None:
             return [await self.send_text_reply(
                 chat,
@@ -36,11 +43,9 @@ class VideoCropHelper(Helper):
                 "I don't understand this crop command. "
                 "Please specify what percentage to cut off the left, right, top, bottom. "
                 "Alternatively specify the desired percentage for the width and height. "
-                "Use the format `crop left 20% right 20% top 10%`."
+                "Use the format `crop left 20% right 20% top 10%`. "
+                "If the video has black bars you wish to crop, just use `crop auto`"
             )]
-        video = find_video_for_message(chat, message)
-        if video is None:
-            return [await self.send_text_reply(chat, message, "I'm not sure which video you would like to crop.")]
         output_path = random_sandbox_video_path()
         async with self.progress_message(chat, message, "Cropping video"):
             task = FfmpegTask(
@@ -49,6 +54,14 @@ class VideoCropHelper(Helper):
             )
             await self.worker.await_task(task)
             return [await self.send_video_reply(chat, message, output_path)]
+
+    async def detect_crop(self, video_path: str):
+        task = FfmpegTask(
+            inputs={video_path: "-vf cropdetect=24:16:0"},
+            outputs={"null"}
+        )
+        output = await self.worker.await_task(task)
+        return output
 
     def parse_crop_input(self, input_clean: str) -> Optional[str]:
         input_split = re.split(r"[\s:=]", input_clean)
