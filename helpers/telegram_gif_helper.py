@@ -103,37 +103,51 @@ class TelegramGifHelper(Helper):
     async def convert_video_to_telegram_gif(
             self, video_path: str, gif_settings: GifSettings = None
     ) -> str:
-        first_pass_filename = random_sandbox_video_path()
         gif_settings = gif_settings or GifSettings.from_input([])
-        bitrate_option = f" -b:v {gif_settings.bitrate}" if gif_settings.bitrate else ""
+        if gif_settings.bitrate:
+            first_try_filename = await self.two_pass_convert(video_path, gif_settings)
+        else:
+            first_try_filename = await self.single_pass_convert(video_path, gif_settings)
+        # Check file size
+        if os.path.getsize(first_try_filename) < TelegramGifHelper.TARGET_SIZE_MB * 1000_000:
+            return first_try_filename
+        # If it's too big, do a 2 pass run
+        return await self.two_pass_convert_target_size(video_path, gif_settings, TelegramGifHelper.TARGET_SIZE_MB)
+
+    async def single_pass_convert(self, video_path: str, gif_settings: GifSettings):
+        first_pass_filename = random_sandbox_video_path()
         # first attempt
         ffmpeg_args = TelegramGifHelper.FFMPEG_OPTIONS.format(
             gif_settings.width, gif_settings.height
-        ) + TelegramGifHelper.CRF_OPTION + bitrate_option
+        ) + TelegramGifHelper.CRF_OPTION
         task = FfmpegTask(
             inputs={video_path: None},
             outputs={first_pass_filename: ffmpeg_args}
         )
         await self.worker.await_task(task)
-        # Check file size
-        if os.path.getsize(first_pass_filename) < TelegramGifHelper.TARGET_SIZE_MB * 1000_000:
-            return first_pass_filename
-        # If it's too big, do a 2 pass run
-        two_pass_filename = random_sandbox_video_path()
+        return first_pass_filename
+
+    async def two_pass_convert_target_size(self, video_path: str, gif_settings: GifSettings, file_size_mb: float):
         # Get video duration from ffprobe
         probe_task = FFprobeTask(
             global_options=["-v error"],
-            inputs={first_pass_filename: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
+            inputs={video_path: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
         )
         duration = float(await self.worker.await_task(probe_task))
-        # 2 pass run
-        bitrate = min(
-            TelegramGifHelper.TARGET_SIZE_MB / duration * 1000000 * 8,
+        # Calculate new bitrate
+        gif_settings.bitrate = min(
+            file_size_mb / duration * 1000000 * 8,
             gif_settings.bitrate
         )
+        return await self.two_pass_convert(video_path, gif_settings)
+
+    async def two_pass_convert(self, video_path: str, gif_settings: GifSettings):
+        # If it's too big, do a 2 pass run
+        two_pass_filename = random_sandbox_video_path()
+        # First pass
         t1_args = TelegramGifHelper.FFMPEG_OPTIONS.format(
             gif_settings.width, gif_settings.height
-        ) + f" -b:v {bitrate} -pass 1 -f mp4"
+        ) + f" -b:v {gif_settings.bitrate} -pass 1 -f mp4"
         task1 = FfmpegTask(
             global_options=["-y"],
             inputs={video_path: None},
@@ -142,7 +156,7 @@ class TelegramGifHelper(Helper):
         await self.worker.await_task(task1)
         t2_args = TelegramGifHelper.FFMPEG_OPTIONS.format(
             gif_settings.width, gif_settings.height
-        ) + f" -b:v {bitrate} -pass 2"
+        ) + f" -b:v {gif_settings.bitrate} -pass 2"
         task2 = FfmpegTask(
             global_options=["-y"],
             inputs={video_path: None},
