@@ -35,8 +35,10 @@ class VideoCropHelper(Helper):
         crop_args = text_clean[len("crop"):].strip()
         if crop_args.lower() == "auto":
             crop_string = await self.detect_crop(video.message_data.file_path)
-            return [await self.send_text_reply(chat, message, crop_string)]
-        crop_string = self.parse_crop_input(crop_args)
+            if crop_string is None:
+                return [await self.send_text_reply(chat, message, "That video could not be auto cropped.")]
+        else:
+            crop_string = self.parse_crop_input(crop_args)
         if crop_string is None:
             return [await self.send_text_reply(
                 chat,
@@ -56,13 +58,19 @@ class VideoCropHelper(Helper):
             await self.worker.await_task(task)
             return [await self.send_video_reply(chat, message, output_path)]
 
-    async def detect_crop(self, video_path: str):
+    async def detect_crop(self, video_path: str) -> Optional[str]:
         task = FfmpegTask(
             inputs={video_path: None},
-            outputs={os.devnull: "-vf cropdetect=24:16:0"}
+            outputs={"null": "-vf cropdetect=24:16:0"}
         )
-        output = await self.worker.await_task(task)
-        return output
+        output, error = await self.worker.await_task(task)
+        crop_match = re.compile(r"crop=[0-9]+:[0-9]+:[0-9]+:[0-9]+")
+        last_match = None
+        for last_match in crop_match.finditer(error):
+            pass
+        if last_match is None:
+            return None
+        return last_match.group(0)
 
     def parse_crop_input(self, input_clean: str) -> Optional[str]:
         input_split = re.split(r"[\s:=]", input_clean)
