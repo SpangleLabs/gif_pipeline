@@ -145,8 +145,11 @@ class TelegramGifHelper(Helper):
         )
         duration = float(await self.worker.await_task(probe_task))
         # Calculate new bitrate
+        max_bitrate = file_size_mb / duration * 1000000 * 8
+        if not gif_settings.bitrate:
+            gif_settings.bitrate = max_bitrate
         gif_settings.bitrate = min(
-            file_size_mb / duration * 1000000 * 8,
+            max_bitrate,
             gif_settings.bitrate
         )
         return await self.two_pass_convert(video_path, gif_settings)
