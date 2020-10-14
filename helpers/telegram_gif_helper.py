@@ -22,10 +22,15 @@ class GifSettings:
     height: int
     bitrate: float
     fps: float
+    # Maximum gif dimension on android telegram is 1280px (width, or height, or both)
+    # Maximum gif dimension on desktop telegram is 1440px (width, or height, or both)
+    # On iOS, there is no maximum gif dimension. Even 5000px gifs display fine
     DEFAULT_WIDTH: ClassVar[int] = 1280
     DEFAULT_HEIGHT: ClassVar[int] = 1280
+    # Bitrate seems to slow video, on older phones, but isn't a major factor compared to FPS
     DEFAULT_BITRATE: ClassVar[Optional[float]] = None
-    DEFAULT_FPS: ClassVar[Optional[float]] = None
+    # On older phones, android 6.0 and such, it seems like anything more than 30fps makes the gif very slow
+    DEFAULT_FPS: ClassVar[Optional[float]] = 30
 
     @classmethod
     def from_input(cls, args: List[str]) -> "GifSettings":
@@ -60,11 +65,6 @@ class GifSettings:
 
 
 class TelegramGifHelper(Helper):
-    # Maximum gif dimension on android telegram is 1280px (width, or height, or both)
-    # Maximum gif dimension on desktop telegram is 1440px (width, or height, or both)
-    # On iOS, there is no maximum gif dimension. Even 5000px gifs display fine
-    DEFAULT_WIDTH = 1280
-    DEFAULT_HEIGHT = 1280
     FFMPEG_OPTIONS = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
                      "-vf \"scale='min({0},iw)':'min({1},ih)':force_original_aspect_" \
                      "ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2{2}\" -profile:v baseline -level 3.0 -vsync vfr"
