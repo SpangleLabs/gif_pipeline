@@ -15,7 +15,7 @@ class FFProbeHelper(Helper):
             if video is not None:
                 async with self.progress_message(chat, message, "Getting video stats"):
                     stats = await self.stats_for_video(video.message_data.file_path)
-                    stats_reply = await self.send_text_reply(stats)
+                    stats_reply = await self.send_text_reply(chat, message, stats)
                 return [stats_reply]
             reply = await self.send_text_reply(
                 chat,
