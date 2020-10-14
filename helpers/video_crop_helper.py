@@ -1,3 +1,4 @@
+import os
 import re
 from typing import Optional
 
@@ -58,7 +59,7 @@ class VideoCropHelper(Helper):
     async def detect_crop(self, video_path: str):
         task = FfmpegTask(
             inputs={video_path: "-vf cropdetect=24:16:0"},
-            outputs={"null"}
+            outputs={os.devnull: ""}
         )
         output = await self.worker.await_task(task)
         return output
