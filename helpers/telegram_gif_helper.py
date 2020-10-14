@@ -105,7 +105,7 @@ class TelegramGifHelper(Helper):
     ) -> str:
         first_pass_filename = random_sandbox_video_path()
         gif_settings = gif_settings or GifSettings.from_input([])
-        bitrate_option = f"-b:v {gif_settings.bitrate}" if gif_settings.bitrate else ""
+        bitrate_option = f" -b:v {gif_settings.bitrate}" if gif_settings.bitrate else ""
         # first attempt
         ffmpeg_args = TelegramGifHelper.FFMPEG_OPTIONS.format(
             gif_settings.width, gif_settings.height
