@@ -20,33 +20,43 @@ from telegram_client import TelegramClient
 class GifSettings:
     width: int
     height: int
-    bitrate: int
+    bitrate: float
+    fps: float
     DEFAULT_WIDTH: ClassVar[int] = 1280
     DEFAULT_HEIGHT: ClassVar[int] = 1280
-    DEFAULT_BITRATE: ClassVar[Optional[int]] = None
+    DEFAULT_BITRATE: ClassVar[Optional[float]] = None
+    DEFAULT_FPS: ClassVar[Optional[float]] = None
 
     @classmethod
     def from_input(cls, args: List[str]) -> "GifSettings":
         width, height = cls.DEFAULT_WIDTH, cls.DEFAULT_HEIGHT
         bitrate = cls.DEFAULT_BITRATE
+        framerate = cls.DEFAULT_FPS
         for arg in args:
             if len(arg.split("x")) == 2:
                 width, height = [int(x) for x in arg.split("x")]
-            else:
-                try:
-                    bitrate = int(arg)
-                except ValueError:
-                    if arg.lower().endswith("mbps"):
-                        bitrate = 1_000_000 * int(arg[:-4])
-                    elif arg.lower().endswith("kbps"):
-                        bitrate = 1_000 * int(arg[:-4])
-                    elif arg.lower().endswith("bps"):
-                        bitrate = int(arg[:-3])
+            elif arg.lower().endswith("bps") or arg.lower().endswith("b/s"):
+                bit_arg = arg[:-3]
+                if bit_arg.lower().endswith("m"):
+                    bitrate = 1_000_000 * float(bit_arg[:-1])
+                elif bit_arg.lower().endswith("k"):
+                    bitrate = 1_000 * float(bit_arg[:-1])
+                else:
+                    bitrate = float(bit_arg)
+            elif arg.lower().endswith("fps"):
+                framerate = float(arg[:-3])
         return GifSettings(
             width=width,
             height=height,
-            bitrate=bitrate
+            bitrate=bitrate,
+            fps=framerate
         )
+
+    @property
+    def fps_filter(self):
+        if self.fps:
+            return f",fps=fps={self.fps}"
+        return ""
 
 
 class TelegramGifHelper(Helper):
@@ -57,7 +67,7 @@ class TelegramGifHelper(Helper):
     DEFAULT_HEIGHT = 1280
     FFMPEG_OPTIONS = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
                      "-vf \"scale='min({0},iw)':'min({1},ih)':force_original_aspect_" \
-                     "ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2\" -profile:v baseline -level 3.0 -vsync vfr"
+                     "ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2{2}\" -profile:v baseline -level 3.0 -vsync vfr"
     # A handy read on Constant Rate Factor, and such https://trac.ffmpeg.org/wiki/Encode/H.264
     CRF_OPTION = " -crf 18"
     TARGET_SIZE_MB = 8
@@ -118,7 +128,7 @@ class TelegramGifHelper(Helper):
         first_pass_filename = random_sandbox_video_path()
         # first attempt
         ffmpeg_args = TelegramGifHelper.FFMPEG_OPTIONS.format(
-            gif_settings.width, gif_settings.height
+            gif_settings.width, gif_settings.height, gif_settings.fps_filter
         ) + TelegramGifHelper.CRF_OPTION
         task = FfmpegTask(
             inputs={video_path: None},
@@ -146,7 +156,7 @@ class TelegramGifHelper(Helper):
         two_pass_filename = random_sandbox_video_path()
         # First pass
         t1_args = TelegramGifHelper.FFMPEG_OPTIONS.format(
-            gif_settings.width, gif_settings.height
+            gif_settings.width, gif_settings.height, gif_settings.fps_filter
         ) + f" -b:v {gif_settings.bitrate} -pass 1 -f mp4"
         task1 = FfmpegTask(
             global_options=["-y"],
@@ -155,7 +165,7 @@ class TelegramGifHelper(Helper):
         )
         await self.worker.await_task(task1)
         t2_args = TelegramGifHelper.FFMPEG_OPTIONS.format(
-            gif_settings.width, gif_settings.height
+            gif_settings.width, gif_settings.height, gif_settings.fps_filter
         ) + f" -b:v {gif_settings.bitrate} -pass 2"
         task2 = FfmpegTask(
             global_options=["-y"],
