@@ -61,7 +61,7 @@ class VideoCropHelper(Helper):
     async def detect_crop(self, video_path: str) -> Optional[str]:
         task = FfmpegTask(
             inputs={video_path: None},
-            outputs={"null": "-vf cropdetect=24:16:0"}
+            outputs={"-": "-vf cropdetect=24:16:0 -f null"}
         )
         output, error = await self.worker.await_task(task)
         crop_match = re.compile(r"crop=[0-9]+:[0-9]+:[0-9]+:[0-9]+")
