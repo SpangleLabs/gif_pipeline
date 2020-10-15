@@ -40,9 +40,9 @@ class DownloadHelper(Helper):
         # Ignore messages the bot has sent.
         if message.message_data.sender_id == self.client.pipeline_bot_id:
             return
-        matches = re.findall(DownloadHelper.LINK_REGEX, message.text, re.IGNORECASE)
+        matches = re.finditer(DownloadHelper.LINK_REGEX, message.text, re.IGNORECASE)
         # Remove gif links, TelegramGifHelper handles those
-        links = [match[0] for match in matches if self.link_is_monitored(match[0])]
+        links = [match.group(0) for match in matches if self.link_is_monitored(match.group(0))]
         if not links:
             return
         async with self.progress_message(chat, message, "Downloading linked videos"):
