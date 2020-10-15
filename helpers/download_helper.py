@@ -13,7 +13,7 @@ from telegram_client import TelegramClient
 
 class DownloadHelper(Helper):
     # Scheme (HTTP, HTTPS, FTP and SFTP):
-    LINK_REGEX += r'(?:(https?|s?ftp):\/\/)?'
+    LINK_REGEX = r'(?:(https?|s?ftp):\/\/)?'
     # www:
     LINK_REGEX += r'(?:www\.)?'
     # Capture domain name or IP. [Group 1...]
