@@ -1,5 +1,6 @@
 import asyncio
 import mimetypes
+import shutil
 import zipfile
 from typing import Optional, List
 
@@ -24,7 +25,8 @@ class ZipHelper(Helper):
                 if mime_type_is_video(mime_type):
                     file_ext = filename.split(".")[-1]
                     video_path = random_sandbox_video_path(file_ext)
-                    zip_ref.extract(filename, video_path)
+                    with zip_ref.open(filename) as zf, open(video_path, "wb") as f:
+                        shutil.copyfileobj(zf, f)
                     video_paths.append(video_path)
         if video_paths:
             return await asyncio.gather(*[self.send_video_reply(chat, message, path) for path in video_paths])
