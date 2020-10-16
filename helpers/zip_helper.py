@@ -14,10 +14,11 @@ from tasks.ffmpeg_task import FfmpegTask
 class ZipHelper(TelegramGifHelper):
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         if message.message_data.has_file and message.message_data.file_path.endswith(".zip"):
-            results = await self.unzip(chat, message)
-            if results:
-                return results
-            return [await self.send_text_reply(chat, message, "This zip file contained no video files.")]
+            async with self.progress_message(chat, message, "Unzipping file"):
+                results = await self.unzip(chat, message)
+                if results:
+                    return results
+                return [await self.send_text_reply(chat, message, "This zip file contained no video files.")]
 
     async def unzip(self, chat: Group, message: Message) -> Optional[List[Message]]:
         video_paths = []
