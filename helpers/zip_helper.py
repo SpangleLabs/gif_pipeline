@@ -32,7 +32,7 @@ class ZipHelper(TelegramGifHelper):
                         shutil.copyfileobj(zf, f)
                     video_paths.append(video_path)
         # Convert to mp4s
-        processed_paths = asyncio.gather(*(self.convert_file(path) for path in video_paths))
+        processed_paths = await asyncio.gather(*(self.convert_file(path) for path in video_paths))
         # Send them
         if processed_paths:
             return await asyncio.gather(*(self.send_video_reply(chat, message, path) for path in processed_paths))
