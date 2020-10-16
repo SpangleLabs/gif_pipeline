@@ -12,6 +12,10 @@ if TYPE_CHECKING:
     from group import ChatData
 
 
+def mime_type_is_video(mime_type: str) -> bool:
+    return mime_type.startswith("video") or mime_type == "image/gif"
+
+
 class MessageData:
     def __init__(
             self,
@@ -62,7 +66,7 @@ class MessageData:
 
     @property
     def has_video(self) -> bool:
-        return self.has_file and (self.file_mime_type.startswith("video") or self.file_mime_type == "image/gif")
+        return self.has_file and mime_type_is_video(self.file_mime_type)
 
 
 class Message:

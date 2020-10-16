@@ -25,6 +25,7 @@ from helpers.video_crop_helper import VideoCropHelper
 from helpers.video_cut_helper import VideoCutHelper
 from helpers.video_helper import VideoHelper
 from helpers.video_rotate_helper import VideoRotateHelper
+from helpers.zip_helper import ZipHelper
 from menu_cache import MenuCache
 from message import Message
 from tasks.task_worker import TaskWorker
@@ -141,7 +142,8 @@ class Pipeline:
             DeleteHelper(self.database, self.client, self.worker),
             MergeHelper(self.database, self.client, self.worker),
             ReverseHelper(self.database, self.client, self.worker),
-            FFProbeHelper(self.database, self.client, self.worker)
+            FFProbeHelper(self.database, self.client, self.worker),
+            ZipHelper(self.database, self.client, self.worker)
         ]
         if "imgur" in self.api_keys:
             helpers.append(
