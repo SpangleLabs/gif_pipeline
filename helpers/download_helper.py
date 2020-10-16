@@ -12,24 +12,24 @@ from telegram_client import TelegramClient
 
 
 class DownloadHelper(Helper):
-    LINK_REGEX = r'('
     # Scheme (HTTP, HTTPS, FTP and SFTP):
-    LINK_REGEX += r'(?:(https?|s?ftp):\/\/)?'
+    LINK_REGEX = r'(?:(https?|s?ftp):\/\/)?'
     # www:
     LINK_REGEX += r'(?:www\.)?'
+    # Capture domain name or IP. [Group 1...]
     LINK_REGEX += r'('
-    # Host and domain (including ccSLD):
+    # Domain and subdomains (Each up to 64 chars, hypens not allowed on either end)
     LINK_REGEX += r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+)'
-    # TLD:
-    LINK_REGEX += r'([A-Z]{2,6})'
+    # TLD: [Group 2]
+    LINK_REGEX += r'([A-Z]{2,63})'
     # IP Address:
     LINK_REGEX += r'|(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+    # End domain name [...Group 1]
     LINK_REGEX += r')'
-    # Port:
+    # Port: [Group 3]
     LINK_REGEX += r'(?::(\d{1,5}))?'
     # Query path:
-    LINK_REGEX += r'(?:(\/\S+)*)'
-    LINK_REGEX += r')'
+    LINK_REGEX += r'(?:[^()\s[\]]*)'
 
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
@@ -40,9 +40,9 @@ class DownloadHelper(Helper):
         # Ignore messages the bot has sent.
         if message.message_data.sender_id == self.client.pipeline_bot_id:
             return
-        matches = re.findall(DownloadHelper.LINK_REGEX, message.text, re.IGNORECASE)
+        matches = re.finditer(DownloadHelper.LINK_REGEX, message.text, re.IGNORECASE)
         # Remove gif links, TelegramGifHelper handles those
-        links = [match[0] for match in matches if self.link_is_monitored(match[0])]
+        links = [match.group(0) for match in matches if self.link_is_monitored(match.group(0))]
         if not links:
             return
         async with self.progress_message(chat, message, "Downloading linked videos"):
