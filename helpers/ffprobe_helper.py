@@ -24,6 +24,20 @@ class FFProbeHelper(Helper):
                 "Please reply to the video you want to get stats for with the message \"ffprobe\"."
             )
             return [reply]
+        if clean_text.startswith("duration"):
+            video = find_video_for_message(chat, message)
+            if video is not None:
+                async with self.progress_message(chat, message, "Getting video duration"):
+                    duration = await self.duration_video(video.message_data.file_path)
+                    stats_reply = await self.send_text_reply(chat, message, f"{duration} seconds")
+                return [stats_reply]
+            reply = await self.send_text_reply(
+                chat,
+                message,
+                "Cannot work out which video you want the duration of. "
+                "Please reply to the video you want to know the duration of with the message \"duration\"."
+            )
+            return [reply]
         # Otherwise, ignore
         return
 
@@ -33,3 +47,10 @@ class FFProbeHelper(Helper):
             inputs={video_path: ""}
         )
         return await self.worker.await_task(probe_task)
+
+    async def duration_video(self, video_path: str) -> float:
+        probe_task = FFprobeTask(
+            global_options=["-v error"],
+            inputs={video_path: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
+        )
+        return float(await self.worker.await_task(probe_task))
