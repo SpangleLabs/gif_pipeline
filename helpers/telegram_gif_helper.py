@@ -2,7 +2,7 @@ import asyncio
 import os
 import re
 from dataclasses import dataclass
-from typing import Optional, List, ClassVar
+from typing import Optional, List, ClassVar, Tuple
 
 import requests
 
@@ -22,6 +22,7 @@ class GifSettings:
     height: int
     bitrate: float
     fps: float
+    audio: bool = False
     # Maximum gif dimension on android telegram is 1280px (width, or height, or both)
     # Maximum gif dimension on desktop telegram is 1440px (width, or height, or both)
     # On iOS, there is no maximum gif dimension. Even 5000px gifs display fine
@@ -58,16 +59,40 @@ class GifSettings:
         )
 
     @property
-    def fps_filter(self):
+    def fps_filter(self) -> str:
         if self.fps:
             return f",fps=fps={self.fps}"
         return ""
 
+    @property
+    def ffmpeg_options(self) -> str:
+        ffmpeg_options = " -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
+            "-vf \"scale='min({0},iw)':'min({1},ih)':force_original_aspect_" \
+            "ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2{2}\" -profile:v baseline -level 3.0 -vsync vfr"
+        if not self.audio:
+            ffmpeg_options = " -an" + ffmpeg_options
+        return ffmpeg_options.format(
+            self.width, self.height, self.fps_filter
+        )
+
+    @property
+    def ffmpeg_options_one_pass(self) -> str:
+        return self.ffmpeg_options + " -crf 18"
+
+    @property
+    def ffmpeg_options_two_pass(self) -> Tuple[str, str]:
+        return self.ffmpeg_options_two_pass_1, self.ffmpeg_options_two_pass_2
+
+    @property
+    def ffmpeg_options_two_pass_1(self) -> str:
+        return self.ffmpeg_options + f" -b:v {self.bitrate} -pass 1 -f mp4"
+
+    @property
+    def ffmpeg_options_two_pass_2(self) -> str:
+        return self.ffmpeg_options + f" -b:v {self.bitrate} -pass 2"
+
 
 class TelegramGifHelper(Helper):
-    FFMPEG_OPTIONS = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
-                     "-vf \"scale='min({0},iw)':'min({1},ih)':force_original_aspect_" \
-                     "ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2{2}\" -profile:v baseline -level 3.0 -vsync vfr"
     # A handy read on Constant Rate Factor, and such https://trac.ffmpeg.org/wiki/Encode/H.264
     CRF_OPTION = " -crf 18"
     TARGET_SIZE_MB = 8
@@ -127,9 +152,7 @@ class TelegramGifHelper(Helper):
     async def single_pass_convert(self, video_path: str, gif_settings: GifSettings):
         first_pass_filename = random_sandbox_video_path()
         # first attempt
-        ffmpeg_args = TelegramGifHelper.FFMPEG_OPTIONS.format(
-            gif_settings.width, gif_settings.height, gif_settings.fps_filter
-        ) + TelegramGifHelper.CRF_OPTION
+        ffmpeg_args = gif_settings.ffmpeg_options_one_pass
         task = FfmpegTask(
             inputs={video_path: None},
             outputs={first_pass_filename: ffmpeg_args}
@@ -158,22 +181,17 @@ class TelegramGifHelper(Helper):
         # If it's too big, do a 2 pass run
         two_pass_filename = random_sandbox_video_path()
         # First pass
-        t1_args = TelegramGifHelper.FFMPEG_OPTIONS.format(
-            gif_settings.width, gif_settings.height, gif_settings.fps_filter
-        ) + f" -b:v {gif_settings.bitrate} -pass 1 -f mp4"
+        two_pass_args = gif_settings.ffmpeg_options_two_pass
         task1 = FfmpegTask(
             global_options=["-y"],
             inputs={video_path: None},
-            outputs={os.devnull: t1_args}
+            outputs={os.devnull: two_pass_args[0]}
         )
         await self.worker.await_task(task1)
-        t2_args = TelegramGifHelper.FFMPEG_OPTIONS.format(
-            gif_settings.width, gif_settings.height, gif_settings.fps_filter
-        ) + f" -b:v {gif_settings.bitrate} -pass 2"
         task2 = FfmpegTask(
             global_options=["-y"],
             inputs={video_path: None},
-            outputs={two_pass_filename: t2_args}
+            outputs={two_pass_filename: two_pass_args[1]}
         )
         await self.worker.await_task(task2)
         return two_pass_filename
