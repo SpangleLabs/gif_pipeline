@@ -259,12 +259,9 @@ class MenuHelper:
         admin_ids = await self.send_helper.client.list_authorized_to_delete(chat.chat_data)
         if sender_id not in admin_ids:
             return None
-        full_text = text + "\nWould you like to delete the message family?"
-        menu = [
-            [Button.inline("Yes please", f"delete:{reply_to.message_data.message_id}")],
-            [Button.inline("No thanks", f"clear_delete_menu")]
-        ]
-        message = await self.send_helper.send_text_reply(chat, reply_to, full_text, buttons=menu)
+        menu = DeleteMenu(reply_to, text)
+
+        message = await self.send_helper.send_text_reply(chat, reply_to, menu.text, buttons=menu.buttons)
         self.send_helper.delete_menu_text = text
         self.send_helper.delete_menu_msg = message
         self.send_helper.menu_cache.add_menu_msg(message, sender_id)
@@ -361,7 +358,20 @@ class SendConfirmationMenu(Menu):
 
 
 class DeleteMenu(Menu):
-    pass
+    def __init__(self, video: Message, prefix_str: str):
+        self.prefix_str = prefix_str
+        self.video = video
+
+    @property
+    def text(self):
+        return self.prefix_str + "\nWould you like to delete the message family?"
+
+    @property
+    def buttons(self) -> Optional[List[List[Button]]]:
+        return [
+            [Button.inline("Yes please", f"delete:{self.video.message_data.message_id}")],
+            [Button.inline("No thanks", f"clear_delete_menu")]
+        ]
 
 
 def was_giffed(database: Database, video: Message) -> bool:
