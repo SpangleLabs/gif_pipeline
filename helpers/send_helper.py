@@ -239,17 +239,12 @@ class MenuHelper:
 
     async def confirmation_menu(self, chat: Group, video_id: str, destination_id: str, sender_id: int) -> List[Message]:
         destination = self.send_helper.get_destination_from_name(destination_id)
-        button_data = button_data_send(int(video_id), destination.chat_data.chat_id)
-        menu = [
-            [Button.inline("I am sure", button_data)],
-            [Button.inline("No thanks", "clear_dest_menu")]
-        ]
-        menu_text = f"Are you sure you want to send this video to {destination.chat_data.title}?"
+        menu = SendConfirmationMenu(video_id, destination)
         menu_msg = await self.send_helper.edit_message(
             chat,
             self.send_helper.destination_menu_msg,
-            new_text=menu_text,
-            new_buttons=menu
+            new_text=menu.text,
+            new_buttons=menu.buttons
         )
         self.send_helper.destination_menu_msg = menu_msg
         self.send_helper.menu_cache.add_menu_msg(menu_msg, sender_id)
@@ -336,7 +331,21 @@ class DestinationMenu(Menu):
 
 
 class SendConfirmationMenu(Menu):
-    pass
+    def __init__(self, video_id: str, destination: Group):
+        self.video_id = video_id
+        self.destination = destination
+
+    @property
+    def text(self) -> str:
+        return f"Are you sure you want to send this video to {self.destination.chat_data.title}?"
+
+    @property
+    def buttons(self) -> Optional[List[List[Button]]]:
+        button_data = button_data_send(int(self.video_id), self.destination.chat_data.chat_id)
+        return [
+            [Button.inline("I am sure", button_data)],
+            [Button.inline("No thanks", "clear_dest_menu")]
+        ]
 
 
 class DeleteMenu(Menu):
