@@ -217,15 +217,14 @@ class MenuHelper:
 
     async def destination_menu(self, chat: Group, cmd: Message, video: Message, sender_id: int) -> List[Message]:
         await self.clear_destination_menu()
-        menu = []
+        channels = []
         for channel in self.send_helper.writable_channels:
             admin_ids = await self.send_helper.client.list_authorized_channel_posters(channel.chat_data)
             if sender_id in admin_ids:
-                button_data = button_data_confirm_send(video, channel)
-                menu.append([Button.inline(channel.chat_data.title, button_data)])
-        if menu:
-            menu_text = "Which channel should this video be sent to?"
-            menu_msg = await self.send_helper.send_text_reply(chat, video, menu_text, buttons=menu)
+                channels.append(channel)
+        if channels:
+            menu = DestinationMenu(video, channels)
+            menu_msg = await self.send_helper.send_text_reply(chat, video, menu.text, buttons=menu.buttons)
             self.send_helper.destination_menu_msg = menu_msg
             self.send_helper.menu_cache.add_menu_msg(menu_msg, sender_id)
             return [menu_msg]
@@ -327,7 +326,20 @@ class NotGifConfirmationMenu(Menu):
 
 
 class DestinationMenu(Menu):
-    pass
+    def __init__(self, video: Message, channels: List[Channel]):
+        self.video = video
+        self.channels = channels
+
+    @property
+    def text(self) -> str:
+        return "Which channel should this video be sent to?"
+
+    @property
+    def buttons(self) -> Optional[List[List[Button]]]:
+        return [
+            [Button.inline(channel.chat_data.title, button_data_confirm_send(self.video, channel))]
+            for channel in self.channels
+        ]
 
 
 class SendConfirmationMenu(Menu):
