@@ -45,7 +45,7 @@ class GifSendHelper(Helper):
         if video is None:
             return [await self.send_text_reply(chat, message, "I'm not sure which gif you want to send.")]
         dest_str = text_clean[4:].strip()
-        if not self.was_giffed(video):
+        if not was_giffed(self.database, video):
             return await self.not_giffed_warning_menu(chat, message, video, dest_str)
         return await self.handle_dest_str(chat, message, video, dest_str, message.message_data.sender_id)
 
@@ -67,15 +67,6 @@ class GifSendHelper(Helper):
             cmd_message = chat.message_by_id(int(split_data[3]))
             return await self.handle_dest_str(chat, cmd_message, message, split_data[4], sender_id)
         return await self.send_video(chat, message, chat_id, sender_id)
-
-    def was_giffed(self, video: Message) -> bool:
-        message_history = self.database.get_message_history(video.message_data)
-        if len(message_history) < 2:
-            return False
-        latest_command = message_history[1].text
-        if latest_command is not None and latest_command.strip().lower() == "gif":
-            return True
-        return False
 
     async def not_giffed_warning_menu(self, chat: Group, cmd: Message, video: Message, dest_str: str) -> List[Message]:
         await self.clear_destination_menu()
@@ -287,6 +278,16 @@ class GifSendHelper(Helper):
             )
             self.delete_menu_msg.delete(self.database)
             self.delete_menu_msg = None
+
+
+def was_giffed(database: Database, video: Message) -> bool:
+    message_history = database.get_message_history(video.message_data)
+    if len(message_history) < 2:
+        return False
+    latest_command = message_history[1].text
+    if latest_command is not None and latest_command.strip().lower() == "gif":
+        return True
+    return False
 
 
 def button_data_send_str(video: Message, sender_id: int, dest_str: str) -> str:
