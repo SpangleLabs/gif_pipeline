@@ -1,4 +1,5 @@
 import shutil
+from abc import abstractmethod
 from typing import Optional, List, Union
 
 from telethon import Button
@@ -206,13 +207,10 @@ class MenuHelper:
             dest_str: str
     ) -> List[Message]:
         await self.clear_destination_menu()
-        button_data = button_data_send_str(video, cmd.message_data.sender_id, dest_str)
-        menu = [
-            [Button.inline("Yes, I am sure", button_data)],
-            [Button.inline("No thanks!", "clear_dest_menu")]
-        ]
-        menu_text = "It looks like this video has not been giffed. Are you sure you want to send it?"
-        menu_msg = await self.send_helper.send_text_reply(chat, cmd, menu_text, buttons=menu)
+        menu = NotGifConfirmationMenu(cmd, video, dest_str)
+        buttons = menu.buttons
+        menu_text = menu.text
+        menu_msg = await self.send_helper.send_text_reply(chat, cmd, menu_text, buttons=buttons)
         self.send_helper.destination_menu_msg = menu_msg
         self.send_helper.menu_cache.add_menu_msg(menu_msg, cmd.message_data.sender_id)
         return [menu_msg]
@@ -300,6 +298,49 @@ class MenuHelper:
             )
             self.send_helper.delete_menu_msg.delete(self.send_helper.database)
             self.send_helper.delete_menu_msg = None
+
+
+class Menu:
+
+    @property
+    @abstractmethod
+    def text(self) -> str:
+        pass
+
+    @property
+    def buttons(self) -> Optional[List[List[Button]]]:
+        return None
+
+
+class NotGifConfirmationMenu(Menu):
+    def __init__(self, cmd: Message, video: Message, dest_str: str):
+        self.cmd = cmd
+        self.video = video
+        self.dest_str = dest_str
+
+    @property
+    def text(self) -> str:
+        return "It looks like this video has not been giffed. Are you sure you want to send it?"
+
+    @property
+    def buttons(self) -> Optional[List[List[Button]]]:
+        button_data = button_data_send_str(self.video, self.cmd.message_data.sender_id, self.dest_str)
+        return [
+            [Button.inline("Yes, I am sure", button_data)],
+            [Button.inline("No thanks!", "clear_dest_menu")]
+        ]
+
+
+class DestinationMenu(Menu):
+    pass
+
+
+class SendConfirmationMenu(Menu):
+    pass
+
+
+class DeleteMenu(Menu):
+    pass
 
 
 def was_giffed(database: Database, video: Message) -> bool:
