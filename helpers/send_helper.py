@@ -213,7 +213,7 @@ class MenuHelper:
     ) -> List[Message]:
         await self.clear_destination_menu()
         menu = NotGifConfirmationMenu(self, video, cmd, dest_str)
-        menu_msg = await menu.send_as_reply(self.send_helper, chat, cmd)
+        menu_msg = await menu.send_as_reply(chat, cmd)
         self.send_helper.destination_menu_msg = menu_msg
         self.send_helper.menu_cache.add_menu_msg(menu_msg, cmd.message_data.sender_id)
         return [menu_msg]
@@ -230,7 +230,7 @@ class MenuHelper:
                 )
             ]
         menu = DestinationMenu(self, video, channels)
-        menu_msg = await menu.send_as_reply(self.send_helper, chat, video)
+        menu_msg = await menu.send_as_reply(chat, video)
         self.send_helper.destination_menu_msg = menu_msg
         self.send_helper.menu_cache.add_menu_msg(menu_msg, sender_id)
         return [menu_msg]
@@ -250,7 +250,7 @@ class MenuHelper:
         destination = self.send_helper.get_destination_from_name(destination_id)
         video = chat.message_by_id(int(video_id))
         menu = SendConfirmationMenu(self, video, destination)
-        menu_msg = await menu.edit_message(self.send_helper, chat, self.send_helper.destination_menu_msg)
+        menu_msg = await menu.edit_message(chat, self.send_helper.destination_menu_msg)
         self.send_helper.destination_menu_msg = menu_msg
         self.send_helper.menu_cache.add_menu_msg(menu_msg, sender_id)
         return [menu_msg]
@@ -266,7 +266,7 @@ class MenuHelper:
         if sender_id not in admin_ids:
             return None
         menu = DeleteMenu(self, reply_to, text)
-        message = await menu.send_as_reply(self.send_helper, chat, reply_to)
+        message = await menu.send_as_reply(chat, reply_to)
         self.send_helper.delete_menu_text = text
         self.send_helper.delete_menu_msg = message
         self.send_helper.menu_cache.add_menu_msg(message, sender_id)
@@ -314,13 +314,13 @@ class Menu:
     def buttons(self) -> Optional[List[List[Button]]]:
         return None
 
-    async def send_as_reply(self, helper: Helper, chat: Group, reply_to: Message) -> Message:
-        menu_msg = await helper.send_text_reply(chat, reply_to, self.text, buttons=self.buttons)
+    async def send_as_reply(self, chat: Group, reply_to: Message) -> Message:
+        menu_msg = await self.menu_helper.send_helper.send_text_reply(chat, reply_to, self.text, buttons=self.buttons)
         self.add_self_to_cache()
         return menu_msg
 
-    async def edit_message(self, helper: Helper, chat: Group, old_msg: Message) -> Message:
-        menu_msg = await helper.edit_message(
+    async def edit_message(self, chat: Group, old_msg: Message) -> Message:
+        menu_msg = await self.menu_helper.send_helper.edit_message(
             chat,
             old_msg,
             new_text=self.text,
