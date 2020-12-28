@@ -217,19 +217,19 @@ class MenuHelper:
     async def destination_menu(self, chat: Group, cmd: Message, video: Message, sender_id: int) -> List[Message]:
         await self.clear_destination_menu()
         channels = await self.available_channels_for_user(sender_id)
-        if channels:
-            menu = DestinationMenu(video, channels)
-            menu_msg = await menu.send_as_reply(self.send_helper, chat, video)
-            self.send_helper.destination_menu_msg = menu_msg
-            self.send_helper.menu_cache.add_menu_msg(menu_msg, sender_id)
-            return [menu_msg]
-        return [
-            await self.send_helper.send_text_reply(
-                chat,
-                cmd,
-                "You do not have permission to send to any available channels."
-            )
-        ]
+        if not channels:
+            return [
+                await self.send_helper.send_text_reply(
+                    chat,
+                    cmd,
+                    "You do not have permission to send to any available channels."
+                )
+            ]
+        menu = DestinationMenu(video, channels)
+        menu_msg = await menu.send_as_reply(self.send_helper, chat, video)
+        self.send_helper.destination_menu_msg = menu_msg
+        self.send_helper.menu_cache.add_menu_msg(menu_msg, sender_id)
+        return [menu_msg]
 
     async def available_channels_for_user(self, user_id: int) -> List[Channel]:
         all_channels = self.send_helper.writable_channels
