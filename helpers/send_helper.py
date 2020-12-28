@@ -1,3 +1,4 @@
+import asyncio
 import shutil
 from abc import abstractmethod
 from typing import Optional, List, Union
@@ -215,11 +216,7 @@ class MenuHelper:
 
     async def destination_menu(self, chat: Group, cmd: Message, video: Message, sender_id: int) -> List[Message]:
         await self.clear_destination_menu()
-        channels = []
-        for channel in self.send_helper.writable_channels:
-            admin_ids = await self.send_helper.client.list_authorized_channel_posters(channel.chat_data)
-            if sender_id in admin_ids:
-                channels.append(channel)
+        channels = await self.available_channels_for_user(sender_id)
         if channels:
             menu = DestinationMenu(video, channels)
             menu_msg = await menu.send_as_reply(self.send_helper, chat, video)
@@ -233,6 +230,17 @@ class MenuHelper:
                 "You do not have permission to send to any available channels."
             )
         ]
+
+    async def available_channels_for_user(self, user_id: int) -> List[Channel]:
+        all_channels = self.send_helper.writable_channels
+        user_is_admin = asyncio.gather(*(self.user_admin_in_channel(user_id, channel) for channel in all_channels))
+        return [
+            channel for channel, is_admin in zip(all_channels, user_is_admin) if is_admin
+        ]
+
+    async def user_admin_in_channel(self, user_id: int, channel: Channel) -> bool:
+        admin_ids = await self.send_helper.client.list_authorized_channel_posters(channel.chat_data)
+        return user_id in admin_ids
 
     async def confirmation_menu(self, chat: Group, video_id: str, destination_id: str, sender_id: int) -> List[Message]:
         destination = self.send_helper.get_destination_from_name(destination_id)
