@@ -212,8 +212,9 @@ class MenuHelper:
             dest_str: str
     ) -> List[Message]:
         await self.clear_destination_menu()
-        menu = NotGifConfirmationMenu(self, video, cmd, dest_str)
-        menu_msg = await menu.send_as_reply(chat, cmd)
+        sender_id = cmd.message_data.sender_id
+        menu = NotGifConfirmationMenu(self, video, sender_id, dest_str)
+        menu_msg = await menu.send_as_reply(chat, video)
         self.send_helper.destination_menu_msg = menu_msg
         self.send_helper.menu_cache.add_menu_msg(menu_msg, cmd.message_data.sender_id)
         return [menu_msg]
@@ -331,9 +332,9 @@ class Menu:
 
 
 class NotGifConfirmationMenu(Menu):
-    def __init__(self, menu_helper: MenuHelper, video: Message, cmd: Message, dest_str: str):
+    def __init__(self, menu_helper: MenuHelper, video: Message, sender_id: int, dest_str: str):
         super().__init__(menu_helper, video)
-        self.cmd = cmd
+        self.sender_id = sender_id
         self.dest_str = dest_str
 
     @property
@@ -342,7 +343,7 @@ class NotGifConfirmationMenu(Menu):
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
-        button_data = button_data_send_str(self.video, self.cmd.message_data.sender_id, self.dest_str)
+        button_data = button_data_send_str(self.video, self.sender_id, self.dest_str)
         return [
             [Button.inline("Yes, I am sure", button_data)],
             [Button.inline("No thanks!", "clear_dest_menu")]
