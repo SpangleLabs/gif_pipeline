@@ -46,7 +46,7 @@ class GifSendHelper(Helper):
         if video is None:
             return [await self.send_text_reply(chat, message, "I'm not sure which gif you want to send.")]
         # Clean up any menus for that message which already exist
-        self.menu_helper.delete_menu_for_video(video)
+        await self.menu_helper.delete_menu_for_video(video)
         # Read dest string
         dest_str = text_clean[4:].strip()
         if not was_giffed(self.database, video):
@@ -211,9 +211,10 @@ class MenuHelper:
     def get_menu_from_cache(self, video: Message) -> Optional['SentMenu']:
         return self.menu_cache.get(video.chat_data.chat_id, {}).get(video.message_data.message_id)
 
-    def delete_menu_for_video(self, video: Message) -> None:
+    async def delete_menu_for_video(self, video: Message) -> None:
         menu = self.get_menu_from_cache(video)
         if menu:
+            await self.send_helper.client.delete_message(menu.msg.message_data)
             menu.msg.delete(self.send_helper.database)
             del self.menu_cache[video.chat_data.chat_id][video.message_data.message_id]
 
