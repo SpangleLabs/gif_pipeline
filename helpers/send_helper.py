@@ -2,6 +2,7 @@ import asyncio
 import shutil
 from abc import abstractmethod
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Optional, List, Union
 
 from telethon import Button
@@ -201,8 +202,17 @@ class MenuHelper:
         self.send_helper = send_helper
         self.menu_cache = defaultdict(lambda: {})
 
-    def add_menu_to_cache(self, menu: 'Menu'):
-        self.menu_cache[menu.video.chat_data.chat_id][menu.video.chat_data.chat_id] = menu
+    def add_menu_to_cache(self, sent_menu: 'SentMenu') -> None:
+        self.menu_cache[sent_menu.menu.video.chat_data.chat_id][sent_menu.menu.video.chat_data.chat_id] = sent_menu
+
+    def get_menu_from_cache(self, video: Message) -> Optional['SentMenu']:
+        return self.menu_cache.get(video.chat_data.chat_id, {}).get(video.message_data.message_id)
+
+    def delete_menu_for_video(self, video: Message) -> None:
+        menu = self.get_menu_from_cache(video)
+        if menu:
+            menu.msg.delete(self.send_helper.database)
+            del self.menu_cache[video.chat_data.chat_id][video.message_data.message_id]
 
     async def send_not_gif_warning_menu(
             self,
@@ -214,7 +224,7 @@ class MenuHelper:
         await self.clear_destination_menu()
         sender_id = cmd.message_data.sender_id
         menu = NotGifConfirmationMenu(self, chat, video, sender_id, dest_str)
-        menu_msg = await menu.send_as_reply(video)
+        menu_msg = await menu.send()
         self.send_helper.destination_menu_msg = menu_msg
         self.send_helper.menu_cache.add_menu_msg(menu_msg, cmd.message_data.sender_id)
         return [menu_msg]
@@ -231,7 +241,7 @@ class MenuHelper:
                 )
             ]
         menu = DestinationMenu(self, chat, video, channels)
-        menu_msg = await menu.send_as_reply(video)
+        menu_msg = await menu.send()
         self.send_helper.destination_menu_msg = menu_msg
         self.send_helper.menu_cache.add_menu_msg(menu_msg, sender_id)
         return [menu_msg]
@@ -251,7 +261,7 @@ class MenuHelper:
         destination = self.send_helper.get_destination_from_name(destination_id)
         video = chat.message_by_id(int(video_id))
         menu = SendConfirmationMenu(self, chat, video, destination)
-        menu_msg = await menu.edit_message(self.send_helper.destination_menu_msg)
+        menu_msg = await menu.send()
         self.send_helper.destination_menu_msg = menu_msg
         self.send_helper.menu_cache.add_menu_msg(menu_msg, sender_id)
         return [menu_msg]
@@ -267,7 +277,7 @@ class MenuHelper:
         if sender_id not in admin_ids:
             return None
         menu = DeleteMenu(self, chat, reply_to, text)
-        message = await menu.send_as_reply(reply_to)
+        message = await menu.send()
         self.send_helper.delete_menu_text = text
         self.send_helper.delete_menu_msg = message
         self.send_helper.menu_cache.add_menu_msg(message, sender_id)
@@ -297,6 +307,12 @@ class MenuHelper:
             self.send_helper.delete_menu_msg = None
 
 
+@dataclass
+class SentMenu:
+    menu: 'Menu'
+    msg: Message
+
+
 class Menu:
 
     def __init__(self, menu_helper: MenuHelper, chat: Group, video: Message):
@@ -304,8 +320,8 @@ class Menu:
         self.chat = chat
         self.video = video
 
-    def add_self_to_cache(self):
-        self.menu_helper.add_menu_to_cache(self)
+    def add_self_to_cache(self, menu_msg: Message):
+        self.menu_helper.add_menu_to_cache(SentMenu(self, menu_msg))
 
     @property
     @abstractmethod
@@ -323,7 +339,7 @@ class Menu:
             self.text,
             buttons=self.buttons
         )
-        self.add_self_to_cache()
+        self.add_self_to_cache(menu_msg)
         return menu_msg
 
     async def edit_message(self, old_msg: Message) -> Message:
@@ -333,8 +349,14 @@ class Menu:
             new_text=self.text,
             new_buttons=self.buttons
         )
-        self.add_self_to_cache()
+        self.add_self_to_cache(menu_msg)
         return menu_msg
+
+    async def send(self) -> Message:
+        menu = self.menu_helper.get_menu_from_cache(self.video)
+        if menu:
+            return await self.edit_message(menu.msg)
+        return await self.send_as_reply(self.video)
 
 
 class NotGifConfirmationMenu(Menu):
