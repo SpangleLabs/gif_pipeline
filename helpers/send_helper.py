@@ -24,18 +24,12 @@ class GifSendHelper(Helper):
             client: TelegramClient,
             worker: TaskWorker,
             channels: List[Channel],
-            menu_cache: MenuCache
+            menu_ownership_cache: MenuCache
     ):
         super().__init__(database, client, worker)
         self.channels = channels
 
-        self.destination_menu_msg = None
-        self.confirmation_menu_msg = None
-        self.delete_menu_msg = None
-        self.delete_menu_text = None
-        self.menu_cache = menu_cache
-
-        self.menu_helper = MenuHelper(self)
+        self.menu_helper = MenuHelper(self, menu_ownership_cache)
 
     @property
     def writable_channels(self) -> List[Channel]:
@@ -51,6 +45,9 @@ class GifSendHelper(Helper):
         video = find_video_for_message(chat, message)
         if video is None:
             return [await self.send_text_reply(chat, message, "I'm not sure which gif you want to send.")]
+        # Clean up any menus for that message which already exist
+        self.menu_helper.delete_menu_for_video(video)
+        # Read dest string
         dest_str = text_clean[4:].strip()
         if not was_giffed(self.database, video):
             return await self.menu_helper.send_not_gif_warning_menu(chat, message, video, dest_str)
@@ -197,10 +194,16 @@ class GifSendHelper(Helper):
 
 
 class MenuHelper:
-    def __init__(self, send_helper: GifSendHelper):
+    def __init__(self, send_helper: GifSendHelper, menu_ownership_cache):
         # Cache of message ID the menu is replying to, to the menu
         self.send_helper = send_helper
         self.menu_cache = defaultdict(lambda: {})
+        # TODO: remove old caches
+        self.destination_menu_msg = None
+        self.confirmation_menu_msg = None
+        self.delete_menu_msg = None
+        self.delete_menu_text = None
+        self.menu_ownership_cache = menu_ownership_cache
 
     def add_menu_to_cache(self, sent_menu: 'SentMenu') -> None:
         self.menu_cache[sent_menu.menu.video.chat_data.chat_id][sent_menu.menu.video.chat_data.chat_id] = sent_menu
@@ -225,8 +228,8 @@ class MenuHelper:
         sender_id = cmd.message_data.sender_id
         menu = NotGifConfirmationMenu(self, chat, video, sender_id, dest_str)
         menu_msg = await menu.send()
-        self.send_helper.destination_menu_msg = menu_msg
-        self.send_helper.menu_cache.add_menu_msg(menu_msg, cmd.message_data.sender_id)
+        self.destination_menu_msg = menu_msg
+        self.menu_ownership_cache.add_menu_msg(menu_msg, cmd.message_data.sender_id)
         return [menu_msg]
 
     async def destination_menu(self, chat: Group, cmd: Message, video: Message, sender_id: int) -> List[Message]:
@@ -242,8 +245,8 @@ class MenuHelper:
             ]
         menu = DestinationMenu(self, chat, video, channels)
         menu_msg = await menu.send()
-        self.send_helper.destination_menu_msg = menu_msg
-        self.send_helper.menu_cache.add_menu_msg(menu_msg, sender_id)
+        self.destination_menu_msg = menu_msg
+        self.menu_ownership_cache.add_menu_msg(menu_msg, sender_id)
         return [menu_msg]
 
     async def available_channels_for_user(self, user_id: int) -> List[Channel]:
@@ -262,8 +265,8 @@ class MenuHelper:
         video = chat.message_by_id(int(video_id))
         menu = SendConfirmationMenu(self, chat, video, destination)
         menu_msg = await menu.send()
-        self.send_helper.destination_menu_msg = menu_msg
-        self.send_helper.menu_cache.add_menu_msg(menu_msg, sender_id)
+        self.destination_menu_msg = menu_msg
+        self.menu_ownership_cache.add_menu_msg(menu_msg, sender_id)
         return [menu_msg]
 
     async def after_send_delete_menu(
@@ -278,33 +281,33 @@ class MenuHelper:
             return None
         menu = DeleteMenu(self, chat, reply_to, text)
         message = await menu.send()
-        self.send_helper.delete_menu_text = text
-        self.send_helper.delete_menu_msg = message
-        self.send_helper.menu_cache.add_menu_msg(message, sender_id)
+        self.delete_menu_text = text
+        self.delete_menu_msg = message
+        self.menu_ownership_cache.add_menu_msg(message, sender_id)
         return message
 
     async def clear_destination_menu(self) -> None:
-        if self.send_helper.destination_menu_msg is not None:
-            await self.send_helper.client.delete_message(self.send_helper.destination_menu_msg.message_data)
-            self.send_helper.destination_menu_msg.delete(self.send_helper.database)
-            self.send_helper.destination_menu_msg = None
+        if self.destination_menu_msg is not None:
+            await self.send_helper.client.delete_message(self.destination_menu_msg.message_data)
+            self.destination_menu_msg.delete(self.send_helper.database)
+            self.destination_menu_msg = None
 
     async def clear_confirmation_menu(self) -> None:
-        if self.send_helper.confirmation_menu_msg is not None:
-            await self.send_helper.client.delete_message(self.send_helper.confirmation_menu_msg.message_data)
-            self.send_helper.confirmation_menu_msg.delete(self.send_helper.database)
-            self.send_helper.confirmation_menu_msg = None
+        if self.confirmation_menu_msg is not None:
+            await self.send_helper.client.delete_message(self.confirmation_menu_msg.message_data)
+            self.confirmation_menu_msg.delete(self.send_helper.database)
+            self.confirmation_menu_msg = None
 
     async def clear_delete_menu(self) -> None:
-        if self.send_helper.delete_menu_msg is not None:
+        if self.delete_menu_msg is not None:
             await self.send_helper.client.edit_message(
-                self.send_helper.delete_menu_msg.chat_data,
-                self.send_helper.delete_menu_msg.message_data,
-                self.send_helper.delete_menu_text,
+                self.delete_menu_msg.chat_data,
+                self.delete_menu_msg.message_data,
+                self.delete_menu_text,
                 new_buttons=None
             )
-            self.send_helper.delete_menu_msg.delete(self.send_helper.database)
-            self.send_helper.delete_menu_msg = None
+            self.delete_menu_msg.delete(self.send_helper.database)
+            self.delete_menu_msg = None
 
 
 @dataclass
