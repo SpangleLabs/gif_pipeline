@@ -137,8 +137,6 @@ class GifSendHelper(Helper):
         initial_message.delete(self.database)
         confirm_text = f"This gif has been sent to {chat_to.chat_data.title} via {chat_from.chat_data.title}"
         confirm_message = await self.menu_helper.after_send_delete_menu(chat, video, confirm_text, sender_id)
-        # Remove menu
-        await self.menu_helper.clear_destination_menu()
         messages = [new_message]
         if confirm_message:
             messages.append(confirm_message)
@@ -160,8 +158,6 @@ class GifSendHelper(Helper):
         new_message = await self.send_message(destination, video_path=video.message_data.file_path)
         confirm_text = f"This gif has been sent to {destination.chat_data.title}."
         confirm_message = await self.menu_helper.after_send_delete_menu(chat, video, confirm_text, sender_id)
-        # Remove menu
-        await self.menu_helper.clear_destination_menu()
         messages = [new_message]
         if confirm_message:
             messages.append(confirm_message)
@@ -273,14 +269,15 @@ class MenuHelper:
     async def after_send_delete_menu(
             self,
             chat: Group,
-            reply_to: Message,
+            video: Message,
             text: str,
             sender_id: int
     ) -> Optional[Message]:
         admin_ids = await self.send_helper.client.list_authorized_to_delete(chat.chat_data)
         if sender_id not in admin_ids:
+            await self.delete_menu_for_video(video)
             return None
-        menu = DeleteMenu(self, chat, reply_to, text)
+        menu = DeleteMenu(self, chat, video, text)
         message = await menu.send()
         self.delete_menu_text = text
         self.delete_menu_msg = message
