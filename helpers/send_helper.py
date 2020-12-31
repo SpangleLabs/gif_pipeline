@@ -54,12 +54,13 @@ class GifSendHelper(Helper):
         return await self.handle_dest_str(chat, message, video, dest_str, message.message_data.sender_id)
 
     async def on_callback_query(self, chat: Group, callback_query: bytes, sender_id: int) -> Optional[List[Message]]:
+        menu_handler_resp = await self.menu_helper.on_callback_query(chat, callback_query, sender_id)
+        if menu_handler_resp:
+            return menu_handler_resp
+        # TODO: migrate everything else into Menu classes
         split_data = callback_query.decode().split(":")
         if split_data[0] == "clear_dest_menu":
             await self.menu_helper.clear_destination_menu()
-            return
-        if split_data[0] == "clear_delete_menu":
-            await self.menu_helper.clear_delete_menu()
             return
         if split_data[0] == "confirm_send":
             return await self.menu_helper.confirmation_menu(chat, split_data[1], split_data[2], sender_id)
@@ -197,12 +198,15 @@ class MenuHelper:
         # TODO: remove old caches
         self.destination_menu_msg = None
         self.confirmation_menu_msg = None
-        self.delete_menu_msg = None
-        self.delete_menu_text = None
+        # TODO: update this alongside menu_cache updates
         self.menu_ownership_cache = menu_ownership_cache
 
     def add_menu_to_cache(self, sent_menu: 'SentMenu') -> None:
-        self.menu_cache[sent_menu.menu.video.chat_data.chat_id][sent_menu.menu.video.chat_data.chat_id] = sent_menu
+        self.menu_cache[
+            sent_menu.menu.video.chat_data.chat_id
+        ][
+            sent_menu.menu.video.message_data.message_id
+        ] = sent_menu
 
     def get_menu_from_cache(self, video: Message) -> Optional['SentMenu']:
         return self.menu_cache.get(video.chat_data.chat_id, {}).get(video.message_data.message_id)
@@ -213,6 +217,18 @@ class MenuHelper:
             await self.send_helper.client.delete_message(menu.msg.message_data)
             menu.msg.delete(self.send_helper.database)
             del self.menu_cache[video.chat_data.chat_id][video.message_data.message_id]
+
+    def remove_menu_from_cache(self, video: Message) -> None:
+        menu = self.get_menu_from_cache(video)
+        if menu:
+            del self.menu_cache[video.chat_data.chat_id][video.message_data.message_id]
+
+    async def on_callback_query(self, chat: Group, callback_query: bytes, sender_id: int) -> Optional[List[Message]]:
+        menus = [menu for video_msg_id, menu in self.menu_cache.get(chat.chat_data.chat_id, {}).items()]
+        for menu in menus:
+            resp = await menu.handle_callback_query(chat, callback_query, sender_id)
+            if resp:
+                return resp
 
     async def send_not_gif_warning_menu(
             self,
@@ -279,8 +295,6 @@ class MenuHelper:
             return None
         menu = DeleteMenu(self, chat, video, text)
         message = await menu.send()
-        self.delete_menu_text = text
-        self.delete_menu_msg = message
         self.menu_ownership_cache.add_menu_msg(message, sender_id)
         return message
 
@@ -295,17 +309,6 @@ class MenuHelper:
             await self.send_helper.client.delete_message(self.confirmation_menu_msg.message_data)
             self.confirmation_menu_msg.delete(self.send_helper.database)
             self.confirmation_menu_msg = None
-
-    async def clear_delete_menu(self) -> None:
-        if self.delete_menu_msg is not None:
-            await self.send_helper.client.edit_message(
-                self.delete_menu_msg.chat_data,
-                self.delete_menu_msg.message_data,
-                self.delete_menu_text,
-                new_buttons=None
-            )
-            self.delete_menu_msg.delete(self.send_helper.database)
-            self.delete_menu_msg = None
 
 
 @dataclass
@@ -333,6 +336,14 @@ class Menu:
     def buttons(self) -> Optional[List[List[Button]]]:
         return None
 
+    async def handle_callback_query(
+            self,
+            chat: Group,
+            callback_query: bytes,
+            sender_id: int
+    ) -> Optional[List[Message]]:
+        pass
+
     async def send_as_reply(self, reply_to: Message) -> Message:
         menu_msg = await self.menu_helper.send_helper.send_text_reply(
             self.chat,
@@ -350,7 +361,10 @@ class Menu:
             new_text=self.text,
             new_buttons=self.buttons
         )
-        self.add_self_to_cache(menu_msg)
+        if self.buttons:
+            self.add_self_to_cache(menu_msg)
+        else:
+            self.menu_helper.remove_menu_from_cache(self.video)
         return menu_msg
 
     async def send(self) -> Message:
@@ -418,17 +432,35 @@ class DeleteMenu(Menu):
     def __init__(self, menu_helper: MenuHelper, chat: Group, video: Message, prefix_str: str):
         super().__init__(menu_helper, chat, video)
         self.prefix_str = prefix_str
+        self.cleared = False
 
     @property
     def text(self):
+        if self.cleared:
+            return self.prefix_str
         return self.prefix_str + "\nWould you like to delete the message family?"
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
+        if self.cleared:
+            return None
         return [
             [Button.inline("Yes please", f"delete:{self.video.message_data.message_id}")],
             [Button.inline("No thanks", f"clear_delete_menu")]
         ]
+
+    def handle_callback_query(
+            self,
+            chat: Group,
+            callback_query: bytes,
+            sender_id: int
+    ) -> Optional[List[Message]]:
+        split_data = callback_query.decode().split(":")
+        if split_data[0] == "clear_delete_menu":
+            self.cleared = True
+            sent_msg = await self.send()
+            return [sent_msg]
+        # The "delete:" callback is handled by DeleteHelper
 
 
 def was_giffed(database: Database, video: Message) -> bool:
