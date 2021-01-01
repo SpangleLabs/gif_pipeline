@@ -55,13 +55,10 @@ class GifSendHelper(Helper):
 
     async def on_callback_query(self, chat: Group, callback_query: bytes, sender_id: int) -> Optional[List[Message]]:
         menu_handler_resp = await self.menu_helper.on_callback_query(chat, callback_query, sender_id)
-        if menu_handler_resp:
+        if menu_handler_resp is not None:
             return menu_handler_resp
         # TODO: migrate everything else into Menu classes
         split_data = callback_query.decode().split(":")
-        if split_data[0] == "clear_dest_menu":
-            await self.menu_helper.clear_destination_menu()
-            return
         if split_data[0] == "confirm_send":
             return await self.menu_helper.confirmation_menu(chat, split_data[1], split_data[2], sender_id)
         # TODO: handle these in menus?
@@ -196,8 +193,6 @@ class MenuHelper:
         # Cache of message ID the menu is replying to, to the menu
         self.send_helper = send_helper
         self.menu_cache = defaultdict(lambda: {})
-        # TODO: remove old caches
-        self.destination_menu_msg = None
         # TODO: update this alongside menu_cache updates
         self.menu_ownership_cache = menu_ownership_cache
 
@@ -237,16 +232,13 @@ class MenuHelper:
             video: Message,
             dest_str: str
     ) -> List[Message]:
-        await self.clear_destination_menu()
         sender_id = cmd.message_data.sender_id
         menu = NotGifConfirmationMenu(self, chat, video, sender_id, dest_str)
         menu_msg = await menu.send()
-        self.destination_menu_msg = menu_msg
         self.menu_ownership_cache.add_menu_msg(menu_msg, cmd.message_data.sender_id)
         return [menu_msg]
 
     async def destination_menu(self, chat: Group, cmd: Message, video: Message, sender_id: int) -> List[Message]:
-        await self.clear_destination_menu()
         channels = await self.available_channels_for_user(sender_id)
         if not channels:
             return [
@@ -258,7 +250,6 @@ class MenuHelper:
             ]
         menu = DestinationMenu(self, chat, video, channels)
         menu_msg = await menu.send()
-        self.destination_menu_msg = menu_msg
         self.menu_ownership_cache.add_menu_msg(menu_msg, sender_id)
         return [menu_msg]
 
@@ -296,12 +287,6 @@ class MenuHelper:
         message = await menu.send()
         self.menu_ownership_cache.add_menu_msg(message, sender_id)
         return message
-
-    async def clear_destination_menu(self) -> None:
-        if self.destination_menu_msg is not None:
-            await self.send_helper.client.delete_message(self.destination_menu_msg.message_data)
-            self.destination_menu_msg.delete(self.send_helper.database)
-            self.destination_menu_msg = None
 
 
 @dataclass
@@ -375,6 +360,8 @@ class Menu:
 
 
 class NotGifConfirmationMenu(Menu):
+    clear_menu = b"clear_not_gif_menu"
+
     def __init__(self, menu_helper: MenuHelper, chat: Group, video: Message, sender_id: int, dest_str: str):
         super().__init__(menu_helper, chat, video)
         self.sender_id = sender_id
@@ -386,11 +373,22 @@ class NotGifConfirmationMenu(Menu):
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
-        button_data = button_data_send_str(self.video, self.sender_id, self.dest_str)
+        button_data = f"send:{self.video.message_data.message_id}:s:{self.sender_id}:{self.dest_str}"
         return [
             [Button.inline("Yes, I am sure", button_data)],
-            [Button.inline("No thanks!", "clear_dest_menu")]
+            [Button.inline("No thanks!", self.clear_menu)]
         ]
+
+    async def handle_callback_query(
+            self,
+            chat: Group,
+            callback_query: bytes,
+            sender_id: int
+    ) -> Optional[List[Message]]:
+        if callback_query == self.clear_menu:
+            await self.delete()
+            return []
+        # TODO: send str handled higher up for now, move it in here
 
 
 class DestinationMenu(Menu):
@@ -411,7 +409,7 @@ class DestinationMenu(Menu):
 
 
 class SendConfirmationMenu(Menu):
-    clear_confirm_menu = "clear_confirm_menu"
+    clear_confirm_menu = b"clear_menu"
 
     def __init__(self, menu_helper: MenuHelper, chat: Group, video: Message, destination: Group):
         super().__init__(menu_helper, chat, video)
@@ -484,10 +482,6 @@ def was_giffed(database: Database, video: Message) -> bool:
     if latest_command is not None and latest_command.strip().lower() == "gif":
         return True
     return False
-
-
-def button_data_send_str(video: Message, sender_id: int, dest_str: str) -> str:
-    return f"send:{video.message_data.message_id}:s:{sender_id}:{dest_str}"
 
 
 def button_data_confirm_send(video: Message, channel: Channel) -> str:
