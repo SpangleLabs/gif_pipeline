@@ -197,7 +197,6 @@ class MenuHelper:
         self.menu_cache = defaultdict(lambda: {})
         # TODO: remove old caches
         self.destination_menu_msg = None
-        self.confirmation_menu_msg = None
         # TODO: update this alongside menu_cache updates
         self.menu_ownership_cache = menu_ownership_cache
 
@@ -303,12 +302,6 @@ class MenuHelper:
             await self.send_helper.client.delete_message(self.destination_menu_msg.message_data)
             self.destination_menu_msg.delete(self.send_helper.database)
             self.destination_menu_msg = None
-
-    async def clear_confirmation_menu(self) -> None:
-        if self.confirmation_menu_msg is not None:
-            await self.send_helper.client.delete_message(self.confirmation_menu_msg.message_data)
-            self.confirmation_menu_msg.delete(self.send_helper.database)
-            self.confirmation_menu_msg = None
 
 
 @dataclass
