@@ -26,7 +26,7 @@ from helpers.video_cut_helper import VideoCutHelper
 from helpers.video_helper import VideoHelper
 from helpers.video_rotate_helper import VideoRotateHelper
 from helpers.zip_helper import ZipHelper
-from menu_cache import MenuCache
+from menu_cache import MenuOwnershipCache
 from message import Message
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient, message_data_from_telegram, chat_id_from_telegram
@@ -104,7 +104,7 @@ class Pipeline:
         self.api_keys = api_keys
         self.worker = TaskWorker(3)
         self.helpers = {}
-        self.menu_cache = MenuCache()
+        self.menu_cache = MenuOwnershipCache()
 
     @property
     def all_chats(self) -> List[Group]:
