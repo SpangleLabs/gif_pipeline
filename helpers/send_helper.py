@@ -57,11 +57,8 @@ class GifSendHelper(Helper):
         menu_handler_resp = await self.menu_helper.on_callback_query(chat, callback_query, sender_id)
         if menu_handler_resp is not None:
             return menu_handler_resp
-        # TODO: migrate everything else into Menu classes
-        split_data = callback_query.decode().split(":")
-        if split_data[0] == "confirm_send":
-            return await self.menu_helper.confirmation_menu(chat, split_data[1], split_data[2], sender_id)
         # TODO: handle these in menus?
+        split_data = callback_query.decode().split(":")
         if split_data[0] != "send":
             return
         chat_id = split_data[2]
@@ -392,6 +389,8 @@ class NotGifConfirmationMenu(Menu):
 
 
 class DestinationMenu(Menu):
+    confirm_send = "confirm_send"
+
     def __init__(self, menu_helper: MenuHelper, chat: Group, video: Message, channels: List[Channel]):
         super().__init__(menu_helper, chat, video)
         self.channels = channels
@@ -402,13 +401,26 @@ class DestinationMenu(Menu):
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
+        video_message_id = self.video.message_data.message_id
         return [
             [Button.inline(
                 channel.chat_data.title,
-                f"confirm_send:{self.video.message_data.message_id}:{channel.chat_data.chat_id}"
+                f"{self.confirm_send}:{video_message_id}:{channel.chat_data.chat_id}"
             )]
             for channel in self.channels
         ]
+
+    async def handle_callback_query(
+            self,
+            chat: Group,
+            callback_query: bytes,
+            sender_id: int
+    ) -> Optional[List[Message]]:
+        split_data = callback_query.decode().split(":")
+        if split_data[0] == self.confirm_send:
+            video_id = split_data[1]
+            destination_id = split_data[2]
+            return await self.menu_helper.confirmation_menu(chat, video_id, destination_id, sender_id)
 
 
 class SendConfirmationMenu(Menu):
