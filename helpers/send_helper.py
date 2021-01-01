@@ -64,6 +64,7 @@ class GifSendHelper(Helper):
             return
         if split_data[0] == "confirm_send":
             return await self.menu_helper.confirmation_menu(chat, split_data[1], split_data[2], sender_id)
+        # TODO: handle these in menus?
         if split_data[0] != "send":
             return
         chat_id = split_data[2]
@@ -277,7 +278,6 @@ class MenuHelper:
         video = chat.message_by_id(int(video_id))
         menu = SendConfirmationMenu(self, chat, video, destination)
         menu_msg = await menu.send()
-        self.destination_menu_msg = menu_msg
         self.menu_ownership_cache.add_menu_msg(menu_msg, sender_id)
         return [menu_msg]
 
@@ -366,6 +366,13 @@ class Menu:
             return await self.edit_message(menu.msg)
         return await self.send_as_reply(self.video)
 
+    async def delete(self) -> None:
+        menu = self.menu_helper.get_menu_from_cache(self.video)
+        if menu:
+            await self.menu_helper.send_helper.client.delete_message(menu.msg.message_data)
+            menu.msg.delete(self.menu_helper.send_helper.database)
+            self.menu_helper.remove_menu_from_cache(self.video)
+
 
 class NotGifConfirmationMenu(Menu):
     def __init__(self, menu_helper: MenuHelper, chat: Group, video: Message, sender_id: int, dest_str: str):
@@ -404,6 +411,8 @@ class DestinationMenu(Menu):
 
 
 class SendConfirmationMenu(Menu):
+    clear_confirm_menu = "clear_confirm_menu"
+
     def __init__(self, menu_helper: MenuHelper, chat: Group, video: Message, destination: Group):
         super().__init__(menu_helper, chat, video)
         self.destination = destination
@@ -414,11 +423,22 @@ class SendConfirmationMenu(Menu):
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
-        button_data = button_data_send(int(self.video.message_data.message_id), self.destination.chat_data.chat_id)
+        button_data = f"send:{self.video.message_data.message_id}:{self.destination.chat_data.chat_id}"
         return [
             [Button.inline("I am sure", button_data)],
-            [Button.inline("No thanks", "clear_dest_menu")]
+            [Button.inline("No thanks", self.clear_confirm_menu)]
         ]
+
+    async def handle_callback_query(
+            self,
+            chat: Group,
+            callback_query: bytes,
+            sender_id: int
+    ) -> Optional[List[Message]]:
+        if callback_query == self.clear_confirm_menu:
+            await self.delete()
+            return []
+        # TODO: handle send?
 
 
 class DeleteMenu(Menu):
@@ -442,7 +462,7 @@ class DeleteMenu(Menu):
             [Button.inline("No thanks", f"clear_delete_menu")]
         ]
 
-    def handle_callback_query(
+    async def handle_callback_query(
             self,
             chat: Group,
             callback_query: bytes,
@@ -468,10 +488,6 @@ def was_giffed(database: Database, video: Message) -> bool:
 
 def button_data_send_str(video: Message, sender_id: int, dest_str: str) -> str:
     return f"send:{video.message_data.message_id}:s:{sender_id}:{dest_str}"
-
-
-def button_data_send(video_id: int, dest_id: int) -> str:
-    return f"send:{video_id}:{dest_id}"
 
 
 def button_data_confirm_send(video: Message, channel: Channel) -> str:
