@@ -403,7 +403,10 @@ class DestinationMenu(Menu):
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
         return [
-            [Button.inline(channel.chat_data.title, button_data_confirm_send(self.video, channel))]
+            [Button.inline(
+                channel.chat_data.title,
+                f"confirm_send:{self.video.message_data.message_id}:{channel.chat_data.chat_id}"
+            )]
             for channel in self.channels
         ]
 
@@ -482,7 +485,3 @@ def was_giffed(database: Database, video: Message) -> bool:
     if latest_command is not None and latest_command.strip().lower() == "gif":
         return True
     return False
-
-
-def button_data_confirm_send(video: Message, channel: Channel) -> str:
-    return f"confirm_send:{video.message_data.message_id}:{channel.chat_data.chat_id}"
