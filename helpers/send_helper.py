@@ -349,8 +349,11 @@ class NotGifConfirmationMenu(Menu):
     clear_menu = b"clear_not_gif_menu"
     send_str = "send_str"
 
-    def __init__(self, menu_helper: MenuHelper, chat: Group, video: Message, sender_id: int, dest_str: str):
+    def __init__(
+            self, menu_helper: MenuHelper, chat: Group, video: Message, sender_id: int, cmd_msg: Message, dest_str: str
+    ):
         super().__init__(menu_helper, chat, video, sender_id)
+        self.cmd_msg = cmd_msg
         self.dest_str = dest_str
 
     @property
@@ -359,7 +362,9 @@ class NotGifConfirmationMenu(Menu):
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
-        button_data = f"{self.send_str}:{self.video.message_data.message_id}:{self.owner_id}:{self.dest_str}"
+        video_id = self.video.message_data.message_id
+        cmd_id = self.cmd_msg.message_data.message_id
+        button_data = f"{self.send_str}:{video_id}:{cmd_id}:{self.dest_str}"
         return [
             [Button.inline("Yes, I am sure", button_data)],
             [Button.inline("No thanks!", self.clear_menu)]
@@ -375,14 +380,13 @@ class NotGifConfirmationMenu(Menu):
             await self.delete()
             return []
         # Handle sending if the user is sure
-        # TODO: am I missing a part of the data?
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.send_str:
-            message = chat.message_by_id(int(split_data[1]))
-            cmd_message = chat.message_by_id(int(split_data[3]))
-            dest_str = split_data[4]
+            _, video_id, cmd_id, dest_str = split_data
+            video_msg = chat.message_by_id(int(video_id))
+            cmd_message = chat.message_by_id(int(cmd_id))
             return await self.menu_helper.send_helper.handle_dest_str(
-                chat, cmd_message, message, dest_str, sender_id
+                chat, cmd_message, video_msg, dest_str, sender_id
             )
 
 
