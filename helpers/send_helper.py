@@ -226,7 +226,7 @@ class MenuHelper:
             dest_str: str
     ) -> List[Message]:
         sender_id = cmd.message_data.sender_id
-        menu = NotGifConfirmationMenu(self, chat, video, sender_id, dest_str)
+        menu = NotGifConfirmationMenu(self, chat, video, sender_id, cmd, dest_str)
         menu_msg = await menu.send()
         return [menu_msg]
 
