@@ -137,6 +137,7 @@ class GifSendHelper(Helper):
     ) -> List[Message]:
         destination = self.get_destination_from_name(destination_id)
         if destination is None:
+            # TODO: get command, and send as reply?
             return [await self.send_text_reply(chat, video, f"Unrecognised destination: {destination_id}")]
         dest_admin_ids = await self.client.list_authorized_channel_posters(destination.chat_data)
         if sender_id not in dest_admin_ids:
@@ -179,6 +180,7 @@ class MenuHelper:
     def __init__(self, send_helper: GifSendHelper, menu_ownership_cache: MenuOwnershipCache):
         # Cache of message ID the menu is replying to, to the menu
         self.send_helper = send_helper
+        # TODO: save and load menu cache, so that menus can resume when bot reboots
         self.menu_cache = defaultdict(lambda: {})
         # TODO: eventually remove this class, when MenuHelper is handling all menus
         self.menu_ownership_cache = menu_ownership_cache
