@@ -5,7 +5,7 @@ import zipfile
 from typing import Optional, List
 
 from group import Group
-from helpers.helpers import Helper, random_sandbox_video_path
+from helpers.helpers import random_sandbox_video_path
 from helpers.telegram_gif_helper import TelegramGifHelper
 from message import Message, mime_type_is_video
 from tasks.ffmpeg_task import FfmpegTask

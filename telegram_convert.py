@@ -1,6 +1,5 @@
 import asyncio
 import os
-import subprocess
 
 import ffmpy3
 

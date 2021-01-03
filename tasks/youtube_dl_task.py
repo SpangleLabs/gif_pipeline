@@ -1,5 +1,4 @@
 import glob
-from abc import abstractmethod
 
 import youtube_dl
 

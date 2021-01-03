@@ -56,7 +56,13 @@ class SceneSplitHelper(VideoCutHelper):
             return [await self.send_text_reply(chat, message, "This video contains only 1 scene.")]
         return [await self.confirmation_menu(chat, message, video, threshold, scene_list)]
 
-    async def on_callback_query(self, chat: Group, callback_query: bytes, sender_id: int, menu_msg_id: int) -> Optional[List[Message]]:
+    async def on_callback_query(
+            self,
+            chat: Group,
+            callback_query: bytes,
+            sender_id: int,
+            menu_msg_id: int
+    ) -> Optional[List[Message]]:
         query_split = callback_query.decode().split(":")
         if query_split[0] == "split_clear_menu":
             await self.clear_confirmation_menu()

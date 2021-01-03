@@ -54,8 +54,8 @@ class DownloadHelper(Helper):
     @staticmethod
     def link_is_monitored(link: str) -> bool:
         exclude_list = [
-            "e621.net", # Handled by MSGHelper
-            "imgur.com/a/", "imgur.com/gallery/", # Handled by ImgurGalleryHelper
+            "e621.net",  # Handled by MSGHelper
+            "imgur.com/a/", "imgur.com/gallery/",  # Handled by ImgurGalleryHelper
             "://t.me/c/",  # Ignored, try to stop telegram loops
             "furaffinity.net/view/",  # Handled FAHelper
             "reddit.com/user/", "reddit.com/u/",  # Ignored, tends to just download 12 second clips
