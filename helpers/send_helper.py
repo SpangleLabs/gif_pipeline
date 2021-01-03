@@ -3,7 +3,7 @@ import shutil
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Dict
 
 from telethon import Button
 
@@ -53,8 +53,8 @@ class GifSendHelper(Helper):
             return await self.menu_helper.send_not_gif_warning_menu(chat, message, video, dest_str)
         return await self.handle_dest_str(chat, message, video, dest_str, message.message_data.sender_id)
 
-    async def on_callback_query(self, chat: Group, callback_query: bytes, sender_id: int) -> Optional[List[Message]]:
-        menu_handler_resp = await self.menu_helper.on_callback_query(chat, callback_query, sender_id)
+    async def on_callback_query(self, chat: Group, callback_query: bytes, sender_id: int, menu_msg_id: int) -> Optional[List[Message]]:
+        menu_handler_resp = await self.menu_helper.on_callback_query(chat, callback_query, sender_id, menu_msg_id)
         if menu_handler_resp is not None:
             return menu_handler_resp
 
@@ -179,11 +179,11 @@ class GifSendHelper(Helper):
 class MenuHelper:
     def __init__(self, send_helper: GifSendHelper, menu_ownership_cache: MenuOwnershipCache):
         # Cache of message ID the menu is replying to, to the menu
-        self.send_helper = send_helper
+        self.send_helper: GifSendHelper = send_helper
         # TODO: save and load menu cache, so that menus can resume when bot reboots
-        self.menu_cache = defaultdict(lambda: {})
+        self.menu_cache: Dict[int, Dict[int, SentMenu]] = defaultdict(lambda: {})
         # TODO: eventually remove this class, when MenuHelper is handling all menus
-        self.menu_ownership_cache = menu_ownership_cache
+        self.menu_ownership_cache: MenuOwnershipCache = menu_ownership_cache
 
     def add_menu_to_cache(self, sent_menu: 'SentMenu') -> None:
         self.menu_cache[
@@ -209,16 +209,13 @@ class MenuHelper:
             del self.menu_cache[video.chat_data.chat_id][video.message_data.message_id]
             self.menu_ownership_cache.remove_menu_msg(menu.msg)
 
-    async def on_callback_query(self, chat: Group, callback_query: bytes, sender_id: int) -> Optional[List[Message]]:
-        menus = [
-            menu
-            for video_msg_id, menu in self.menu_cache.get(chat.chat_data.chat_id, {}).items()
-            if menu.owner_id == sender_id
-        ]
-        for menu in menus:
-            resp = await menu.handle_callback_query(chat, callback_query, sender_id)
-            if resp:
-                return resp
+    async def on_callback_query(
+            self, chat: Group, callback_query: bytes, sender_id: int, menu_msg_id: int
+    ) -> Optional[List[Message]]:
+        menu = self.menu_cache.get(chat.chat_data.chat_id, {}).get(menu_msg_id)
+        if menu:
+            return await menu.menu.handle_callback_query(callback_query, sender_id)
+        # TODO: When MenuHelper is handling all menus, throw an error message here for menu not existing
 
     async def send_not_gif_warning_menu(
             self,
@@ -257,7 +254,7 @@ class MenuHelper:
         admin_ids = await self.send_helper.client.list_authorized_channel_posters(channel.chat_data)
         return user_id in admin_ids
 
-    async def confirmation_menu(self, chat: Group, video_id: str, destination_id: str, sender_id: int) -> List[Message]:
+    async def confirmation_menu(self, chat: Group, video_id: int, destination_id: str, sender_id: int) -> List[Message]:
         destination = self.send_helper.get_destination_from_name(destination_id)
         video = chat.message_by_id(int(video_id))
         menu = SendConfirmationMenu(self, chat, video, sender_id, destination)
@@ -298,6 +295,10 @@ class Menu:
         self.menu_helper.add_menu_to_cache(SentMenu(self, menu_msg))
 
     @property
+    def callback_id(self) -> str:
+        return str(self.video.message_data.message_id)
+
+    @property
     @abstractmethod
     def text(self) -> str:
         pass
@@ -308,7 +309,6 @@ class Menu:
 
     async def handle_callback_query(
             self,
-            chat: Group,
             callback_query: bytes,
             sender_id: int
     ) -> Optional[List[Message]]:
@@ -364,9 +364,7 @@ class NotGifConfirmationMenu(Menu):
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
-        video_id = self.video.message_data.message_id
-        cmd_id = self.cmd_msg.message_data.message_id
-        button_data = f"{self.send_str}:{video_id}:{cmd_id}:{self.dest_str}"
+        button_data = f"{self.send_str}:{self.dest_str}"
         return [
             [Button.inline("Yes, I am sure", button_data)],
             [Button.inline("No thanks!", self.clear_menu)]
@@ -374,7 +372,6 @@ class NotGifConfirmationMenu(Menu):
 
     async def handle_callback_query(
             self,
-            chat: Group,
             callback_query: bytes,
             sender_id: int
     ) -> Optional[List[Message]]:
@@ -384,11 +381,9 @@ class NotGifConfirmationMenu(Menu):
         # Handle sending if the user is sure
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.send_str:
-            _, video_id, cmd_id, dest_str = split_data
-            video_msg = chat.message_by_id(int(video_id))
-            cmd_message = chat.message_by_id(int(cmd_id))
+            _, dest_str = split_data
             return await self.menu_helper.send_helper.handle_dest_str(
-                chat, cmd_message, video_msg, dest_str, sender_id
+                self.chat, self.cmd_msg, self.video, dest_str, sender_id
             )
 
 
@@ -405,26 +400,24 @@ class DestinationMenu(Menu):
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
-        video_message_id = self.video.message_data.message_id
         return [
             [Button.inline(
                 channel.chat_data.title,
-                f"{self.confirm_send}:{video_message_id}:{channel.chat_data.chat_id}"
+                f"{self.confirm_send}:{channel.chat_data.chat_id}"
             )]
             for channel in self.channels
         ]
 
     async def handle_callback_query(
             self,
-            chat: Group,
             callback_query: bytes,
             sender_id: int
     ) -> Optional[List[Message]]:
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.confirm_send:
-            video_id = split_data[1]
-            destination_id = split_data[2]
-            return await self.menu_helper.confirmation_menu(chat, video_id, destination_id, sender_id)
+            video_id = self.video.message_data.message_id
+            destination_id = split_data[1]
+            return await self.menu_helper.confirmation_menu(self.chat, video_id, destination_id, sender_id)
 
 
 class SendConfirmationMenu(Menu):
@@ -441,7 +434,7 @@ class SendConfirmationMenu(Menu):
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
-        button_data = f"{self.send_callback}:{self.video.message_data.message_id}:{self.destination.chat_data.chat_id}"
+        button_data = f"{self.send_callback}:{self.destination.chat_data.chat_id}"
         return [
             [Button.inline("I am sure", button_data)],
             [Button.inline("No thanks", self.clear_confirm_menu)]
@@ -449,7 +442,6 @@ class SendConfirmationMenu(Menu):
 
     async def handle_callback_query(
             self,
-            chat: Group,
             callback_query: bytes,
             sender_id: int
     ) -> Optional[List[Message]]:
@@ -459,8 +451,7 @@ class SendConfirmationMenu(Menu):
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.send_callback:
             destination_id = split_data[2]
-            message = chat.message_by_id(int(split_data[1]))
-            return await self.menu_helper.send_helper.send_video(chat, message, destination_id, sender_id)
+            return await self.menu_helper.send_helper.send_video(self.chat, self.video, destination_id, sender_id)
 
 
 class DeleteMenu(Menu):
@@ -486,7 +477,6 @@ class DeleteMenu(Menu):
 
     async def handle_callback_query(
             self,
-            chat: Group,
             callback_query: bytes,
             sender_id: int
     ) -> Optional[List[Message]]:

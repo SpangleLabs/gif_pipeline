@@ -264,14 +264,17 @@ class Pipeline:
             logging.info("User tried to press a button on a menu that wasn't theirs")
             await event.answer("This is not your menu, you are not authorised to use it.")
             return
+        menu_msg_id = event.message_id
         # Hand callback queries to helpers
         helper_results = await asyncio.gather(
-            *(helper.on_callback_query(chat, event.data, event.sender_id) for helper in self.helpers.values()),
+            *(helper.on_callback_query(
+                chat, event.data, event.sender_id, menu_msg_id
+            ) for helper in self.helpers.values()),
             return_exceptions=True
         )
         results_dict = dict(zip(self.helpers.keys(), helper_results))
         for helper, result in results_dict.items():
-            if isinstance(result, Exception):
+            if isinstance(result, BaseException):
                 logging.error(
                     f"Helper {helper} threw an exception trying to handle callback query {event}.",
                     exc_info=result
