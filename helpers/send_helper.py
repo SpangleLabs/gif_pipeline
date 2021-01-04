@@ -29,7 +29,7 @@ class GifSendHelper(Helper):
         super().__init__(database, client, worker)
         self.channels = channels
 
-        self.menu_helper = MenuHelper(self, menu_ownership_cache)
+        self.menu_helper = MenuHelper(self.database, self.client, self, menu_ownership_cache)
 
     @property
     def writable_channels(self) -> List[Channel]:
@@ -73,7 +73,16 @@ class GifSendHelper(Helper):
             sender_id: int
     ) -> List[Message]:
         if dest_str == "":
-            return await self.menu_helper.destination_menu(chat, cmd, video, sender_id)
+            channels = await self.available_channels_for_user(sender_id)
+            if not channels:
+                return [
+                    await self.send_text_reply(
+                        chat,
+                        cmd,
+                        "You do not have permission to send to any available channels."
+                    )
+                ]
+            return await self.menu_helper.destination_menu(chat, cmd, video, sender_id, channels)
         if "<->" in dest_str:
             destinations = dest_str.split("<->", 1)
             return await self.send_two_way_forward(chat, cmd, video, destinations[0], destinations[1], sender_id)
@@ -88,6 +97,19 @@ class GifSendHelper(Helper):
             await self.menu_helper.delete_menu_for_video(video)
             return [await self.send_text_reply(chat, cmd, f"Unrecognised destination: {dest_str}")]
         return await self.send_video(chat, video, cmd, destination, sender_id)
+
+    async def available_channels_for_user(self, user_id: int) -> List[Channel]:
+        all_channels = self.writable_channels
+        user_is_admin = await asyncio.gather(
+            *(self.user_admin_in_channel(user_id, channel) for channel in all_channels)
+        )
+        return [
+            channel for channel, is_admin in zip(all_channels, user_is_admin) if is_admin
+        ]
+
+    async def user_admin_in_channel(self, user_id: int, channel: Channel) -> bool:
+        admin_ids = await self.client.list_authorized_channel_posters(channel.chat_data)
+        return user_id in admin_ids
 
     async def send_two_way_forward(
             self,
@@ -188,7 +210,15 @@ class GifSendHelper(Helper):
 
 
 class MenuHelper:
-    def __init__(self, send_helper: GifSendHelper, menu_ownership_cache: MenuOwnershipCache):
+    def __init__(
+            self,
+            database: Database,
+            client: TelegramClient,
+            send_helper: GifSendHelper,
+            menu_ownership_cache: MenuOwnershipCache
+    ):
+        self.database = database
+        self.client = client
         # Cache of message ID the menu is replying to, to the menu
         self.send_helper: GifSendHelper = send_helper
         # TODO: save and load menu cache, so that menus can resume when bot reboots
@@ -210,8 +240,8 @@ class MenuHelper:
     async def delete_menu_for_video(self, video: Message) -> None:
         menu = self.get_menu_from_cache(video)
         if menu:
-            await self.send_helper.client.delete_message(menu.msg.message_data)
-            menu.msg.delete(self.send_helper.database)
+            await self.client.delete_message(menu.msg.message_data)
+            menu.msg.delete(self.database)
             self.remove_menu_from_cache(video)
 
     def remove_menu_from_cache(self, video: Message) -> None:
@@ -248,32 +278,17 @@ class MenuHelper:
         menu_msg = await menu.send()
         return [menu_msg]
 
-    async def destination_menu(self, chat: Group, cmd: Message, video: Message, sender_id: int) -> List[Message]:
-        channels = await self.available_channels_for_user(sender_id)
-        if not channels:
-            return [
-                await self.send_helper.send_text_reply(
-                    chat,
-                    cmd,
-                    "You do not have permission to send to any available channels."
-                )
-            ]
+    async def destination_menu(
+            self,
+            chat: Group,
+            cmd: Message,
+            video: Message,
+            sender_id: int,
+            channels: List[Channel]
+    ) -> List[Message]:
         menu = DestinationMenu(self, chat, video, sender_id, cmd, channels)
         menu_msg = await menu.send()
         return [menu_msg]
-
-    async def available_channels_for_user(self, user_id: int) -> List[Channel]:
-        all_channels = self.send_helper.writable_channels
-        user_is_admin = await asyncio.gather(
-            *(self.user_admin_in_channel(user_id, channel) for channel in all_channels)
-        )
-        return [
-            channel for channel, is_admin in zip(all_channels, user_is_admin) if is_admin
-        ]
-
-    async def user_admin_in_channel(self, user_id: int, channel: Channel) -> bool:
-        admin_ids = await self.send_helper.client.list_authorized_channel_posters(channel.chat_data)
-        return user_id in admin_ids
 
     async def confirmation_menu(
             self,
