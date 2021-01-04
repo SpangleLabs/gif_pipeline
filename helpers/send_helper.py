@@ -29,7 +29,7 @@ class GifSendHelper(Helper):
         super().__init__(database, client, worker)
         self.channels = channels
 
-        self.menu_helper = MenuHelper(self.database, self.client, self, menu_ownership_cache)
+        self.menu_helper = MenuHelper(database, client, worker, menu_ownership_cache)
 
     @property
     def writable_channels(self) -> List[Channel]:
@@ -50,7 +50,7 @@ class GifSendHelper(Helper):
         # Read dest string
         dest_str = text_clean[4:].strip()
         if not was_giffed(self.database, video):
-            return await self.menu_helper.send_not_gif_warning_menu(chat, message, video, dest_str)
+            return await self.menu_helper.send_not_gif_warning_menu(chat, message, video, self, dest_str)
         return await self.handle_dest_str(chat, message, video, dest_str, message.message_data.sender_id)
 
     async def on_callback_query(
@@ -82,7 +82,7 @@ class GifSendHelper(Helper):
                         "You do not have permission to send to any available channels."
                     )
                 ]
-            return await self.menu_helper.destination_menu(chat, cmd, video, channels)
+            return await self.menu_helper.destination_menu(chat, cmd, video, self, channels)
         if "<->" in dest_str:
             destinations = dest_str.split("<->", 1)
             return await self.send_two_way_forward(chat, cmd, video, destinations[0], destinations[1], sender_id)
@@ -209,22 +209,24 @@ class GifSendHelper(Helper):
         return new_message
 
 
-class MenuHelper:
+class MenuHelper(Helper):
+
     def __init__(
             self,
             database: Database,
             client: TelegramClient,
-            send_helper: GifSendHelper,
-            menu_ownership_cache: MenuOwnershipCache
+            worker: TaskWorker,
+            menu_ownership_cache: MenuOwnershipCache,
     ):
-        self.database = database
-        self.client = client
+        super().__init__(database, client, worker)
         # Cache of message ID the menu is replying to, to the menu
-        self.send_helper: GifSendHelper = send_helper
         # TODO: save and load menu cache, so that menus can resume when bot reboots
         self.menu_cache: Dict[int, Dict[int, SentMenu]] = defaultdict(lambda: {})
         # TODO: eventually remove this class, when MenuHelper is handling all menus
         self.menu_ownership_cache: MenuOwnershipCache = menu_ownership_cache
+
+    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+        pass
 
     def add_menu_to_cache(self, sent_menu: 'SentMenu') -> None:
         self.menu_cache[
@@ -271,9 +273,10 @@ class MenuHelper:
             chat: Group,
             cmd: Message,
             video: Message,
+            send_helper: GifSendHelper,
             dest_str: str
     ) -> List[Message]:
-        menu = NotGifConfirmationMenu(self, chat, cmd, video, dest_str)
+        menu = NotGifConfirmationMenu(self, chat, cmd, video, send_helper, dest_str)
         menu_msg = await menu.send()
         return [menu_msg]
 
@@ -282,9 +285,10 @@ class MenuHelper:
             chat: Group,
             cmd: Message,
             video: Message,
+            send_helper: GifSendHelper,
             channels: List[Channel]
     ) -> List[Message]:
-        menu = DestinationMenu(self, chat, cmd, video, channels)
+        menu = DestinationMenu(self, chat, cmd, video, send_helper, channels)
         menu_msg = await menu.send()
         return [menu_msg]
 
@@ -293,10 +297,11 @@ class MenuHelper:
             chat: Group,
             cmd_msg: Message,
             video: Message,
+            send_helper: GifSendHelper,
             destination_id: str,
     ) -> List[Message]:
-        destination = self.send_helper.get_destination_from_name(destination_id)
-        menu = SendConfirmationMenu(self, chat, cmd_msg, video, destination)
+        destination = send_helper.get_destination_from_name(destination_id)
+        menu = SendConfirmationMenu(self, chat, cmd_msg, video, send_helper, destination)
         menu_msg = await menu.send()
         return [menu_msg]
 
@@ -354,7 +359,7 @@ class Menu:
         pass
 
     async def send_as_reply(self, reply_to: Message) -> Message:
-        menu_msg = await self.menu_helper.send_helper.send_text_reply(
+        menu_msg = await self.menu_helper.send_text_reply(
             self.chat,
             reply_to,
             self.text,
@@ -364,7 +369,7 @@ class Menu:
         return menu_msg
 
     async def edit_message(self, old_msg: Message) -> Message:
-        menu_msg = await self.menu_helper.send_helper.edit_message(
+        menu_msg = await self.menu_helper.edit_message(
             self.chat,
             old_msg,
             new_text=self.text,
@@ -391,9 +396,16 @@ class NotGifConfirmationMenu(Menu):
     send_str = "send_str"
 
     def __init__(
-            self, menu_helper: MenuHelper, chat: Group, cmd_msg: Message, video: Message, dest_str: str
+            self,
+            menu_helper: MenuHelper,
+            chat: Group,
+            cmd_msg: Message,
+            video: Message,
+            send_helper: GifSendHelper,
+            dest_str: str
     ):
         super().__init__(menu_helper, chat, cmd_msg, video)
+        self.send_helper = send_helper
         self.dest_str = dest_str
 
     @property
@@ -420,7 +432,7 @@ class NotGifConfirmationMenu(Menu):
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.send_str:
             _, dest_str = split_data
-            return await self.menu_helper.send_helper.handle_dest_str(
+            return await self.send_helper.handle_dest_str(
                 self.chat, self.cmd, self.video, dest_str, sender_id
             )
 
@@ -434,9 +446,11 @@ class DestinationMenu(Menu):
             chat: Group,
             cmd_msg: Message,
             video: Message,
+            send_helper: GifSendHelper,
             channels: List[Channel]
     ):
         super().__init__(menu_helper, chat, cmd_msg, video)
+        self.send_helper = send_helper
         self.channels = channels
 
     @property
@@ -461,7 +475,9 @@ class DestinationMenu(Menu):
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.confirm_send:
             destination_id = split_data[1]
-            return await self.menu_helper.confirmation_menu(self.chat, self.cmd, self.video, destination_id)
+            return await self.menu_helper.confirmation_menu(
+                self.chat, self.cmd, self.video, self.send_helper, destination_id
+            )
 
 
 class SendConfirmationMenu(Menu):
@@ -474,9 +490,11 @@ class SendConfirmationMenu(Menu):
             chat: Group,
             cmd_msg: Message,
             video: Message,
+            send_helper: GifSendHelper,
             destination: Group
     ):
         super().__init__(menu_helper, chat, cmd_msg, video)
+        self.send_helper = send_helper
         self.destination = destination
 
     @property
@@ -499,7 +517,7 @@ class SendConfirmationMenu(Menu):
             await self.delete()
             return []
         if callback_query == self.send_callback:
-            return await self.menu_helper.send_helper.send_video(
+            return await self.send_helper.send_video(
                 self.chat, self.video, self.cmd, self.destination, sender_id
             )
 
