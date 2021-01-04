@@ -215,10 +215,18 @@ class MenuHelper:
             del self.menu_cache[video.chat_data.chat_id][video.message_data.message_id]
             self.menu_ownership_cache.remove_menu_msg(menu.msg)
 
+    def get_menu_by_message_id(self, chat_id: int, menu_msg_id: int) -> Optional['SentMenu']:
+        menus = [
+            menu for video_id, menu in self.menu_cache.get(chat_id, {}).items()
+            if menu.msg.message_data.message_id == menu_msg_id
+        ]
+        return next(iter(menus), None)
+
     async def on_callback_query(
             self, chat: Group, callback_query: bytes, sender_id: int, menu_msg_id: int
     ) -> Optional[List[Message]]:
-        menu = self.menu_cache.get(chat.chat_data.chat_id, {}).get(menu_msg_id)
+        # Menus are cached by video ID, not menu message ID.
+        menu = self.get_menu_by_message_id(chat.chat_data.chat_id, menu_msg_id)
         if menu:
             return await menu.menu.handle_callback_query(callback_query, sender_id)
         # TODO: When MenuHelper is handling all menus, throw an error message here for menu not existing
@@ -251,7 +259,9 @@ class MenuHelper:
 
     async def available_channels_for_user(self, user_id: int) -> List[Channel]:
         all_channels = self.send_helper.writable_channels
-        user_is_admin = asyncio.gather(*(self.user_admin_in_channel(user_id, channel) for channel in all_channels))
+        user_is_admin = await asyncio.gather(
+            *(self.user_admin_in_channel(user_id, channel) for channel in all_channels)
+        )
         return [
             channel for channel, is_admin in zip(all_channels, user_is_admin) if is_admin
         ]
@@ -456,7 +466,7 @@ class SendConfirmationMenu(Menu):
             return []
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.send_callback:
-            destination_id = split_data[2]
+            destination_id = split_data[1]
             return await self.menu_helper.send_helper.send_video(self.chat, self.video, destination_id, sender_id)
 
 
