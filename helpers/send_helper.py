@@ -310,7 +310,7 @@ class MenuHelper:
             text: str,
             sender_id: int
     ) -> Optional[Message]:
-        admin_ids = await self.send_helper.client.list_authorized_to_delete(chat.chat_data)
+        admin_ids = await self.client.list_authorized_to_delete(chat.chat_data)
         if sender_id not in admin_ids:
             await self.delete_menu_for_video(video)
             return None
