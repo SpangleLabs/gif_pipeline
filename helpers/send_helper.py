@@ -83,7 +83,7 @@ class GifSendHelper(Helper):
         if "<-" in dest_str:
             destinations = dest_str.split("<-", 1)
             return await self.send_forward(chat, cmd, video, destinations[1], destinations[0], sender_id)
-        return await self.send_video(chat, video, dest_str, sender_id)
+        return await self.send_video(chat, video, cmd, dest_str, sender_id)
 
     async def send_two_way_forward(
             self,
@@ -110,15 +110,18 @@ class GifSendHelper(Helper):
     ) -> List[Message]:
         chat_from = self.get_destination_from_name(destination_from)
         if chat_from is None:
+            await self.menu_helper.delete_menu_for_video(video)
             return [await self.send_text_reply(chat, cmd_message, f"Unrecognised destination from: {destination_from}")]
         chat_to = self.get_destination_from_name(destination_to)
         if chat_to is None:
+            await self.menu_helper.delete_menu_for_video(video)
             return [await self.send_text_reply(chat, cmd_message, f"Unrecognised destination to: {destination_to}")]
         # Check permissions in both groups
         from_admin_ids = await self.client.list_authorized_channel_posters(chat_from.chat_data)
         to_admin_ids = await self.client.list_authorized_channel_posters(chat_to.chat_data)
         if sender_id not in from_admin_ids or sender_id not in to_admin_ids:
-            error_text = f"You need to be an admin of both channels to send a forwarded video."
+            await self.menu_helper.delete_menu_for_video(video)
+            error_text = "You need to be an admin of both channels to send a forwarded video."
             return [await self.send_text_reply(chat, cmd_message, error_text)]
         # Send initial message
         initial_message = await self.send_message(chat_from, video_path=video.message_data.file_path)
@@ -138,16 +141,18 @@ class GifSendHelper(Helper):
             self,
             chat: Group,
             video: Message,
+            cmd: Message,
             destination_id: Union[str, int],
             sender_id: int
     ) -> List[Message]:
         destination = self.get_destination_from_name(destination_id)
         if destination is None:
-            # TODO: get command, and send as reply?
-            return [await self.send_text_reply(chat, video, f"Unrecognised destination: {destination_id}")]
+            await self.menu_helper.delete_menu_for_video(video)
+            return [await self.send_text_reply(chat, cmd, f"Unrecognised destination: {destination_id}")]
         dest_admin_ids = await self.client.list_authorized_channel_posters(destination.chat_data)
         if sender_id not in dest_admin_ids:
-            return [await self.send_text_reply(chat, video, "You do not have permission to post in that channel.")]
+            await self.menu_helper.delete_menu_for_video(video)
+            return [await self.send_text_reply(chat, cmd, "You do not have permission to post in that channel.")]
         new_message = await self.send_message(destination, video_path=video.message_data.file_path)
         confirm_text = f"This gif has been sent to {destination.chat_data.title}."
         confirm_message = await self.menu_helper.after_send_delete_menu(chat, video, confirm_text, sender_id)
@@ -253,7 +258,7 @@ class MenuHelper:
                     "You do not have permission to send to any available channels."
                 )
             ]
-        menu = DestinationMenu(self, chat, video, sender_id, channels)
+        menu = DestinationMenu(self, chat, video, sender_id, cmd, channels)
         menu_msg = await menu.send()
         return [menu_msg]
 
@@ -270,10 +275,16 @@ class MenuHelper:
         admin_ids = await self.send_helper.client.list_authorized_channel_posters(channel.chat_data)
         return user_id in admin_ids
 
-    async def confirmation_menu(self, chat: Group, video_id: int, destination_id: str, sender_id: int) -> List[Message]:
+    async def confirmation_menu(
+            self,
+            chat: Group,
+            video: Message,
+            cmd_msg: Message,
+            destination_id: str,
+            sender_id: int
+    ) -> List[Message]:
         destination = self.send_helper.get_destination_from_name(destination_id)
-        video = chat.message_by_id(int(video_id))
-        menu = SendConfirmationMenu(self, chat, video, sender_id, destination)
+        menu = SendConfirmationMenu(self, chat, video, sender_id, cmd_msg, destination)
         menu_msg = await menu.send()
         return [menu_msg]
 
@@ -368,9 +379,9 @@ class NotGifConfirmationMenu(Menu):
     send_str = "send_str"
 
     def __init__(
-            self, menu_helper: MenuHelper, chat: Group, video: Message, sender_id: int, cmd_msg: Message, dest_str: str
+            self, menu_helper: MenuHelper, chat: Group, video: Message, owner_id: int, cmd_msg: Message, dest_str: str
     ):
-        super().__init__(menu_helper, chat, video, sender_id)
+        super().__init__(menu_helper, chat, video, owner_id)
         self.cmd_msg = cmd_msg
         self.dest_str = dest_str
 
@@ -406,9 +417,18 @@ class NotGifConfirmationMenu(Menu):
 class DestinationMenu(Menu):
     confirm_send = "confirm_send"
 
-    def __init__(self, menu_helper: MenuHelper, chat: Group, video: Message, owner_id: int, channels: List[Channel]):
+    def __init__(
+            self,
+            menu_helper: MenuHelper,
+            chat: Group,
+            video: Message,
+            owner_id: int,
+            cmd_msg: Message,
+            channels: List[Channel]
+    ):
         super().__init__(menu_helper, chat, video, owner_id)
         self.channels = channels
+        self.cmd_msg = cmd_msg
 
     @property
     def text(self) -> str:
@@ -431,18 +451,28 @@ class DestinationMenu(Menu):
     ) -> Optional[List[Message]]:
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.confirm_send:
-            video_id = self.video.message_data.message_id
             destination_id = split_data[1]
-            return await self.menu_helper.confirmation_menu(self.chat, video_id, destination_id, sender_id)
+            return await self.menu_helper.confirmation_menu(
+                self.chat, self.video, self.cmd_msg, destination_id, sender_id
+            )
 
 
 class SendConfirmationMenu(Menu):
     clear_confirm_menu = b"clear_menu"
     send_callback = "send"
 
-    def __init__(self, menu_helper: MenuHelper, chat: Group, video: Message, owner_id: int, destination: Group):
+    def __init__(
+            self,
+            menu_helper: MenuHelper,
+            chat: Group,
+            video: Message,
+            owner_id: int,
+            cmd_msg: Message,
+            destination: Group
+    ):
         super().__init__(menu_helper, chat, video, owner_id)
         self.destination = destination
+        self.cmd_msg = cmd_msg
 
     @property
     def text(self) -> str:
@@ -467,7 +497,9 @@ class SendConfirmationMenu(Menu):
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.send_callback:
             destination_id = split_data[1]
-            return await self.menu_helper.send_helper.send_video(self.chat, self.video, destination_id, sender_id)
+            return await self.menu_helper.send_helper.send_video(
+                self.chat, self.video, self.cmd_msg, destination_id, sender_id
+            )
 
 
 class DeleteMenu(Menu):
