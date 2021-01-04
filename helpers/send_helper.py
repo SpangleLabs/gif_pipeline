@@ -83,7 +83,11 @@ class GifSendHelper(Helper):
         if "<-" in dest_str:
             destinations = dest_str.split("<-", 1)
             return await self.send_forward(chat, cmd, video, destinations[1], destinations[0], sender_id)
-        return await self.send_video(chat, video, cmd, dest_str, sender_id)
+        destination = self.get_destination_from_name(dest_str)
+        if destination is None:
+            await self.menu_helper.delete_menu_for_video(video)
+            return [await self.send_text_reply(chat, cmd, f"Unrecognised destination: {dest_str}")]
+        return await self.send_video(chat, video, cmd, destination, sender_id)
 
     async def send_two_way_forward(
             self,
@@ -142,13 +146,9 @@ class GifSendHelper(Helper):
             chat: Group,
             video: Message,
             cmd: Message,
-            destination_id: Union[str, int],
+            destination: Group,
             sender_id: int
     ) -> List[Message]:
-        destination = self.get_destination_from_name(destination_id)
-        if destination is None:
-            await self.menu_helper.delete_menu_for_video(video)
-            return [await self.send_text_reply(chat, cmd, f"Unrecognised destination: {destination_id}")]
         dest_admin_ids = await self.client.list_authorized_channel_posters(destination.chat_data)
         if sender_id not in dest_admin_ids:
             await self.menu_helper.delete_menu_for_video(video)
@@ -459,7 +459,7 @@ class DestinationMenu(Menu):
 
 class SendConfirmationMenu(Menu):
     clear_confirm_menu = b"clear_menu"
-    send_callback = "send"
+    send_callback = b"send"
 
     def __init__(
             self,
@@ -480,9 +480,8 @@ class SendConfirmationMenu(Menu):
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
-        button_data = f"{self.send_callback}:{self.destination.chat_data.chat_id}"
         return [
-            [Button.inline("I am sure", button_data)],
+            [Button.inline("I am sure", self.send_callback)],
             [Button.inline("No thanks", self.clear_confirm_menu)]
         ]
 
@@ -494,11 +493,9 @@ class SendConfirmationMenu(Menu):
         if callback_query == self.clear_confirm_menu:
             await self.delete()
             return []
-        split_data = callback_query.decode().split(":")
-        if split_data[0] == self.send_callback:
-            destination_id = split_data[1]
+        if callback_query == self.send_callback:
             return await self.menu_helper.send_helper.send_video(
-                self.chat, self.video, self.cmd_msg, destination_id, sender_id
+                self.chat, self.video, self.cmd_msg, self.destination, sender_id
             )
 
 
