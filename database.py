@@ -1,5 +1,6 @@
 import sqlite3
-from typing import List, Optional, Type, TypeVar, Set
+from collections import defaultdict
+from typing import List, Optional, Type, TypeVar, Set, Iterable
 
 import dateutil.parser
 
@@ -153,18 +154,20 @@ class Database:
 
     def get_messages_for_hashes(self, image_hashes: Set[str]) -> List[MessageData]:
         cur = self.conn.cursor()
-        messages = []
-        # TODO: can fail if there are too many hashes
-        for row in cur.execute(
-                "SELECT DISTINCT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
-                "m.file_path, m.file_mime_type, m.reply_to, m.sender_id, m.is_scheduled "
-                "FROM video_hashes v "
-                "LEFT JOIN messages m on v.entry_id = m.entry_id "
-                f"WHERE v.hash IN ({','.join('?' * len(image_hashes))}) AND m.datetime IS NOT NULL",
-                list(image_hashes)
-        ):
-            messages.append(message_data_from_row(row))
-        return messages
+        messages = defaultdict(lambda: {})
+        # Chunk this up, as it will otherwise fail if there are too many hashes
+        image_hash_lists = chunks(image_hashes, 500)
+        for image_hash_list in image_hash_lists:
+            for row in cur.execute(
+                    "SELECT DISTINCT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
+                    "m.file_path, m.file_mime_type, m.reply_to, m.sender_id, m.is_scheduled "
+                    "FROM video_hashes v "
+                    "LEFT JOIN messages m on v.entry_id = m.entry_id "
+                    f"WHERE v.hash IN ({','.join('?' * len(image_hash_list))}) AND m.datetime IS NOT NULL",
+                    list(image_hash_list)
+            ):
+                messages[row["chat_id"]][row["message_id"]] = message_data_from_row(row)
+        return [msg for chat_id, chat_msgs in messages.items() for msg_id, msg in chat_msgs.items()]
 
     def save_hashes(self, message: MessageData, hashes: Set[str]) -> None:
         cur = self.conn.cursor()
@@ -261,3 +264,13 @@ class Database:
         ):
             messages.append(message_data_from_row(row))
         return messages
+
+
+S = TypeVar('S')
+
+
+def chunks(lst: Iterable[S], n: int) -> List[List[S]]:
+    """Yield successive n-sized chunks from lst."""
+    lst = list(lst)
+    for i in range(0, len(lst), n):
+        yield list(lst)[i:i + n]
