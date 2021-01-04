@@ -48,17 +48,6 @@ class GifSendHelper(Helper):
             return await self.menu_helper.send_not_gif_warning_menu(chat, message, video, self, dest_str)
         return await self.handle_dest_str(chat, message, video, dest_str, message.message_data.sender_id)
 
-    async def on_callback_query(
-            self,
-            chat: Group,
-            callback_query: bytes,
-            sender_id: int,
-            menu_msg_id: int
-    ) -> Optional[List[Message]]:
-        menu_handler_resp = await self.menu_helper.on_callback_query(chat, callback_query, sender_id, menu_msg_id)
-        if menu_handler_resp is not None:
-            return menu_handler_resp
-
     async def handle_dest_str(
             self,
             chat: Group,
