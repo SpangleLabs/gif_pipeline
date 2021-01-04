@@ -20,12 +20,11 @@ class GifSendHelper(Helper):
             client: TelegramClient,
             worker: TaskWorker,
             channels: List[Channel],
-            menu_ownership_cache: MenuOwnershipCache
+            menu_helper: MenuHelper
     ):
         super().__init__(database, client, worker)
         self.channels = channels
-
-        self.menu_helper = MenuHelper(database, client, worker, menu_ownership_cache)
+        self.menu_helper = menu_helper
 
     @property
     def writable_channels(self) -> List[Channel]:

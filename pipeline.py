@@ -14,6 +14,7 @@ from helpers.duplicate_helper import DuplicateHelper
 from helpers.fa_helper import FAHelper
 from helpers.ffprobe_helper import FFProbeHelper
 from helpers.imgur_gallery_helper import ImgurGalleryHelper
+from helpers.menu_helper import MenuHelper
 from helpers.merge_helper import MergeHelper
 from helpers.msg_helper import MSGHelper
 from helpers.reverse_helper import ReverseHelper
@@ -126,6 +127,7 @@ class Pipeline:
     def initialise_helpers(self) -> None:
         logging.info("Initialising helpers")
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
+        menu_helper = MenuHelper(self.database, self.client, self.worker, self.menu_cache)
         helpers = [
             duplicate_helper,
             TelegramGifHelper(self.database, self.client, self.worker),
@@ -138,7 +140,7 @@ class Pipeline:
             MSGHelper(self.database, self.client, self.worker),
             FAHelper(self.database, self.client, self.worker),
             SceneSplitHelper(self.database, self.client, self.worker, self.menu_cache),
-            GifSendHelper(self.database, self.client, self.worker, self.channels, self.menu_cache),
+            GifSendHelper(self.database, self.client, self.worker, self.channels, menu_helper),
             DeleteHelper(self.database, self.client, self.worker),
             MergeHelper(self.database, self.client, self.worker),
             ReverseHelper(self.database, self.client, self.worker),
