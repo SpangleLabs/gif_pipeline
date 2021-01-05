@@ -425,9 +425,8 @@ class SplitScenesConfirmationMenu(Menu):
             self.cleared = True
             sent_msg = await self.send()
             return [sent_msg]
-        if callback_query != self.cmd_split:
-            return None
-        await self.delete()
-        progress_text = f"Splitting video into {len(self.scene_list)} scenes"
-        async with self.menu_helper.progress_message(self.chat, self.cmd, progress_text):
-            return await self.split_helper.split_scenes(self.chat, self.cmd, self.video, self.scene_list)
+        if callback_query == self.cmd_split:
+            await self.delete()
+            progress_text = f"Splitting video into {len(self.scene_list)} scenes"
+            async with self.menu_helper.progress_message(self.chat, self.cmd, progress_text):
+                return await self.split_helper.split_scenes(self.chat, self.cmd, self.video, self.scene_list)
