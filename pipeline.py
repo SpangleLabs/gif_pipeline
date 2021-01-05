@@ -139,7 +139,7 @@ class Pipeline:
             VideoHelper(self.database, self.client, self.worker),
             MSGHelper(self.database, self.client, self.worker),
             FAHelper(self.database, self.client, self.worker),
-            SceneSplitHelper(self.database, self.client, self.worker, self.menu_cache),
+            SceneSplitHelper(self.database, self.client, self.worker, menu_helper),
             GifSendHelper(self.database, self.client, self.worker, self.channels, menu_helper),
             DeleteHelper(self.database, self.client, self.worker),
             MergeHelper(self.database, self.client, self.worker),
