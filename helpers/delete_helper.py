@@ -62,10 +62,4 @@ class DeleteHelper(Helper):
             return None
         message_id = int(query_split[1])
         message = chat.message_by_id(message_id)
-        message_history = self.database.get_message_history(message.message_data)
-        message_family = self.database.get_message_family(message_history[-1])
-        for msg_data in message_family:
-            msg = chat.message_by_id(msg_data.message_id)
-            await self.client.delete_message(msg_data)
-            msg.delete(self.database)
-        return []
+        return await self.delete_family(chat, message)
