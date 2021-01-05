@@ -1,15 +1,17 @@
+from __future__ import annotations
 import asyncio
 import shutil
-from typing import Optional, List, Union
+from typing import Optional, List, Union, TYPE_CHECKING
 
 from database import Database
 from group import Group, Channel
 from helpers.helpers import Helper, find_video_for_message
-from helpers.menu_helper import MenuHelper
-from menu_cache import MenuOwnershipCache
 from message import Message
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient, message_data_from_telegram
+
+if TYPE_CHECKING:
+    from helpers.menu_helper import MenuHelper
 
 
 class GifSendHelper(Helper):
