@@ -416,7 +416,7 @@ class SplitScenesConfirmationMenu(Menu):
                 [Button.inline("No thank you", self.cmd_cancel)]
             ]
 
-    def handle_callback_query(
+    async def handle_callback_query(
             self,
             callback_query: bytes,
             sender_id: int
