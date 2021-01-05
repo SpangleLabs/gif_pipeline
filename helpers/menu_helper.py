@@ -423,7 +423,8 @@ class SplitScenesConfirmationMenu(Menu):
     ) -> Optional[List[Message]]:
         if callback_query == self.cmd_cancel:
             self.cleared = True
-            return
+            sent_msg = await self.send()
+            return [sent_msg]
         if callback_query != self.cmd_split:
             return None
         await self.delete()
