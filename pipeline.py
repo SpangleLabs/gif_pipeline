@@ -130,6 +130,7 @@ class Pipeline:
         menu_helper = MenuHelper(self.database, self.client, self.worker, self.menu_cache)
         helpers = [
             duplicate_helper,
+            menu_helper,
             TelegramGifHelper(self.database, self.client, self.worker),
             VideoRotateHelper(self.database, self.client, self.worker),
             VideoCutHelper(self.database, self.client, self.worker),
