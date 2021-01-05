@@ -33,7 +33,8 @@ class VideoCropHelper(Helper):
             return [await self.send_text_reply(chat, message, "I'm not sure which video you would like to crop.")]
         crop_args = text_clean[len("crop"):].strip()
         if crop_args.lower() == "auto":
-            crop_string = await self.detect_crop(video.message_data.file_path)
+            async with self.progress_message(chat, message, "Detecting auto crop settings"):
+                crop_string = await self.detect_crop(video.message_data.file_path)
             if crop_string is None:
                 return [await self.send_text_reply(chat, message, "That video could not be auto cropped.")]
         else:
