@@ -70,7 +70,9 @@ class MenuHelper(Helper):
     ) -> Optional[List[Message]]:
         # Menus are cached by video ID, not menu message ID.
         menu = self.get_menu_by_message_id(chat.chat_data.chat_id, menu_msg_id)
-        if menu:
+        if menu and not menu.clicked:
+            # Prevent double clicking menus
+            menu.clicked = True
             return await menu.menu.handle_callback_query(callback_query, sender_id)
         # TODO: When MenuHelper is handling all menus, throw an error message here for menu not existing
 
@@ -131,6 +133,7 @@ class MenuHelper(Helper):
 class SentMenu:
     menu: 'Menu'
     msg: Message
+    clicked: bool = False
 
 
 class Menu:
