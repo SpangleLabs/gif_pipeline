@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import sys
-from typing import Dict, List, Iterator, Optional
+from typing import Dict, List, Iterator, Optional, Iterable, Union
 
 from telethon import events
 
@@ -185,7 +185,7 @@ class Pipeline:
         self.database.save_message(new_message.message_data)
         logging.info(f"Edited message initialised: {new_message}")
 
-    async def on_new_message(self, event: events.NewMessage.Event):
+    async def on_new_message(self, event: events.NewMessage.Event) -> None:
         # This is called just for new messages
         # Get chat, check it's one we know
         chat = self.chat_by_id(chat_id_from_telegram(event.message))
@@ -205,13 +205,12 @@ class Pipeline:
     async def pass_message_to_handlers(self, new_message: Message, chat: Group = None):
         if chat is None:
             chat = self.chat_by_id(new_message.chat_data.chat_id)
-        helper_results = await asyncio.gather(
+        helper_results: Iterable[Union[BaseException, Optional[List[Message]]]] = await asyncio.gather(
             *(helper.on_new_message(chat, new_message) for helper in self.helpers.values()),
             return_exceptions=True
         )
-        results_dict = dict(zip(self.helpers.keys(), helper_results))
-        for helper, result in results_dict.items():
-            if isinstance(result, Exception):
+        for helper, result in zip(self.helpers.keys(), helper_results):
+            if isinstance(result, BaseException):
                 logging.error(
                     f"Helper {helper} threw an exception trying to handle message {new_message}.",
                     exc_info=result
@@ -269,14 +268,13 @@ class Pipeline:
             return
         menu_msg_id = event.message_id
         # Hand callback queries to helpers
-        helper_results = await asyncio.gather(
+        helper_results: Iterable[Union[BaseException, Optional[List[Message]]]] = await asyncio.gather(
             *(helper.on_callback_query(
-                chat, event.data, event.sender_id, menu_msg_id
+                chat, event.data, event.sender_id, menu_msg_id, event.answer
             ) for helper in self.helpers.values()),
             return_exceptions=True
         )
-        results_dict = dict(zip(self.helpers.keys(), helper_results))
-        for helper, result in results_dict.items():
+        for helper, result in zip(self.helpers.keys(), helper_results):
             if isinstance(result, BaseException):
                 logging.error(
                     f"Helper {helper} threw an exception trying to handle callback query {event}.",

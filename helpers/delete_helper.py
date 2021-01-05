@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from database import Database
 from group import Group
-from helpers.helpers import Helper
+from helpers.helpers import Helper, AnswerCallback
 from message import Message, MessageData
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient
@@ -52,7 +52,8 @@ class DeleteHelper(Helper):
             chat: Group,
             callback_query: bytes,
             sender_id: int,
-            menu_msg_id: int
+            menu_msg_id: int,
+            answer_callback: AnswerCallback
     ) -> Optional[List[Message]]:
         query_split = callback_query.decode().split(":")
         if query_split[0] != "delete":
@@ -62,4 +63,6 @@ class DeleteHelper(Helper):
             return None
         message_id = int(query_split[1])
         message = chat.message_by_id(message_id)
-        return await self.delete_family(chat, message)
+        resp = await self.delete_family(chat, message)
+        await answer_callback()
+        return resp

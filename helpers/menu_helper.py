@@ -8,7 +8,7 @@ from telethon import Button
 
 from database import Database
 from group import Group, Channel
-from helpers.helpers import Helper
+from helpers.helpers import Helper, AnswerCallback
 from helpers.scene_split_helper import SceneSplitHelper
 from helpers.send_helper import GifSendHelper
 from menu_cache import MenuOwnershipCache
@@ -68,15 +68,26 @@ class MenuHelper(Helper):
         return next(iter(menus), None)
 
     async def on_callback_query(
-            self, chat: Group, callback_query: bytes, sender_id: int, menu_msg_id: int
+            self,
+            chat: Group,
+            callback_query: bytes,
+            sender_id: int,
+            menu_msg_id: int,
+            answer_callback: AnswerCallback
     ) -> Optional[List[Message]]:
         # Menus are cached by video ID, not menu message ID.
         menu = self.get_menu_by_message_id(chat.chat_data.chat_id, menu_msg_id)
-        if menu and not menu.clicked:
-            # Prevent double clicking menus
-            menu.clicked = True
-            return await menu.menu.handle_callback_query(callback_query, sender_id)
-        # TODO: When MenuHelper is handling all menus, throw an error message here for menu not existing
+        if not menu:
+            # Not sure what menu this came from
+            await answer_callback("That menu is unrecognised.")
+        if menu.clicked:
+            # Menu already clicked
+            await answer_callback("That menu has already been clicked.")
+        # Prevent double clicking menus
+        menu.clicked = True
+        resp = await menu.menu.handle_callback_query(callback_query, sender_id)
+        await answer_callback()
+        return resp
 
     async def send_not_gif_warning_menu(
             self,

@@ -2,7 +2,7 @@ import os
 import shutil
 import uuid
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import Optional, List, Callable, Awaitable, Union
 
 from async_generator import asynccontextmanager
 from telethon import Button
@@ -12,6 +12,8 @@ from group import Group
 from message import Message
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient, message_data_from_telegram
+
+AnswerCallback = Union[Callable[[], Awaitable[None]], Callable[[str], Awaitable[None]]]
 
 
 def find_video_for_message(chat: Group, message: Message) -> Optional[Message]:
@@ -143,7 +145,8 @@ class Helper(ABC):
             chat: Group,
             callback_query: bytes,
             sender_id: int,
-            menu_msg_id: int
+            menu_msg_id: int,
+            answer_callback: AnswerCallback
     ) -> Optional[List[Message]]:
         pass
 
