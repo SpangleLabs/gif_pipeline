@@ -27,7 +27,7 @@ from helpers.video_cut_helper import VideoCutHelper
 from helpers.video_helper import VideoHelper
 from helpers.video_rotate_helper import VideoRotateHelper
 from helpers.zip_helper import ZipHelper
-from menu_cache import MenuOwnershipCache
+from menu_cache import MenuCache
 from message import Message
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient, message_data_from_telegram, chat_id_from_telegram
@@ -105,7 +105,7 @@ class Pipeline:
         self.api_keys = api_keys
         self.worker = TaskWorker(3)
         self.helpers = {}
-        self.menu_cache = MenuOwnershipCache()
+        self.menu_cache = MenuCache()
 
     @property
     def all_chats(self) -> List[Group]:
@@ -261,19 +261,29 @@ class Pipeline:
         if chat is None:
             logging.debug("Ignoring new message in other chat, which must have slipped through")
             return
+        # Get the menu
+        menu = self.menu_cache.get_menu_by_message_id(event.chat_id, event.message_id)
+        if not menu:
+            logging.warning("Received a callback for a menu missing from cache")
+            await event.answer("That menu is unrecognised.")
+            return
         # Check button was pressed by the person who requested the menu
-        if event.sender_id != self.menu_cache.get_sender_for_message(event.chat_id, event.message_id):
+        if event.sender_id != menu.menu.owner_id:
             logging.info("User tried to press a button on a menu that wasn't theirs")
             await event.answer("This is not your menu, you are not authorised to use it.")
             return
-        menu_msg_id = event.message_id
+        # Check if menu has already been clicked
+        if menu.clicked:
+            # Menu already clicked
+            logging.info("Callback received for a menu which has already been clicked")
+            await event.answer("That menu has already been clicked.")
+            return
         # Hand callback queries to helpers
         helper_results: Iterable[Union[BaseException, Optional[List[Message]]]] = await asyncio.gather(
-            *(helper.on_callback_query(
-                chat, event.data, event.sender_id, menu_msg_id, event.answer
-            ) for helper in self.helpers.values()),
+            *(helper.on_callback_query(event.data, menu) for helper in self.helpers.values()),
             return_exceptions=True
         )
+        answered = False
         for helper, result in zip(self.helpers.keys(), helper_results):
             if isinstance(result, BaseException):
                 logging.error(
@@ -283,6 +293,9 @@ class Pipeline:
             elif result:
                 for reply_message in result:
                     await self.pass_message_to_handlers(reply_message)
+            # Check for result is None because empty list would be an answer, None is not
+            if result is not None and not answered:
+                await event.answer()
 
 
 def setup_logging() -> None:

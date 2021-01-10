@@ -2,7 +2,8 @@ from typing import Optional, List
 
 from database import Database
 from group import Group
-from helpers.helpers import Helper, AnswerCallback
+from helpers.helpers import Helper
+from menu_cache import SentMenu
 from message import Message, MessageData
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient
@@ -49,20 +50,16 @@ class DeleteHelper(Helper):
 
     async def on_callback_query(
             self,
-            chat: Group,
             callback_query: bytes,
-            sender_id: int,
-            menu_msg_id: int,
-            answer_callback: AnswerCallback
+            menu: SentMenu
     ) -> Optional[List[Message]]:
         query_split = callback_query.decode().split(":")
         if query_split[0] != "delete":
             return None
-        admin_ids = await self.client.list_authorized_to_delete(chat.chat_data)
-        if sender_id not in admin_ids:
+        admin_ids = await self.client.list_authorized_to_delete(menu.msg.chat_data)
+        if menu.menu.owner_id not in admin_ids:
             return None
         message_id = int(query_split[1])
-        message = chat.message_by_id(message_id)
-        resp = await self.delete_family(chat, message)
-        await answer_callback()
+        message = menu.menu.chat.message_by_id(message_id)
+        resp = await self.delete_family(menu.menu.chat, message)
         return resp

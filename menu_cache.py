@@ -1,24 +1,42 @@
 from collections import defaultdict
-from typing import Optional
+from dataclasses import dataclass
+from typing import Optional, Dict, TYPE_CHECKING
 
-from message import Message
+if TYPE_CHECKING:
+    from helpers.menu_helper import Menu
+    from message import Message
 
 
-class MenuOwnershipCache:
-    def __init__(self) -> None:
-        self.cache = defaultdict(lambda: dict())
+class MenuCache:
+    def __init__(self):
+        # TODO: save and load menu cache, so that menus can resume when bot reboots
+        self._menu_cache: Dict[int, Dict[int, SentMenu]] = defaultdict(lambda: {})
 
-    def add_menu(self, chat_id: int, message_id: int, requester_id: int) -> None:
-        self.cache[chat_id][message_id] = requester_id
+    def add_menu(self, sent_menu: 'SentMenu') -> None:
+        self._menu_cache[
+            sent_menu.menu.video.chat_data.chat_id
+        ][
+            sent_menu.menu.video.message_data.message_id
+        ] = sent_menu
 
-    def add_menu_msg(self, message: Message, requester_id: int) -> None:
-        self.add_menu(message.chat_data.chat_id, message.message_data.message_id, requester_id)
+    def get_menu_by_video(self, video: Message) -> Optional['SentMenu']:
+        return self._menu_cache.get(video.chat_data.chat_id, {}).get(video.message_data.message_id)
 
-    def get_sender_for_message(self, chat_id: int, message_id: int) -> Optional[int]:
-        return self.cache[chat_id].get(message_id)
+    def remove_menu_by_video(self, video: Message) -> None:
+        menu = self.get_menu_by_video(video)
+        if menu:
+            del self._menu_cache[video.chat_data.chat_id][video.message_data.message_id]
 
-    def remove_menu(self, chat_id: int, message_id: int) -> None:
-        del self.cache[chat_id][message_id]
+    def get_menu_by_message_id(self, chat_id: int, menu_msg_id: int) -> Optional['SentMenu']:
+        menus = [
+            menu for video_id, menu in self._menu_cache.get(chat_id, {}).items()
+            if menu.msg.message_data.message_id == menu_msg_id
+        ]
+        return next(iter(menus), None)
 
-    def remove_menu_msg(self, message: Message) -> None:
-        self.remove_menu(message.chat_data.chat_id, message.message_data.message_id)
+
+@dataclass
+class SentMenu:
+    menu: 'Menu'
+    msg: Message
+    clicked: bool = False

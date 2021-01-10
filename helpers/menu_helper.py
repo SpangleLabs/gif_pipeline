@@ -1,17 +1,15 @@
 from abc import abstractmethod
-from collections import defaultdict
-from dataclasses import dataclass
-from typing import Dict, Optional, List, Tuple
+from typing import Optional, List, Tuple
 
 from scenedetect import FrameTimecode
 from telethon import Button
 
 from database import Database
 from group import Group, Channel
-from helpers.helpers import Helper, AnswerCallback
+from helpers.helpers import Helper
 from helpers.scene_split_helper import SceneSplitHelper
 from helpers.send_helper import GifSendHelper
-from menu_cache import MenuOwnershipCache
+from menu_cache import MenuCache, SentMenu
 from message import Message
 from tasks.task_worker import TaskWorker
 from telegram_client import TelegramClient
@@ -24,70 +22,31 @@ class MenuHelper(Helper):
             database: Database,
             client: TelegramClient,
             worker: TaskWorker,
-            menu_ownership_cache: MenuOwnershipCache,
+            menu_cache: MenuCache,
     ):
         super().__init__(database, client, worker)
         # Cache of message ID the menu is replying to, to the menu
-        # TODO: save and load menu cache, so that menus can resume when bot reboots
-        self.menu_cache: Dict[int, Dict[int, SentMenu]] = defaultdict(lambda: {})
-        # TODO: eventually remove this class, when MenuHelper is handling all menus
-        self.menu_ownership_cache: MenuOwnershipCache = menu_ownership_cache
+        self.menu_cache = menu_cache
 
     async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
         pass
 
-    def add_menu_to_cache(self, sent_menu: 'SentMenu') -> None:
-        self.menu_cache[
-            sent_menu.menu.video.chat_data.chat_id
-        ][
-            sent_menu.menu.video.message_data.message_id
-        ] = sent_menu
-        self.menu_ownership_cache.add_menu_msg(sent_menu.msg, sent_menu.menu.owner_id)
-
-    def get_menu_from_cache(self, video: Message) -> Optional['SentMenu']:
-        return self.menu_cache.get(video.chat_data.chat_id, {}).get(video.message_data.message_id)
+    async def on_callback_query(
+            self,
+            callback_query: bytes,
+            menu: SentMenu
+    ) -> Optional[List[Message]]:
+        # Prevent double clicking menus
+        menu.clicked = True
+        resp = await menu.menu.handle_callback_query(callback_query)
+        return resp
 
     async def delete_menu_for_video(self, video: Message) -> None:
-        menu = self.get_menu_from_cache(video)
+        menu = self.menu_cache.get_menu_by_video(video)
         if menu:
             await self.client.delete_message(menu.msg.message_data)
             menu.msg.delete(self.database)
-            self.remove_menu_from_cache(video)
-
-    def remove_menu_from_cache(self, video: Message) -> None:
-        menu = self.get_menu_from_cache(video)
-        if menu:
-            del self.menu_cache[video.chat_data.chat_id][video.message_data.message_id]
-            self.menu_ownership_cache.remove_menu_msg(menu.msg)
-
-    def get_menu_by_message_id(self, chat_id: int, menu_msg_id: int) -> Optional['SentMenu']:
-        menus = [
-            menu for video_id, menu in self.menu_cache.get(chat_id, {}).items()
-            if menu.msg.message_data.message_id == menu_msg_id
-        ]
-        return next(iter(menus), None)
-
-    async def on_callback_query(
-            self,
-            chat: Group,
-            callback_query: bytes,
-            sender_id: int,
-            menu_msg_id: int,
-            answer_callback: AnswerCallback
-    ) -> Optional[List[Message]]:
-        # Menus are cached by video ID, not menu message ID.
-        menu = self.get_menu_by_message_id(chat.chat_data.chat_id, menu_msg_id)
-        if not menu:
-            # Not sure what menu this came from
-            await answer_callback("That menu is unrecognised.")
-        if menu.clicked:
-            # Menu already clicked
-            await answer_callback("That menu has already been clicked.")
-        # Prevent double clicking menus
-        menu.clicked = True
-        resp = await menu.menu.handle_callback_query(callback_query, sender_id)
-        await answer_callback()
-        return resp
+            self.menu_cache.remove_menu_by_video(video)
 
     async def send_not_gif_warning_menu(
             self,
@@ -155,13 +114,6 @@ class MenuHelper(Helper):
         return message
 
 
-@dataclass
-class SentMenu:
-    menu: 'Menu'
-    msg: Message
-    clicked: bool = False
-
-
 class Menu:
 
     def __init__(self, menu_helper: MenuHelper, chat: Group, cmd: Message, video: Message):
@@ -171,7 +123,7 @@ class Menu:
         self.video = video
 
     def add_self_to_cache(self, menu_msg: Message):
-        self.menu_helper.add_menu_to_cache(SentMenu(self, menu_msg))
+        self.menu_helper.menu_cache.add_menu(SentMenu(self, menu_msg))
 
     @property
     def owner_id(self) -> int:
@@ -188,8 +140,7 @@ class Menu:
 
     async def handle_callback_query(
             self,
-            callback_query: bytes,
-            sender_id: int
+            callback_query: bytes
     ) -> Optional[List[Message]]:
         pass
 
@@ -213,11 +164,11 @@ class Menu:
         if self.buttons:
             self.add_self_to_cache(menu_msg)
         else:
-            self.menu_helper.remove_menu_from_cache(self.video)
+            self.menu_helper.menu_cache.remove_menu_by_video(self.video)
         return menu_msg
 
     async def send(self) -> Message:
-        menu = self.menu_helper.get_menu_from_cache(self.video)
+        menu = self.menu_helper.menu_cache.get_menu_by_video(self.video)
         if menu:
             return await self.edit_message(menu.msg)
         return await self.send_as_reply(self.video)
@@ -257,8 +208,7 @@ class NotGifConfirmationMenu(Menu):
 
     async def handle_callback_query(
             self,
-            callback_query: bytes,
-            sender_id: int
+            callback_query: bytes
     ) -> Optional[List[Message]]:
         if callback_query == self.clear_menu:
             await self.delete()
@@ -268,7 +218,7 @@ class NotGifConfirmationMenu(Menu):
         if split_data[0] == self.send_str:
             _, dest_str = split_data
             return await self.send_helper.handle_dest_str(
-                self.chat, self.cmd, self.video, dest_str, sender_id
+                self.chat, self.cmd, self.video, dest_str, self.owner_id
             )
 
 
@@ -304,8 +254,7 @@ class DestinationMenu(Menu):
 
     async def handle_callback_query(
             self,
-            callback_query: bytes,
-            sender_id: int
+            callback_query: bytes
     ) -> Optional[List[Message]]:
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.confirm_send:
@@ -345,15 +294,14 @@ class SendConfirmationMenu(Menu):
 
     async def handle_callback_query(
             self,
-            callback_query: bytes,
-            sender_id: int
+            callback_query: bytes
     ) -> Optional[List[Message]]:
         if callback_query == self.clear_confirm_menu:
             await self.delete()
             return []
         if callback_query == self.send_callback:
             return await self.send_helper.send_video(
-                self.chat, self.video, self.cmd, self.destination, sender_id
+                self.chat, self.video, self.cmd, self.destination, self.owner_id
             )
 
 
@@ -380,8 +328,7 @@ class DeleteMenu(Menu):
 
     async def handle_callback_query(
             self,
-            callback_query: bytes,
-            sender_id: int
+            callback_query: bytes
     ) -> Optional[List[Message]]:
         split_data = callback_query.decode().split(":")
         if split_data[0] == "clear_delete_menu":
@@ -429,8 +376,7 @@ class SplitScenesConfirmationMenu(Menu):
 
     async def handle_callback_query(
             self,
-            callback_query: bytes,
-            sender_id: int
+            callback_query: bytes
     ) -> Optional[List[Message]]:
         if callback_query == self.cmd_cancel:
             self.cleared = True
