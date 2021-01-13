@@ -38,5 +38,5 @@ class MenuCache:
 @dataclass
 class SentMenu:
     menu: 'Menu'
-    msg: Message
+    msg: 'Message'
     clicked: bool = False
