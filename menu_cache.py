@@ -19,10 +19,10 @@ class MenuCache:
             sent_menu.menu.video.message_data.message_id
         ] = sent_menu
 
-    def get_menu_by_video(self, video: Message) -> Optional['SentMenu']:
+    def get_menu_by_video(self, video: 'Message') -> Optional['SentMenu']:
         return self._menu_cache.get(video.chat_data.chat_id, {}).get(video.message_data.message_id)
 
-    def remove_menu_by_video(self, video: Message) -> None:
+    def remove_menu_by_video(self, video: 'Message') -> None:
         menu = self.get_menu_by_video(video)
         if menu:
             del self._menu_cache[video.chat_data.chat_id][video.message_data.message_id]
