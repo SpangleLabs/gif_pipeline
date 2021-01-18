@@ -23,6 +23,9 @@ class DeleteHelper(Helper):
         if text_clean == "delete family":
             if message.message_data.sender_id not in admin_ids:
                 return None
+            if message.message_data.reply_to is None:
+                error_text = "You need to reply to the message you want to delete."
+                return [await self.send_text_reply(chat, message, error_text)]
             return await self.delete_family(chat, message)
         if text_clean == "delete branch":
             if message.message_data.sender_id not in admin_ids:
@@ -36,8 +39,6 @@ class DeleteHelper(Helper):
 
     async def delete_family(self, chat: Group, message: Message) -> Optional[List[Message]]:
         message_history = self.database.get_message_history(message.message_data)
-        if len(message_history) == 1:
-            return [await self.send_text_reply(chat, message, "I'm not sure which message you want to delete.")]
         return await self.delete_branch(chat, message_history[-1])
 
     async def delete_branch(self, chat: Group, message: MessageData) -> Optional[List[Message]]:
