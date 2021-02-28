@@ -150,6 +150,7 @@ class Group(ABC):
         for message_data in removed_messages:
             database.remove_message(message_data)
         # Check files, turn message data into messages
+        # TODO: I bet these downloads can be parallelized
         messages = []
         for message in channel_messages:
             old_file_path = message.file_path

@@ -25,6 +25,7 @@ class DuplicateHelper(Helper):
         # Initialise, get all channels, get all videos, decompose all, add to the master hash
         workshop_ids = {workshop.chat_data.chat_id: workshop for workshop in workshops}
         messages_needing_hashes = self.database.get_messages_needing_hashing()
+        # TODO: asyncio gather this, so we can parallelize more aggressively
         for message_data in messages_needing_hashes:
             # Skip any messages in workshops which are disabled
             workshop = workshop_ids.get(message_data.chat_id)
@@ -58,6 +59,7 @@ class DuplicateHelper(Helper):
         await self.decompose_video(message_data.file_path, message_decompose_path)
         # Hash the images
         hashes = set()
+        # TODO stop this being single threaded omg
         for image_file in glob.glob(f"{message_decompose_path}/*.png"):
             image = Image.open(image_file)
             image_hash = str(imagehash.dhash(image))
