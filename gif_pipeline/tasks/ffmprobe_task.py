@@ -2,7 +2,7 @@ import subprocess
 
 import ffmpy3
 
-from tasks.task import Task
+from gif_pipeline.tasks.task import Task
 
 
 class FFprobeTask(Task[str]):

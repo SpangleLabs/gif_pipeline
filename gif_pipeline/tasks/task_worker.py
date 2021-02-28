@@ -1,7 +1,7 @@
 import asyncio
 from typing import List
 
-from tasks.task import Task, T
+from gif_pipeline.tasks.task import Task, T
 
 
 class TaskWorker:

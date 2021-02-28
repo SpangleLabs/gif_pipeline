@@ -3,7 +3,7 @@ from typing import Tuple
 
 import ffmpy3
 
-from tasks.task import Task
+from gif_pipeline.tasks.task import Task
 
 
 class FfmpegTask(Task[Tuple[str, str]]):

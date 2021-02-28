@@ -4,11 +4,11 @@ import shutil
 import zipfile
 from typing import Optional, List
 
-from group import Group
-from helpers.helpers import random_sandbox_video_path
-from helpers.telegram_gif_helper import TelegramGifHelper
-from message import Message, mime_type_is_video
-from tasks.ffmpeg_task import FfmpegTask
+from gif_pipeline.group import Group
+from gif_pipeline.helpers.helpers import random_sandbox_video_path
+from gif_pipeline.helpers.telegram_gif_helper import TelegramGifHelper
+from gif_pipeline.message import Message, mime_type_is_video
+from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
 
 
 class ZipHelper(TelegramGifHelper):

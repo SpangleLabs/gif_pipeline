@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from typing import Optional, Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from helpers.menu_helper import Menu
-    from message import Message
+    from gif_pipeline.helpers.menu_helper import Menu
+    from gif_pipeline.message import Message
 
 
 class MenuCache:

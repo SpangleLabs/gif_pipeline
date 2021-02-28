@@ -1,12 +1,12 @@
 from typing import Optional, List
 
-from database import Database
-from group import Group
-from helpers.helpers import Helper
-from menu_cache import SentMenu
-from message import Message, MessageData
-from tasks.task_worker import TaskWorker
-from telegram_client import TelegramClient
+from gif_pipeline.database import Database
+from gif_pipeline.group import Group
+from gif_pipeline.helpers.helpers import Helper
+from gif_pipeline.menu_cache import SentMenu
+from gif_pipeline.message import Message, MessageData
+from gif_pipeline.tasks.task_worker import TaskWorker
+from gif_pipeline.telegram_client import TelegramClient
 
 
 class DeleteHelper(Helper):

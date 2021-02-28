@@ -4,16 +4,16 @@ from typing import Optional, List, Tuple, TYPE_CHECKING
 
 from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetector, FrameTimecode
 
-from database import Database
-from group import Group
-from helpers.helpers import find_video_for_message
-from helpers.video_cut_helper import VideoCutHelper
-from message import Message
-from tasks.task_worker import TaskWorker
-from telegram_client import TelegramClient
+from gif_pipeline.database import Database
+from gif_pipeline.group import Group
+from gif_pipeline.helpers.helpers import find_video_for_message
+from gif_pipeline.helpers.video_cut_helper import VideoCutHelper
+from gif_pipeline.message import Message
+from gif_pipeline.tasks.task_worker import TaskWorker
+from gif_pipeline.telegram_client import TelegramClient
 
 if TYPE_CHECKING:
-    from helpers.menu_helper import MenuHelper
+    from gif_pipeline.helpers.menu_helper import MenuHelper
 
 
 class SceneSplitHelper(VideoCutHelper):

@@ -1,12 +1,12 @@
 import os
 from typing import Optional, List
 
-from group import Group
-from helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path
-from helpers.telegram_gif_helper import GifSettings
-from message import Message
-from tasks.ffmpeg_task import FfmpegTask
-from tasks.ffmprobe_task import FFprobeTask
+from gif_pipeline.group import Group
+from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path
+from gif_pipeline.helpers.telegram_gif_helper import GifSettings
+from gif_pipeline.message import Message
+from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
+from gif_pipeline.tasks.ffmprobe_task import FFprobeTask
 
 
 class VideoHelper(Helper):

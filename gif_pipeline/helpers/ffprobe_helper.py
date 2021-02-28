@@ -1,9 +1,9 @@
 from typing import Optional, List
 
-from group import Group
-from helpers.helpers import Helper, find_video_for_message
-from message import Message
-from tasks.ffmprobe_task import FFprobeTask
+from gif_pipeline.group import Group
+from gif_pipeline.helpers.helpers import Helper, find_video_for_message
+from gif_pipeline.message import Message
+from gif_pipeline.tasks.ffmprobe_task import FFprobeTask
 
 
 class FFProbeHelper(Helper):

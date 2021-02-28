@@ -9,8 +9,8 @@ from telethon.tl.functions.channels import EditAdminRequest
 from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
 from telethon.tl.types import ChatAdminRights, ChannelParticipantsAdmins, ChannelParticipantCreator
 
-from group import ChatData, ChannelData, WorkshopData
-from message import MessageData
+from gif_pipeline.group import ChatData, ChannelData, WorkshopData
+from gif_pipeline.message import MessageData
 
 R = TypeVar("R")
 

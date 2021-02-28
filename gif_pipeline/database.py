@@ -4,8 +4,8 @@ from typing import List, Optional, Type, TypeVar, Set, Iterable
 
 import dateutil.parser
 
-from group import ChatData, WorkshopData, ChannelData
-from message import MessageData
+from gif_pipeline.group import ChatData, WorkshopData, ChannelData
+from gif_pipeline.message import MessageData
 
 chat_types = {
     "channel": ChannelData,

@@ -6,12 +6,12 @@ from abc import ABC, abstractmethod
 from typing import Dict, Union, Any, TypeVar, List, Optional, Coroutine, Callable
 from typing import TYPE_CHECKING
 
-from message import Message
+from gif_pipeline.message import Message
 
 if TYPE_CHECKING:
-    from telegram_client import TelegramClient
-    from database import Database
-    from message import MessageData
+    from gif_pipeline.telegram_client import TelegramClient
+    from gif_pipeline.database import Database
+    from gif_pipeline.message import MessageData
 T = TypeVar('T', bound='Group')
 C = TypeVar('C', bound='ChatData')
 

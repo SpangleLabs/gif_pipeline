@@ -3,15 +3,15 @@ import asyncio
 import shutil
 from typing import Optional, List, Union, TYPE_CHECKING
 
-from database import Database
-from group import Group, Channel
-from helpers.helpers import Helper, find_video_for_message
-from message import Message
-from tasks.task_worker import TaskWorker
-from telegram_client import TelegramClient, message_data_from_telegram
+from gif_pipeline.database import Database
+from gif_pipeline.group import Group, Channel
+from gif_pipeline.helpers.helpers import Helper, find_video_for_message
+from gif_pipeline.message import Message
+from gif_pipeline.tasks.task_worker import TaskWorker
+from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram
 
 if TYPE_CHECKING:
-    from helpers.menu_helper import MenuHelper
+    from gif_pipeline.helpers.menu_helper import MenuHelper
 
 
 class GifSendHelper(Helper):

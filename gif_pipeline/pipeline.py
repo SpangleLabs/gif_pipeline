@@ -6,31 +6,31 @@ from typing import Dict, List, Iterator, Optional, Iterable, Union
 
 from telethon import events
 
-from database import Database
-from group import Group, Channel, WorkshopGroup, ChannelConfig, WorkshopConfig
-from helpers.delete_helper import DeleteHelper
-from helpers.download_helper import DownloadHelper
-from helpers.duplicate_helper import DuplicateHelper
-from helpers.fa_helper import FAHelper
-from helpers.ffprobe_helper import FFProbeHelper
-from helpers.imgur_gallery_helper import ImgurGalleryHelper
-from helpers.menu_helper import MenuHelper
-from helpers.merge_helper import MergeHelper
-from helpers.msg_helper import MSGHelper
-from helpers.reverse_helper import ReverseHelper
-from helpers.scene_split_helper import SceneSplitHelper
-from helpers.send_helper import GifSendHelper
-from helpers.stabilise_helper import StabiliseHelper
-from helpers.telegram_gif_helper import TelegramGifHelper
-from helpers.video_crop_helper import VideoCropHelper
-from helpers.video_cut_helper import VideoCutHelper
-from helpers.video_helper import VideoHelper
-from helpers.video_rotate_helper import VideoRotateHelper
-from helpers.zip_helper import ZipHelper
-from menu_cache import MenuCache
-from message import Message
-from tasks.task_worker import TaskWorker
-from telegram_client import TelegramClient, message_data_from_telegram, chat_id_from_telegram
+from gif_pipeline.database import Database
+from gif_pipeline.group import Group, Channel, WorkshopGroup, ChannelConfig, WorkshopConfig
+from gif_pipeline.helpers.delete_helper import DeleteHelper
+from gif_pipeline.helpers.download_helper import DownloadHelper
+from gif_pipeline.helpers.duplicate_helper import DuplicateHelper
+from gif_pipeline.helpers.fa_helper import FAHelper
+from gif_pipeline.helpers.ffprobe_helper import FFProbeHelper
+from gif_pipeline.helpers.imgur_gallery_helper import ImgurGalleryHelper
+from gif_pipeline.helpers.menu_helper import MenuHelper
+from gif_pipeline.helpers.merge_helper import MergeHelper
+from gif_pipeline.helpers.msg_helper import MSGHelper
+from gif_pipeline.helpers.reverse_helper import ReverseHelper
+from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
+from gif_pipeline.helpers.send_helper import GifSendHelper
+from gif_pipeline.helpers.stabilise_helper import StabiliseHelper
+from gif_pipeline.helpers.telegram_gif_helper import TelegramGifHelper
+from gif_pipeline.helpers.video_crop_helper import VideoCropHelper
+from gif_pipeline.helpers.video_cut_helper import VideoCutHelper
+from gif_pipeline.helpers.video_helper import VideoHelper
+from gif_pipeline.helpers.video_rotate_helper import VideoRotateHelper
+from gif_pipeline.helpers.zip_helper import ZipHelper
+from gif_pipeline.menu_cache import MenuCache
+from gif_pipeline.message import Message
+from gif_pipeline.tasks.task_worker import TaskWorker
+from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram, chat_id_from_telegram
 
 
 class PipelineConfig:

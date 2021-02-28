@@ -6,13 +6,13 @@ from typing import Optional, List, Set
 import imagehash
 from PIL import Image
 
-from database import Database
-from group import WorkshopGroup, Group
-from helpers.helpers import Helper
-from message import Message, MessageData
-from tasks.ffmpeg_task import FfmpegTask
-from tasks.task_worker import TaskWorker
-from telegram_client import TelegramClient
+from gif_pipeline.database import Database
+from gif_pipeline.group import WorkshopGroup, Group
+from gif_pipeline.helpers.helpers import Helper
+from gif_pipeline.message import Message, MessageData
+from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
+from gif_pipeline.tasks.task_worker import TaskWorker
+from gif_pipeline.telegram_client import TelegramClient
 
 
 class DuplicateHelper(Helper):

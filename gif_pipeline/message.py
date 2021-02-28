@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from telegram_client import TelegramClient
-    from database import Database
-    from group import ChatData
+    from gif_pipeline.database import Database
+    from gif_pipeline.group import ChatData
 
 
 def mime_type_is_video(mime_type: str) -> bool:

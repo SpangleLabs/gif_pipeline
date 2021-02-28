@@ -4,15 +4,15 @@ from typing import Optional, List, Tuple
 from scenedetect import FrameTimecode
 from telethon import Button
 
-from database import Database
-from group import Group, Channel
-from helpers.helpers import Helper
-from helpers.scene_split_helper import SceneSplitHelper
-from helpers.send_helper import GifSendHelper
-from menu_cache import MenuCache, SentMenu
-from message import Message
-from tasks.task_worker import TaskWorker
-from telegram_client import TelegramClient
+from gif_pipeline.database import Database
+from gif_pipeline.group import Group, Channel
+from gif_pipeline.helpers.helpers import Helper
+from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
+from gif_pipeline.helpers.send_helper import GifSendHelper
+from gif_pipeline.menu_cache import MenuCache, SentMenu
+from gif_pipeline.message import Message
+from gif_pipeline.tasks.task_worker import TaskWorker
+from gif_pipeline.telegram_client import TelegramClient
 
 
 class MenuHelper(Helper):

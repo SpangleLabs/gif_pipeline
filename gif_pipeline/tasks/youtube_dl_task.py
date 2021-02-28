@@ -2,7 +2,7 @@ import glob
 
 import youtube_dl
 
-from tasks.task import Task
+from gif_pipeline.tasks.task import Task
 
 
 class YoutubeDLTask(Task[str]):
