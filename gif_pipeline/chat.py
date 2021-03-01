@@ -31,10 +31,9 @@ class Chat(ABC):
         self.client = client
 
     @staticmethod
-    async def load_chat_data(
+    async def create_chat_data(
             getter: Callable[[str], Coroutine[None, None, C]],
             config: 'ChatConfig',
-            client: TelegramClient,
             database: 'Database'
     ) -> C:
         # Get chat id, name, etc
@@ -113,7 +112,7 @@ class Channel(Chat):
 
     @classmethod
     async def from_config(cls, config: 'ChatConfig', client: TelegramClient, database: 'Database') -> Channel:
-        chat_data = await Chat.load_chat_data(client.get_channel_data, config, client, database)
+        chat_data = await Chat.create_chat_data(client.get_channel_data, config, database)
         return await cls.from_data(chat_data, config, client, database)
 
     @classmethod
@@ -126,7 +125,7 @@ class WorkshopGroup(Chat):
 
     @classmethod
     async def from_config(cls, config: 'ChatConfig', client: TelegramClient, database: 'Database') -> WorkshopGroup:
-        chat_data = await Chat.load_chat_data(client.get_workshop_data, config, client, database)
+        chat_data = await Chat.create_chat_data(client.get_workshop_data, config, database)
         return await cls.from_data(chat_data, config, client, database)
 
     @classmethod
