@@ -5,7 +5,7 @@ from scenedetect import FrameTimecode
 from telethon import Button
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import Group, Channel
+from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
 from gif_pipeline.helpers.send_helper import GifSendHelper
@@ -28,7 +28,7 @@ class MenuHelper(Helper):
         # Cache of message ID the menu is replying to, to the menu
         self.menu_cache = menu_cache
 
-    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         pass
 
     async def on_callback_query(
@@ -50,7 +50,7 @@ class MenuHelper(Helper):
 
     async def send_not_gif_warning_menu(
             self,
-            chat: Group,
+            chat: Chat,
             cmd: Message,
             video: Message,
             send_helper: GifSendHelper,
@@ -62,7 +62,7 @@ class MenuHelper(Helper):
 
     async def destination_menu(
             self,
-            chat: Group,
+            chat: Chat,
             cmd: Message,
             video: Message,
             send_helper: GifSendHelper,
@@ -74,7 +74,7 @@ class MenuHelper(Helper):
 
     async def confirmation_menu(
             self,
-            chat: Group,
+            chat: Chat,
             cmd_msg: Message,
             video: Message,
             send_helper: GifSendHelper,
@@ -87,7 +87,7 @@ class MenuHelper(Helper):
 
     async def after_send_delete_menu(
             self,
-            chat: Group,
+            chat: Chat,
             cmd: Message,
             video: Message,
             text: str,
@@ -102,7 +102,7 @@ class MenuHelper(Helper):
 
     async def split_scenes_confirmation(
             self,
-            chat: Group,
+            chat: Chat,
             cmd: Message,
             video: Message,
             threshold: int,
@@ -116,7 +116,7 @@ class MenuHelper(Helper):
 
 class Menu:
 
-    def __init__(self, menu_helper: MenuHelper, chat: Group, cmd: Message, video: Message):
+    def __init__(self, menu_helper: MenuHelper, chat: Chat, cmd: Message, video: Message):
         self.menu_helper = menu_helper
         self.chat = chat
         self.cmd = cmd
@@ -184,7 +184,7 @@ class NotGifConfirmationMenu(Menu):
     def __init__(
             self,
             menu_helper: MenuHelper,
-            chat: Group,
+            chat: Chat,
             cmd_msg: Message,
             video: Message,
             send_helper: GifSendHelper,
@@ -228,7 +228,7 @@ class DestinationMenu(Menu):
     def __init__(
             self,
             menu_helper: MenuHelper,
-            chat: Group,
+            chat: Chat,
             cmd_msg: Message,
             video: Message,
             send_helper: GifSendHelper,
@@ -271,11 +271,11 @@ class SendConfirmationMenu(Menu):
     def __init__(
             self,
             menu_helper: MenuHelper,
-            chat: Group,
+            chat: Chat,
             cmd_msg: Message,
             video: Message,
             send_helper: GifSendHelper,
-            destination: Group
+            destination: Chat
     ):
         super().__init__(menu_helper, chat, cmd_msg, video)
         self.send_helper = send_helper
@@ -306,7 +306,7 @@ class SendConfirmationMenu(Menu):
 
 
 class DeleteMenu(Menu):
-    def __init__(self, menu_helper: MenuHelper, chat: Group, cmd_msg: Message, video: Message, prefix_str: str):
+    def __init__(self, menu_helper: MenuHelper, chat: Chat, cmd_msg: Message, video: Message, prefix_str: str):
         super().__init__(menu_helper, chat, cmd_msg, video)
         self.prefix_str = prefix_str
         self.cleared = False
@@ -345,7 +345,7 @@ class SplitScenesConfirmationMenu(Menu):
     def __init__(
             self,
             menu_helper: MenuHelper,
-            chat: Group,
+            chat: Chat,
             cmd: Message,
             video: Message,
             threshold: int,

@@ -5,7 +5,7 @@ from typing import Optional, List, Dict
 import requests
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import Group
+from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.task_worker import TaskWorker
@@ -18,7 +18,7 @@ class ImgurGalleryHelper(Helper):
         super().__init__(database, client, worker)
         self.imgur_client_id = imgur_client_id
 
-    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         # If message has imgur gallery/album link in it
         matching_links = re.findall(r"imgur.com/(?:gallery|a)/([0-9a-z]+)", message.text, re.IGNORECASE)
         if not matching_links:
@@ -29,7 +29,7 @@ class ImgurGalleryHelper(Helper):
             ))
             return [message for gallery in galleries for message in gallery]
 
-    async def handle_gallery_link(self, chat: Group, message: Message, gallery_id: str) -> List[Message]:
+    async def handle_gallery_link(self, chat: Chat, message: Message, gallery_id: str) -> List[Message]:
         api_url = "https://api.imgur.com/3/album/{}".format(gallery_id)
         api_key = f"Client-ID {self.imgur_client_id}"
         api_resp = requests.get(api_url, headers={"Authorization": api_key})
@@ -39,7 +39,7 @@ class ImgurGalleryHelper(Helper):
             return [await self.send_text_reply(chat, message, "That imgur gallery contains no videos.")]
         return await asyncio.gather(*(self.send_imgur_video(chat, message, image) for image in images))
 
-    async def send_imgur_video(self, chat: Group, message: Message, image: Dict[str, str]) -> Message:
+    async def send_imgur_video(self, chat: Chat, message: Message, image: Dict[str, str]) -> Message:
         file_url = image["mp4"]
         file_ext = file_url.split(".")[-1]
         resp = requests.get(file_url)

@@ -1,13 +1,13 @@
 from typing import Optional, List
 
-from gif_pipeline.group import Group
+from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmprobe_task import FFprobeTask
 
 
 class FFProbeHelper(Helper):
-    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         # If a message has text saying ffprobe or stats, and is a reply to a video, get stats for that video
         clean_text = message.text.strip().lower()
         if clean_text.startswith("ffprobe") or clean_text.startswith("stats"):

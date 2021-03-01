@@ -5,7 +5,7 @@ from typing import Optional, List
 import requests
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import Group
+from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import random_sandbox_video_path
 from gif_pipeline.helpers.telegram_gif_helper import TelegramGifHelper
 from gif_pipeline.message import Message
@@ -18,7 +18,7 @@ class MSGHelper(TelegramGifHelper):
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 
-    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         # If message has relevant link in it
         matching_links = re.findall(r"e621.net/posts/([0-9]+)", message.text, re.IGNORECASE)
         if not matching_links:
@@ -26,7 +26,7 @@ class MSGHelper(TelegramGifHelper):
         async with self.progress_message(chat, message, "Processing MSG links in message"):
             return await asyncio.gather(*(self.handle_post_link(chat, message, post_id) for post_id in matching_links))
 
-    async def handle_post_link(self, chat: Group, message: Message, post_id: str):
+    async def handle_post_link(self, chat: Chat, message: Message, post_id: str):
         api_link = f"https://e621.net/posts/{post_id}.json"
         api_resp = requests.get(api_link, headers={"User-Agent": "Gif pipeline (my username is dr-spangle)"})
         api_data = api_resp.json()

@@ -1,7 +1,7 @@
 from typing import Optional, List
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import Group
+from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.menu_cache import SentMenu
 from gif_pipeline.message import Message, MessageData
@@ -14,7 +14,7 @@ class DeleteHelper(Helper):
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 
-    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         # If a message says to delete, delete it and delete local files
         text_clean = message.text.strip().lower()
         if not text_clean.startswith("delete"):
@@ -37,11 +37,11 @@ class DeleteHelper(Helper):
             return await self.delete_branch(chat, reply_to.message_data)
         return None
 
-    async def delete_family(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def delete_family(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         message_history = self.database.get_message_history(message.message_data)
         return await self.delete_branch(chat, message_history[-1])
 
-    async def delete_branch(self, chat: Group, message: MessageData) -> Optional[List[Message]]:
+    async def delete_branch(self, chat: Chat, message: MessageData) -> Optional[List[Message]]:
         message_family = self.database.get_message_family(message)
         for msg_data in message_family:
             msg = chat.message_by_id(msg_data.message_id)

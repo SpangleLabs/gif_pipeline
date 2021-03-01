@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from telegram_client import TelegramClient
     from gif_pipeline.database import Database
-    from gif_pipeline.group import ChatData
+    from gif_pipeline.chat_data import ChatData
 
 
 def mime_type_is_video(mime_type: str) -> bool:

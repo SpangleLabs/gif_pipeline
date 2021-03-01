@@ -2,7 +2,7 @@ import re
 from typing import Optional
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import Group
+from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path, find_video_for_message
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
@@ -22,7 +22,7 @@ class VideoCropHelper(Helper):
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 
-    async def on_new_message(self, chat: Group, message: Message):
+    async def on_new_message(self, chat: Chat, message: Message):
         # If a message has text saying to crop, some percentages maybe?
         # And is a reply to a video, then crop it
         text_clean = message.text.lower().strip()

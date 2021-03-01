@@ -2,7 +2,7 @@ import re
 from typing import Optional, Tuple, Match
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import Group
+from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
@@ -15,7 +15,7 @@ class VideoCutHelper(Helper):
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 
-    async def on_new_message(self, chat: Group, message: Message):
+    async def on_new_message(self, chat: Chat, message: Message):
         # If a message has text saying to cut, with times?
         # Maybe `cut start:end`, or `cut out start:end` and is a reply to a video, then cut it
         text_clean = message.text.lower().strip()

@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from gif_pipeline.group import Group
+from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
@@ -8,7 +8,7 @@ from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
 
 class StabiliseHelper(Helper):
 
-    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         text_clean = message.text.lower().strip()
         if text_clean not in ["stabilise", "stabilize", "stab", "deshake", "unshake"]:
             return

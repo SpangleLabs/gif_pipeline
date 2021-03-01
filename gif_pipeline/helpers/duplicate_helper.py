@@ -7,7 +7,7 @@ import imagehash
 from PIL import Image
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import WorkshopGroup, Group
+from gif_pipeline.chat import WorkshopGroup, Chat
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.message import Message, MessageData
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
@@ -98,7 +98,7 @@ class DuplicateHelper(Helper):
 
     async def post_duplicate_warning(
             self,
-            chat: Group,
+            chat: Chat,
             new_message: Message,
             potential_matches: Set[MessageData],
             has_blank_frame: bool
@@ -131,7 +131,7 @@ class DuplicateHelper(Helper):
         )
         await self.worker.await_task(task)
 
-    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         # If message has a video, decompose it if necessary, then check images against master hash
         if not isinstance(chat, WorkshopGroup):
             await self.get_or_create_message_hashes(message.message_data)
@@ -160,5 +160,5 @@ class DuplicateHelper(Helper):
         if warning_msg is not None:
             return [warning_msg]
 
-    async def on_deleted_message(self, chat: Group, message: Message):
+    async def on_deleted_message(self, chat: Chat, message: Message):
         self.database.remove_message_hashes(message.message_data)

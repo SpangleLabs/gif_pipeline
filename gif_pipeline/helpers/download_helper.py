@@ -3,7 +3,7 @@ import re
 import youtube_dl
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import Group
+from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.task_worker import TaskWorker
@@ -34,7 +34,7 @@ class DownloadHelper(Helper):
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 
-    async def on_new_message(self, chat: Group, message: Message):
+    async def on_new_message(self, chat: Chat, message: Message):
         if not message.text:
             return
         # Ignore messages the bot has sent.
@@ -62,7 +62,7 @@ class DownloadHelper(Helper):
         ]
         return not link.endswith(".gif") and all(exclude not in link for exclude in exclude_list)
 
-    async def handle_link(self, chat: Group, message: Message, link: str) -> Message:
+    async def handle_link(self, chat: Chat, message: Message, link: str) -> Message:
         try:
             download_filename = await self.download_link(link)
             return await self.send_video_reply(chat, message, download_filename)

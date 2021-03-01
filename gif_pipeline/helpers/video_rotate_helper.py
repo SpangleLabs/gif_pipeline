@@ -1,7 +1,7 @@
 from typing import Optional
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import Group
+from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
@@ -25,7 +25,7 @@ class VideoRotateHelper(Helper):
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 
-    async def on_new_message(self, chat: Group, message: Message):
+    async def on_new_message(self, chat: Chat, message: Message):
         # If a message has text saying to rotate, and is a reply to a video, then cut it
         # `rotate left`, `rotate right`, `flip horizontal`?, `rotate 90`, `rotate 180`
         text_clean = message.text.strip().lower().replace("-", "")

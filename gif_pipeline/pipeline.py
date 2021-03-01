@@ -7,7 +7,8 @@ from tqdm import tqdm
 
 from gif_pipeline.chat_builder import ChannelBuilder, WorkshopBuilder
 from gif_pipeline.database import Database
-from gif_pipeline.group import Group, Channel, WorkshopGroup, ChannelConfig, WorkshopConfig
+from gif_pipeline.chat import Chat, Channel, WorkshopGroup
+from gif_pipeline.chat_config import ChannelConfig, WorkshopConfig
 from gif_pipeline.helpers.delete_helper import DeleteHelper
 from gif_pipeline.helpers.download_helper import DownloadHelper
 from gif_pipeline.helpers.duplicate_helper import DuplicateHelper
@@ -94,8 +95,8 @@ class Pipeline:
         self.menu_cache = MenuCache()
 
     @property
-    def all_chats(self) -> List[Group]:
-        channels = [x for x in self.channels]  # type: List[Group]
+    def all_chats(self) -> List[Chat]:
+        channels = [x for x in self.channels]  # type: List[Chat]
         for workshop in self.workshops:
             channels.append(workshop)
         return channels
@@ -104,7 +105,7 @@ class Pipeline:
     def all_chat_ids(self) -> List[int]:
         return [chat.chat_data.chat_id for chat in self.all_chats]
 
-    def chat_by_id(self, chat_id: int) -> Optional[Group]:
+    def chat_by_id(self, chat_id: int) -> Optional[Chat]:
         for chat in self.all_chats:
             if chat.chat_data.chat_id == chat_id:
                 return chat
@@ -188,7 +189,7 @@ class Pipeline:
         # Pass to helpers
         await self.pass_message_to_handlers(new_message, chat)
 
-    async def pass_message_to_handlers(self, new_message: Message, chat: Group = None):
+    async def pass_message_to_handlers(self, new_message: Message, chat: Chat = None):
         if chat is None:
             chat = self.chat_by_id(new_message.chat_data.chat_id)
         helper_results: Iterable[Union[BaseException, Optional[List[Message]]]] = await asyncio.gather(

@@ -5,7 +5,7 @@ from typing import Optional, List, Tuple, TYPE_CHECKING
 from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetector, FrameTimecode
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import Group
+from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import find_video_for_message
 from gif_pipeline.helpers.video_cut_helper import VideoCutHelper
 from gif_pipeline.message import Message
@@ -22,7 +22,7 @@ class SceneSplitHelper(VideoCutHelper):
         super().__init__(database, client, worker)
         self.menu_helper = menu_helper
 
-    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         text_clean = message.text.strip().lower()
         key_words = ["split scenes", "scenesplit", "scene split"]
         args = None
@@ -73,7 +73,7 @@ class SceneSplitHelper(VideoCutHelper):
 
     async def split_scenes(
             self,
-            chat: Group,
+            chat: Chat,
             message: Message,
             video: Message,
             scene_list: List[Tuple[FrameTimecode, FrameTimecode]]

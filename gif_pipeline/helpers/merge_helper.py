@@ -2,7 +2,7 @@ import asyncio
 import shutil
 from typing import Optional, List, Tuple
 
-from gif_pipeline.group import Group
+from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.helpers.video_helper import video_has_audio_track_task, add_audio_track_task
 from gif_pipeline.message import Message
@@ -11,7 +11,7 @@ from gif_pipeline.tasks.ffmprobe_task import FFprobeTask
 
 
 class MergeHelper(Helper):
-    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         text_clean = message.message_data.text.lower().strip()
         if text_clean.startswith("merge"):
             merge_command = text_clean[5:].strip()
@@ -24,7 +24,7 @@ class MergeHelper(Helper):
             return await self.handle_prepend(chat, message, prepend_command)
         return None
 
-    async def handle_merge(self, chat: Group, message: Message, merge_command: str) -> Optional[List[Message]]:
+    async def handle_merge(self, chat: Chat, message: Message, merge_command: str) -> Optional[List[Message]]:
         messages_to_merge = []
         reply_to = chat.message_by_id(message.message_data.reply_to)
         if reply_to is not None:
@@ -44,7 +44,7 @@ class MergeHelper(Helper):
             messages_to_merge.append(msg)
         return await self.merge_messages(chat, message, messages_to_merge)
 
-    async def handle_append(self, chat: Group, message: Message, append_command: str) -> Optional[List[Message]]:
+    async def handle_append(self, chat: Chat, message: Message, append_command: str) -> Optional[List[Message]]:
         messages_to_merge = []
         reply_to = chat.message_by_id(message.message_data.reply_to)
         if reply_to is None:
@@ -66,7 +66,7 @@ class MergeHelper(Helper):
             messages_to_merge.append(msg)
         return await self.merge_messages(chat, message, messages_to_merge)
 
-    async def handle_prepend(self, chat: Group, message: Message, prepend_command: str) -> Optional[List[Message]]:
+    async def handle_prepend(self, chat: Chat, message: Message, prepend_command: str) -> Optional[List[Message]]:
         messages_to_merge = []
         links = prepend_command.split()
         for link in links:
@@ -90,7 +90,7 @@ class MergeHelper(Helper):
 
     async def merge_messages(
             self,
-            chat: Group,
+            chat: Chat,
             cmd_message: Message,
             messages_to_merge: List[Message]
     ) -> Optional[List[Message]]:

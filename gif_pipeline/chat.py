@@ -3,9 +3,11 @@ from __future__ import annotations
 import logging
 import os
 from abc import ABC, abstractmethod
-from typing import Dict, Union, Any, TypeVar, List, Optional, Coroutine, Callable
+from typing import TypeVar, List, Optional, Coroutine, Callable
 from typing import TYPE_CHECKING
 
+from gif_pipeline.chat_config import ChatConfig
+from gif_pipeline.chat_data import C, ChatData
 from gif_pipeline.message import Message
 
 if TYPE_CHECKING:
@@ -13,98 +15,9 @@ if TYPE_CHECKING:
     from gif_pipeline.database import Database
     from gif_pipeline.message import MessageData
 T = TypeVar('T', bound='Group')
-C = TypeVar('C', bound='ChatData')
 
 
-class ChatConfig(ABC):
-    def __init__(
-            self,
-            handle: Union[str, int],
-            *,
-            queue: bool = False,
-            duplicate_detection: bool = True
-    ):
-        self.handle = handle
-        self.queue = queue
-        self.duplicate_detection = duplicate_detection
-        self.read_only = False
-
-    @staticmethod
-    @abstractmethod
-    def from_json(json_dict: Dict[str, Any]) -> 'ChatConfig':
-        pass
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(handle={self.handle})"
-
-
-class ChannelConfig(ChatConfig):
-
-    def __init__(
-            self,
-            handle: Union[str, int],
-            *,
-            queue: bool = False,
-            duplicate_detection: bool = True,
-            read_only: bool = False
-    ):
-        super().__init__(handle, queue=queue, duplicate_detection=duplicate_detection)
-        self.read_only = read_only
-
-    @staticmethod
-    def from_json(json_dict) -> 'ChannelConfig':
-        return ChannelConfig(
-            json_dict['handle'],
-            queue=json_dict['queue'],
-            read_only=json_dict.get("read_only", False)
-        )
-
-
-class WorkshopConfig(ChatConfig):
-
-    @staticmethod
-    def from_json(json_dict) -> 'WorkshopConfig':
-        return WorkshopConfig(json_dict['handle'], duplicate_detection=json_dict.get("duplicate_detection", True))
-
-
-class ChatData(ABC):
-    def __init__(self, chat_id: int, username: Optional[str], title: str) -> None:
-        self.chat_id = chat_id
-        self.username = username
-        self.title = title
-
-    @property
-    @abstractmethod
-    def directory(self) -> str:
-        pass
-
-    def telegram_link_for_message(self, message_data: 'MessageData') -> str:
-        handle = abs(self.chat_id)
-        if str(self.chat_id).startswith("-100"):
-            handle = str(self.chat_id)[4:]
-        return f"https://t.me/c/{handle}/{message_data.message_id}"
-
-
-class ChannelData(ChatData):
-
-    @property
-    def directory(self) -> str:
-        return f"store/channels/{self.username or self.chat_id}/"
-
-    def telegram_link_for_message(self, message_data: 'MessageData') -> str:
-        if self.username is None:
-            return super().telegram_link_for_message(message_data)
-        return f"https://t.me/{self.username}/{message_data.message_id}"
-
-
-class WorkshopData(ChatData):
-
-    @property
-    def directory(self) -> str:
-        return f"store/workshop/{self.chat_id}/"
-
-
-class Group(ABC):
+class Chat(ABC):
     def __init__(
             self,
             chat_data: ChatData,
@@ -196,27 +109,27 @@ class Group(ABC):
         self.messages.append(message)
 
 
-class Channel(Group):
+class Channel(Chat):
 
     @classmethod
     async def from_config(cls, config: 'ChatConfig', client: TelegramClient, database: 'Database') -> Channel:
-        chat_data = await Group.load_chat_data(client.get_channel_data, config, client, database)
+        chat_data = await Chat.load_chat_data(client.get_channel_data, config, client, database)
         return await cls.from_data(chat_data, config, client, database)
 
     @classmethod
     async def from_data(cls, chat_data: 'ChatData', config: 'ChatConfig', client: TelegramClient, database: 'Database'):
-        messages = await Group.load_messages(chat_data, config, client, database)
+        messages = await Chat.load_messages(chat_data, config, client, database)
         return Channel(chat_data, config, messages, client)
 
 
-class WorkshopGroup(Group):
+class WorkshopGroup(Chat):
 
     @classmethod
     async def from_config(cls, config: 'ChatConfig', client: TelegramClient, database: 'Database') -> WorkshopGroup:
-        chat_data = await Group.load_chat_data(client.get_workshop_data, config, client, database)
+        chat_data = await Chat.load_chat_data(client.get_workshop_data, config, client, database)
         return await cls.from_data(chat_data, config, client, database)
 
     @classmethod
     async def from_data(cls, chat_data: 'ChatData', config: 'ChatConfig', client: TelegramClient, database: 'Database'):
-        messages = await Group.load_messages(chat_data, config, client, database)
+        messages = await Chat.load_messages(chat_data, config, client, database)
         return WorkshopGroup(chat_data, config, messages, client)

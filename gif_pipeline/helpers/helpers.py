@@ -8,14 +8,14 @@ from async_generator import asynccontextmanager
 from telethon import Button
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import Group
+from gif_pipeline.chat import Chat
 from gif_pipeline.menu_cache import SentMenu
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram
 
 
-def find_video_for_message(chat: Group, message: Message) -> Optional[Message]:
+def find_video_for_message(chat: Chat, message: Message) -> Optional[Message]:
     # If given message has a video, return that
     if message.has_video:
         return message
@@ -40,7 +40,7 @@ class Helper(ABC):
 
     async def send_text_reply(
             self,
-            chat: Group,
+            chat: Chat,
             message: Message,
             text: str,
             *,
@@ -53,7 +53,7 @@ class Helper(ABC):
             buttons=buttons
         )
 
-    async def send_video_reply(self, chat: Group, message: Message, video_path: str, text: str = None) -> Message:
+    async def send_video_reply(self, chat: Chat, message: Message, video_path: str, text: str = None) -> Message:
         return await self.send_message(
             chat,
             video_path=video_path,
@@ -63,7 +63,7 @@ class Helper(ABC):
 
     async def send_message(
             self,
-            chat: Group,
+            chat: Chat,
             *,
             text: Optional[str] = None,
             video_path: Optional[str] = None,
@@ -102,7 +102,7 @@ class Helper(ABC):
 
     async def edit_message(
             self,
-            chat: Group,
+            chat: Chat,
             message: Message,
             *,
             new_text: Optional[str] = None,
@@ -117,7 +117,7 @@ class Helper(ABC):
         return new_message
 
     @asynccontextmanager
-    async def progress_message(self, chat: Group, message: Message, text: str = None):
+    async def progress_message(self, chat: Chat, message: Message, text: str = None):
         if text is None:
             text = f"In progress. {self.name} is working on this."
         text = f"⏳ {text}"
@@ -133,10 +133,10 @@ class Helper(ABC):
             msg.delete(self.database)
 
     @abstractmethod
-    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         pass
 
-    async def on_deleted_message(self, chat: Group, message: Message) -> None:
+    async def on_deleted_message(self, chat: Chat, message: Message) -> None:
         pass
 
     async def on_callback_query(
@@ -156,6 +156,6 @@ class ArchiveHelper(Helper):
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 
-    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         # If a message says to archive, move to archive channel
         pass

@@ -7,7 +7,7 @@ from typing import Optional, List, ClassVar, Tuple
 import requests
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import Group
+from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
@@ -100,7 +100,7 @@ class TelegramGifHelper(Helper):
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 
-    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         # If message has text which is a link to a gif, download it, then convert it
         gif_links = re.findall(r"[^\s]+\.gif", message.text, re.IGNORECASE)
         if gif_links:
@@ -127,7 +127,7 @@ class TelegramGifHelper(Helper):
         # Otherwise, ignore
         return
 
-    async def convert_gif_link(self, chat: Group, message: Message, gif_link: str) -> Message:
+    async def convert_gif_link(self, chat: Chat, message: Message, gif_link: str) -> Message:
         resp = requests.get(gif_link)
         gif_path = random_sandbox_video_path("gif")
         with open(gif_path, "wb") as f:

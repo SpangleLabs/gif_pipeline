@@ -4,7 +4,7 @@ import shutil
 from typing import Optional, List, Union, TYPE_CHECKING
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import Group, Channel
+from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.task_worker import TaskWorker
@@ -32,7 +32,7 @@ class GifSendHelper(Helper):
     def writable_channels(self) -> List[Channel]:
         return [channel for channel in self.channels if not channel.config.read_only]
 
-    async def on_new_message(self, chat: Group, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         # If a message says to send to a channel, and replies to a gif, then forward to that channel
         # `send deergifs`, `send cowgifs->deergifs`
         # Needs to handle queueing too?
@@ -52,7 +52,7 @@ class GifSendHelper(Helper):
 
     async def handle_dest_str(
             self,
-            chat: Group,
+            chat: Chat,
             cmd: Message,
             video: Message,
             dest_str: str,
@@ -99,7 +99,7 @@ class GifSendHelper(Helper):
 
     async def send_two_way_forward(
             self,
-            chat: Group,
+            chat: Chat,
             cmd_message: Message,
             video: Message,
             destination1: str,
@@ -113,7 +113,7 @@ class GifSendHelper(Helper):
 
     async def send_forward(
             self,
-            chat: Group,
+            chat: Chat,
             cmd_msg: Message,
             video: Message,
             destination_from: str,
@@ -151,10 +151,10 @@ class GifSendHelper(Helper):
 
     async def send_video(
             self,
-            chat: Group,
+            chat: Chat,
             video: Message,
             cmd: Message,
-            destination: Group,
+            destination: Chat,
             sender_id: int
     ) -> List[Message]:
         dest_admin_ids = await self.client.list_authorized_channel_posters(destination.chat_data)
@@ -169,7 +169,7 @@ class GifSendHelper(Helper):
             messages.append(confirm_message)
         return messages
 
-    def get_destination_from_name(self, destination_id: Union[str, int]) -> Optional[Group]:
+    def get_destination_from_name(self, destination_id: Union[str, int]) -> Optional[Chat]:
         destination = None
         for channel in self.writable_channels:
             if channel.chat_data.username == destination_id:
@@ -180,7 +180,7 @@ class GifSendHelper(Helper):
                 break
         return destination
 
-    async def forward_message(self, destination: Group, message: Message) -> Message:
+    async def forward_message(self, destination: Chat, message: Message) -> Message:
         msg = await self.client.forward_message(destination.chat_data, message.message_data)
         message_data = message_data_from_telegram(msg)
         if message.has_video:

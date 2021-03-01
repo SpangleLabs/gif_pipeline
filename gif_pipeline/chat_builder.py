@@ -4,7 +4,9 @@ from typing import List, Awaitable
 from tqdm import tqdm
 
 from gif_pipeline.database import Database
-from gif_pipeline.group import ChatData, ChatConfig, Group, Channel, WorkshopGroup
+from gif_pipeline.chat import Chat, Channel, WorkshopGroup
+from gif_pipeline.chat_data import ChatData
+from gif_pipeline.chat_config import ChatConfig
 from gif_pipeline.telegram_client import TelegramClient
 
 
@@ -25,14 +27,14 @@ class ChatBuilder(ABC):
             self.database.remove_chat(chat)
 
     @abstractmethod
-    async def create_chat(self, chat_config: ChatConfig) -> Group:
+    async def create_chat(self, chat_config: ChatConfig) -> Chat:
         pass
 
     @abstractmethod
-    async def update_chat(self, chat_config: ChatConfig, chat_data: ChatData) -> Group:
+    async def update_chat(self, chat_config: ChatConfig, chat_data: ChatData) -> Chat:
         pass
 
-    def get_initialisers(self, chat_confs: List[ChatConfig]) -> List[Awaitable[Group]]:
+    def get_initialisers(self, chat_confs: List[ChatConfig]) -> List[Awaitable[Chat]]:
         chat_data = self.list_chats()
         init_tasks = []
         for conf in chat_confs:
@@ -54,10 +56,10 @@ class ChannelBuilder(ChatBuilder):
     def list_chats(self) -> List[ChatData]:
         return self.database.list_channels()
 
-    async def create_chat(self, chat_config: ChatConfig) -> Group:
+    async def create_chat(self, chat_config: ChatConfig) -> Chat:
         return await Channel.from_config(chat_config, self.client, self.database)
 
-    async def update_chat(self, chat_config: ChatConfig, chat_data: ChatData) -> Group:
+    async def update_chat(self, chat_config: ChatConfig, chat_data: ChatData) -> Chat:
         return await Channel.from_data(chat_data, chat_config, self.client, self.database)
 
 
@@ -66,8 +68,8 @@ class WorkshopBuilder(ChatBuilder):
     def list_chats(self) -> List[ChatData]:
         return self.database.list_workshops()
 
-    async def create_chat(self, chat_config: ChatConfig) -> Group:
+    async def create_chat(self, chat_config: ChatConfig) -> Chat:
         return await WorkshopGroup.from_config(chat_config, self.client, self.database)
 
-    async def update_chat(self, chat_config: ChatConfig, chat_data: ChatData) -> Group:
+    async def update_chat(self, chat_config: ChatConfig, chat_data: ChatData) -> Chat:
         return await WorkshopGroup.from_data(chat_data, chat_config, self.client, self.database)
