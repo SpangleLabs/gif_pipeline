@@ -51,17 +51,17 @@ class PipelineConfig:
         database = Database()
         client = TelegramClient(self.api_id, self.api_hash, self.pipeline_bot_token, self.public_bot_token)
         client.synchronise_async(client.initialise())
-        channel_builder = ChannelBuilder(database, client)
-        workshop_builder = WorkshopBuilder(database, client)
-        channels, workshops = client.synchronise_async(self.initialise_chats(channel_builder, workshop_builder))
+        channels, workshops = client.synchronise_async(self.initialise_chats(database, client))
         pipe = Pipeline(database, client, channels, workshops, self.api_keys)
         return pipe
 
     async def initialise_chats(
             self,
-            channel_builder: ChannelBuilder,
-            workshop_builder: WorkshopBuilder
+            database: Database,
+            client: TelegramClient
     ) -> Tuple[List[Channel], List[WorkshopGroup]]:
+        channel_builder = ChannelBuilder(database, client)
+        workshop_builder = WorkshopBuilder(database, client)
         logging.info("Deleting unused channels")
         channel_inits = channel_builder.get_initialisers(self.channels)
         logging.info("Deleting unused workshops")
