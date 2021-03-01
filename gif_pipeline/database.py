@@ -56,6 +56,18 @@ class Database:
         self.conn.commit()
         cur.close()
 
+    def remove_chat(self, chat_data: ChatData):
+        messages = self.list_messages_for_chat(chat_data)
+        for message in messages:
+            self.remove_message(message)
+        cur = self.conn.cursor()
+        cur.execute(
+            "DELETE FROM chats WHERE chat_id = ?",
+            (chat_data.chat_id, )
+        )
+        self.conn.commit()
+        cur.close()
+
     def list_chats(self, chat_type: Type[T]) -> List[T]:
         cur = self.conn.cursor()
         chats = []
@@ -119,6 +131,7 @@ class Database:
         self.conn.commit()
 
     def remove_message(self, message: MessageData) -> None:
+        self.remove_message_hashes(message)
         cur = self.conn.cursor()
         cur.execute(
             "DELETE FROM messages WHERE chat_id = ? AND message_id = ? AND is_scheduled = ?",
