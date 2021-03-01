@@ -53,11 +53,11 @@ class PipelineConfig:
         client.synchronise_async(client.initialise())
         channel_builder = ChannelBuilder(database, client)
         workshop_builder = WorkshopBuilder(database, client)
-        channels, workshops = client.synchronise_async(self.tqdm_initialise_chats(channel_builder, workshop_builder))
+        channels, workshops = client.synchronise_async(self.initialise_chats(channel_builder, workshop_builder))
         pipe = Pipeline(database, client, channels, workshops, self.api_keys)
         return pipe
 
-    async def tqdm_initialise_chats(
+    async def initialise_chats(
             self,
             channel_builder: ChannelBuilder,
             workshop_builder: WorkshopBuilder
