@@ -1,9 +1,11 @@
 import asyncio
 import logging
-from typing import Dict, List, Iterator, Optional, Iterable, Union
+from typing import Dict, List, Iterator, Optional, Iterable, Union, Tuple
 
 from telethon import events
+from tqdm import tqdm
 
+from gif_pipeline.chat_builder import ChannelBuilder, WorkshopBuilder
 from gif_pipeline.database import Database
 from gif_pipeline.group import Group, Channel, WorkshopGroup, ChannelConfig, WorkshopConfig
 from gif_pipeline.helpers.delete_helper import DeleteHelper
@@ -49,42 +51,28 @@ class PipelineConfig:
         database = Database()
         client = TelegramClient(self.api_id, self.api_hash, self.pipeline_bot_token, self.public_bot_token)
         client.synchronise_async(client.initialise())
-        logging.info("Initialising channels")
-        channels = self.get_channels(client, database)
-        workshops = self.get_workshops(client, database)
+        channel_builder = ChannelBuilder(database, client)
+        workshop_builder = WorkshopBuilder(database, client)
+        channels, workshops = client.synchronise_async(self.tqdm_initialise_chats(channel_builder, workshop_builder))
         pipe = Pipeline(database, client, channels, workshops, self.api_keys)
-        logging.info("Initialised channels")
         return pipe
 
-    def get_channels(self, client: TelegramClient, database: Database) -> List[Channel]:
-        db_channels = database.list_channels()
-        channel_inits = []
-        for conf in self.channels:
-            matching_db_chat = next(
-                (chat for chat in db_channels if chat.username == conf.handle or chat.chat_id == conf.handle),
-                None
-            )
-            if matching_db_chat:
-                channel_inits.append(Channel.from_data(matching_db_chat, conf, client, database))
-            else:
-                channel_inits.append(Channel.from_config(conf, client, database))
-        channels = client.synchronise_async(asyncio.gather(*channel_inits))
-        return channels
-
-    def get_workshops(self, client: TelegramClient, database: Database) -> List[WorkshopGroup]:
-        db_channels = database.list_workshops()
-        workshop_inits = []
-        for conf in self.workshops:
-            matching_db_chat = next(
-                (chat for chat in db_channels if chat.username == conf.handle or chat.chat_id == conf.handle),
-                None
-            )
-            if matching_db_chat:
-                workshop_inits.append(WorkshopGroup.from_data(matching_db_chat, conf, client, database))
-            else:
-                workshop_inits.append(WorkshopGroup.from_config(conf, client, database))
-        channels = client.synchronise_async(asyncio.gather(*workshop_inits))
-        return channels
+    async def tqdm_initialise_chats(
+            self,
+            channel_builder: ChannelBuilder,
+            workshop_builder: WorkshopBuilder
+    ) -> Tuple[List[Channel], List[WorkshopGroup]]:
+        logging.info("Deleting unused channels")
+        channel_inits = channel_builder.get_initialisers(self.channels)
+        logging.info("Deleting unused workshops")
+        workshop_inits = workshop_builder.get_initialisers(self.workshops)
+        logging.info("Initialising channels and workshops")
+        chat_inits = [*channel_inits, *workshop_inits]
+        chats = [await chat for chat in tqdm(asyncio.as_completed(chat_inits), total=len(chat_inits))]
+        channels = [chat for chat in chats if isinstance(chat, Channel)]
+        workshops = [chat for chat in chats if isinstance(chat, WorkshopGroup)]
+        logging.info("Initialised channels and workshops")
+        return channels, workshops
 
 
 class Pipeline:
