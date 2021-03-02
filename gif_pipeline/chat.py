@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from gif_pipeline.chat_config import ChatConfig
 from gif_pipeline.chat_data import C, ChatData
 from gif_pipeline.message import Message
+from gif_pipeline.utils import tqdm_gather
 
 if TYPE_CHECKING:
     from gif_pipeline.telegram_client import TelegramClient
@@ -61,15 +62,16 @@ class Chat(ABC):
             database.save_message(message_data)
         for message_data in removed_messages:
             database.remove_message(message_data)
+
         # Check files, turn message data into messages
-        # TODO: I bet these downloads can be parallelized
-        messages = []
-        for message in channel_messages:
+        async def save_message(message):
             old_file_path = message.file_path
             new_message = await Message.from_message_data(message, chat_data, client)
-            messages.append(new_message)
             if old_file_path != new_message.message_data.file_path:
                 database.save_message(new_message.message_data)
+            return new_message
+        messages = await tqdm_gather([save_message(message) for message in channel_messages])
+
         # Check for extra files which need removing
         dir_files = os.listdir(chat_data.directory)
         msg_files = [msg.message_data.file_path for msg in messages]
