@@ -6,8 +6,8 @@ from abc import ABC
 from typing import TYPE_CHECKING, Awaitable
 from typing import TypeVar, List, Optional, Coroutine, Callable
 
-from gif_pipeline.chat_config import ChatConfig
-from gif_pipeline.chat_data import C, ChatData
+from gif_pipeline.chat_config import ChatConfig, ChannelConfig, WorkshopConfig
+from gif_pipeline.chat_data import C, ChatData, ChannelData, WorkshopData
 from gif_pipeline.message import Message
 
 if TYPE_CHECKING:
@@ -103,8 +103,18 @@ class Chat(ABC):
 
 
 class Channel(Chat):
-    pass
+
+    def __init__(self, chat_data: ChannelData, config: ChannelConfig, messages: List[Message], client: TelegramClient):
+        super().__init__(chat_data, config, messages, client)
 
 
 class WorkshopGroup(Chat):
-    pass
+
+    def __init__(
+            self,
+            chat_data: WorkshopData,
+            config: WorkshopConfig,
+            messages: List[Message],
+            client: TelegramClient
+    ):
+        super().__init__(chat_data, config, messages, client)
