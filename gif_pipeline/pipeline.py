@@ -30,8 +30,11 @@ from gif_pipeline.helpers.video_rotate_helper import VideoRotateHelper
 from gif_pipeline.helpers.zip_helper import ZipHelper
 from gif_pipeline.menu_cache import MenuCache
 from gif_pipeline.message import Message
-from gif_pipeline.tasks.task_worker import TaskWorker
+from gif_pipeline.tasks.task_worker import TaskWorker, Bottleneck
 from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram, chat_id_from_telegram
+from gif_pipeline.utils import tqdm_gather
+
+logger = logging.getLogger(__name__)
 
 
 class PipelineConfig:
@@ -61,18 +64,46 @@ class PipelineConfig:
             database: Database,
             client: TelegramClient
     ) -> Tuple[List[Channel], List[WorkshopGroup]]:
-        channel_builder = ChannelBuilder(database, client)
-        workshop_builder = WorkshopBuilder(database, client)
-        logging.info("Deleting unused channels")
-        channel_inits = channel_builder.get_initialisers(self.channels)
-        logging.info("Deleting unused workshops")
-        workshop_inits = workshop_builder.get_initialisers(self.workshops)
-        logging.info("Initialising channels and workshops")
-        chat_inits = [*channel_inits, *workshop_inits]
-        chats = [await chat for chat in tqdm(asyncio.as_completed(chat_inits), total=len(chat_inits))]
-        channels = [chat for chat in chats if isinstance(chat, Channel)]
-        workshops = [chat for chat in chats if isinstance(chat, WorkshopGroup)]
-        logging.info("Initialised channels and workshops")
+        download_bottleneck = Bottleneck(3)
+        channel_builder = ChannelBuilder(database, client, download_bottleneck)
+        workshop_builder = WorkshopBuilder(database, client, download_bottleneck)
+        # Get chat data for chat config
+        logger.info("Initialising channel data")
+        channel_data = await channel_builder.get_chat_data(self.channels)
+        logger.info("Initialising workshop data")
+        workshop_data = await workshop_builder.get_chat_data(self.workshops)
+
+        message_inits = []
+        logger.info("Listing messages in channels")
+        channel_message_lists = await channel_builder.get_message_inits(self.channels, channel_data)
+        channel_message_counts = [len(x) for x in channel_message_lists]
+        message_inits += [init for message_list in channel_message_lists for init in message_list]
+        logger.info("Listing messages in workshops")
+        workshop_message_lists = await channel_builder.get_message_inits(self.channels, channel_data)
+        workshop_message_counts = [len(x) for x in workshop_message_lists]
+        message_inits += [init for message_list in workshop_message_lists for init in message_list]
+
+        logger.info("Downloading messages")
+        all_messages = await tqdm_gather(message_inits, desc="Downloading messages")
+
+        logger.info("Creating channels")
+        channels = []
+        for chan_conf, chan_data, message_count in zip(self.channels, channel_data, channel_message_counts):
+            chan_messages = all_messages[:message_count]
+            all_messages = all_messages[message_count:]
+            channels.append(Channel(chan_data, chan_conf, chan_messages, client))
+        logger.info("Creating workshops")
+        workshops = []
+        for work_conf, work_data, message_count in zip(self.workshops, workshop_data, workshop_message_counts):
+            work_messages = all_messages[:message_count]
+            all_messages = all_messages[message_count:]
+            workshops.append(WorkshopGroup(work_data, work_conf, work_messages, client))
+
+        logger.info("Cleaning up excess files")
+        for chat in tqdm([*channels, *workshops], desc="Cleaning up excess files"):
+            chat.cleanup_excess_files()
+
+        logger.info("Initialised channels and workshops")
         return channels, workshops
 
 
