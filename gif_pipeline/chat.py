@@ -31,20 +31,6 @@ class Chat(ABC):
         self.client = client
 
     @staticmethod
-    async def create_chat_data(
-            getter: Callable[[str], Coroutine[None, None, C]],
-            config: 'ChatConfig',
-            database: 'Database'
-    ) -> C:
-        # Get chat id, name, etc
-        chat_data = await getter(config.handle)
-        # Ensure chat is in database
-        database.save_chat(chat_data)
-        # Create directory
-        os.makedirs(chat_data.directory, exist_ok=True)
-        return chat_data
-
-    @staticmethod
     async def list_message_initialisers(
             chat_data: 'ChatData',
             config: 'ChatConfig',

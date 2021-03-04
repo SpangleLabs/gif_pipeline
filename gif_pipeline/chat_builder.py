@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 from abc import abstractmethod, ABC
 from typing import List, Awaitable
@@ -41,7 +42,7 @@ class ChatBuilder(ABC):
 
     async def get_chat_data(self, chat_confs: List[ChatConfig]) -> List[ChatData]:
         db_data = self.list_chats()
-        chat_data = []
+        chat_data_list = []
         logger.info("Creating chat data")
         for conf in tqdm(chat_confs, desc="Creating chat data"):
             matching_chat_data = next(
@@ -49,13 +50,16 @@ class ChatBuilder(ABC):
                 None
             )
             if matching_chat_data:
-                chat_data.append(matching_chat_data)
+                chat_data_list.append(matching_chat_data)
                 db_data.remove(matching_chat_data)
             else:
-                chat_data.append(await self.create_chat_data(conf))
+                chat_data = await self.create_chat_data(conf)
+                chat_data_list.append(chat_data)
+                self.database.save_chat(chat_data)
+                os.makedirs(chat_data.directory, exist_ok=True)
         logger.info("Deleting chats")
         self.delete_chats(db_data)
-        return chat_data
+        return chat_data_list
 
     async def get_message_inits(
             self,
@@ -79,7 +83,7 @@ class ChannelBuilder(ChatBuilder):
         return self.database.list_channels()
 
     async def create_chat_data(self, chat_config: ChatConfig) -> ChannelData:
-        return await Chat.create_chat_data(self.client.get_channel_data, chat_config, self.database)
+        return await self.client.get_channel_data(chat_config.handle)
 
 
 class WorkshopBuilder(ChatBuilder):
@@ -88,4 +92,4 @@ class WorkshopBuilder(ChatBuilder):
         return self.database.list_workshops()
 
     async def create_chat_data(self, chat_config: ChatConfig) -> WorkshopData:
-        return await Chat.create_chat_data(self.client.get_workshop_data, chat_config, self.database)
+        return await self.client.get_workshop_data(chat_config.handle)
