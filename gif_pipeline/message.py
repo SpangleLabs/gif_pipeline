@@ -89,6 +89,7 @@ class Message:
 
     @classmethod
     async def from_message_data(cls, message_data: MessageData, chat_data: 'ChatData', client: 'TelegramClient'):
+        logging.info(f"Creating message: {message_data}")
         if message_data.has_file:
             if message_data.file_path is None:
                 video_path = message_data.expected_file_path(chat_data)
