@@ -67,7 +67,8 @@ class ChatBuilder(ABC):
             chat_data_list: List[ChatData]
     ) -> List[List[Awaitable[Message]]]:
         message_inits = []
-        for chat_conf, chat_data in tqdm(zip(chat_confs, chat_data_list), "Listing messages"):
+        total = len(chat_confs)
+        for chat_conf, chat_data in tqdm(zip(chat_confs, chat_data_list), "Listing messages", total=total):
             new_inits = [
                 self.download_bottleneck.await_run(message_init)
                 for message_init
