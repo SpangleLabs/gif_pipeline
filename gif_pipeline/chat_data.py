@@ -37,7 +37,7 @@ class ChatData(ABC):
 
     @abstractmethod
     def matches_config(self, conf: ChatConfig) -> bool:
-        return self.username == conf.handle or chat_id_matches(self.chat_id, conf.handle)
+        return self.username.casefold() == conf.handle.casefold() or chat_id_matches(self.chat_id, conf.handle)
 
 
 class ChannelData(ChatData):
