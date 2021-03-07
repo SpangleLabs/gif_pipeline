@@ -3,7 +3,24 @@ import json
 import logging
 import sys
 
+import tqdm
+
 from gif_pipeline.pipeline import PipelineConfig
+
+
+class TqdmLoggingHandler(logging.Handler):
+    def __init__(self, level=logging.NOTSET):
+        super().__init__(level)
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            tqdm.tqdm.write(msg)
+            self.flush()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            self.handleError(record)
 
 
 def setup_logging() -> None:
@@ -15,7 +32,7 @@ def setup_logging() -> None:
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    console_handler = logging.StreamHandler()
+    console_handler = TqdmLoggingHandler()
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
