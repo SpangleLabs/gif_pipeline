@@ -18,6 +18,14 @@ def chat_id_matches(id1: Union[int, str], id2: Union[int, str]) -> bool:
     return id1_str == id2_str
 
 
+def chat_username_matches(username1: Optional[str], username2: Optional[str]) -> bool:
+    if username1 is None:
+        return False
+    if username2 is None:
+        return False
+    return username1.casefold() == username2.casefold()
+
+
 class ChatData(ABC):
     def __init__(self, chat_id: int, username: Optional[str], title: str) -> None:
         self.chat_id = chat_id
@@ -37,7 +45,7 @@ class ChatData(ABC):
 
     @abstractmethod
     def matches_config(self, conf: ChatConfig) -> bool:
-        return self.username.casefold() == conf.handle.casefold() or chat_id_matches(self.chat_id, conf.handle)
+        return chat_username_matches(self.username, conf.handle) or chat_id_matches(self.chat_id, conf.handle)
 
 
 class ChannelData(ChatData):
