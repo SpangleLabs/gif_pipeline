@@ -1,7 +1,21 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar, Optional
+from typing import TypeVar, Optional, Union
+
+from gif_pipeline.chat_config import ChatConfig, ChannelConfig, WorkshopConfig
+from gif_pipeline.message import MessageData
 
 C = TypeVar('C', bound='ChatData')
+
+
+def chat_id_matches(id1: Union[int, str], id2: Union[int, str]) -> bool:
+    prefix = "-100"
+    id1_str = str(id1)
+    id2_str = str(id2)
+    if id1_str.startswith(prefix):
+        id1_str = id1_str[len(prefix):]
+    if id2_str.startswith(prefix):
+        id2_str = id2_str[len(prefix):]
+    return id1_str == id2_str
 
 
 class ChatData(ABC):
@@ -21,6 +35,10 @@ class ChatData(ABC):
             handle = str(self.chat_id)[4:]
         return f"https://t.me/c/{handle}/{message_data.message_id}"
 
+    @abstractmethod
+    def matches_config(self, conf: ChatConfig) -> bool:
+        return self.username == conf.handle or chat_id_matches(self.chat_id, conf.handle)
+
 
 class ChannelData(ChatData):
 
@@ -33,9 +51,15 @@ class ChannelData(ChatData):
             return super().telegram_link_for_message(message_data)
         return f"https://t.me/{self.username}/{message_data.message_id}"
 
+    def matches_config(self, conf: ChatConfig) -> bool:
+        return isinstance(conf, ChannelConfig) and super().matches_config(conf)
+
 
 class WorkshopData(ChatData):
 
     @property
     def directory(self) -> str:
         return f"store/workshop/{self.chat_id}/"
+
+    def matches_config(self, conf: ChatConfig) -> bool:
+        return isinstance(conf, WorkshopConfig) and super().matches_config(conf)

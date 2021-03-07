@@ -48,7 +48,7 @@ class ChatBuilder(ABC):
         logger.info(f"Creating {self.chat_type} data")
         for conf in tqdm(chat_confs, desc=f"Creating {self.chat_type} data"):
             matching_chat_data = next(
-                (chat for chat in db_data if chat.username == conf.handle or chat.chat_id == conf.handle),
+                (chat for chat in db_data if chat.matches_config(conf)),
                 None
             )
             if matching_chat_data:
