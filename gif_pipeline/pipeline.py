@@ -79,7 +79,7 @@ class PipelineConfig:
         channel_message_counts = [len(x) for x in channel_message_lists]
         message_inits += [init for message_list in channel_message_lists for init in message_list]
         logger.info("Listing messages in workshops")
-        workshop_message_lists = await channel_builder.get_message_inits(self.channels, channel_data)
+        workshop_message_lists = await workshop_builder.get_message_inits(self.workshops, workshop_data)
         workshop_message_counts = [len(x) for x in workshop_message_lists]
         message_inits += [init for message_list in workshop_message_lists for init in message_list]
 
