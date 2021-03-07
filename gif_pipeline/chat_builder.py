@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 class ChatBuilder(ABC):
+    chat_type = "chat"
+
     def __init__(self, database: Database, client: TelegramClient, download_bottleneck: Bottleneck):
         self.database = database
         self.client = client
@@ -28,9 +30,9 @@ class ChatBuilder(ABC):
         pass
 
     def delete_chats(self, chats: List[ChatData]) -> None:
-        for chat in tqdm(chats, desc="Deleting excess chats"):
+        for chat in tqdm(chats, desc=f"Deleting excess {self.chat_type}s"):
             messages = self.database.list_messages_for_chat(chat)
-            for message in tqdm(messages, position=1, desc="Removing messages"):
+            for message in tqdm(messages, position=1, desc=f"Removing {chat.title} messages"):
                 self.database.remove_message(message)
             self.database.remove_chat(chat)
             # Clear files
@@ -43,8 +45,8 @@ class ChatBuilder(ABC):
     async def get_chat_data(self, chat_confs: List[ChatConfig]) -> List[ChatData]:
         db_data = self.list_chats()
         chat_data_list = []
-        logger.info("Creating chat data")
-        for conf in tqdm(chat_confs, desc="Creating chat data"):
+        logger.info(f"Creating {self.chat_type} data")
+        for conf in tqdm(chat_confs, desc=f"Creating {self.chat_type} data"):
             matching_chat_data = next(
                 (chat for chat in db_data if chat.username == conf.handle or chat.chat_id == conf.handle),
                 None
@@ -57,7 +59,7 @@ class ChatBuilder(ABC):
                 chat_data_list.append(chat_data)
                 self.database.save_chat(chat_data)
                 os.makedirs(chat_data.directory, exist_ok=True)
-        logger.info("Deleting chats")
+        logger.info(f"Deleting {self.chat_type}s")
         self.delete_chats(db_data)
         return chat_data_list
 
@@ -68,7 +70,8 @@ class ChatBuilder(ABC):
     ) -> List[List[Awaitable[Message]]]:
         message_inits = []
         total = len(chat_confs)
-        for chat_conf, chat_data in tqdm(zip(chat_confs, chat_data_list), "Listing messages", total=total):
+        title = f"Listing {self.chat_type} messages"
+        for chat_conf, chat_data in tqdm(zip(chat_confs, chat_data_list), title, total=total):
             new_inits = [
                 self.download_bottleneck.await_run(message_init)
                 for message_init
@@ -79,6 +82,7 @@ class ChatBuilder(ABC):
 
 
 class ChannelBuilder(ChatBuilder):
+    chat_type = "channel"
 
     def list_chats(self) -> List[ChatData]:
         return self.database.list_channels()
@@ -88,6 +92,7 @@ class ChannelBuilder(ChatBuilder):
 
 
 class WorkshopBuilder(ChatBuilder):
+    chat_type = "workshop"
 
     def list_chats(self) -> List[ChatData]:
         return self.database.list_workshops()
