@@ -1,7 +1,8 @@
+import asyncio
 import glob
 import os
 import shutil
-from typing import Optional, List, Set
+from typing import Optional, List, Set, Dict
 
 import imagehash
 from PIL import Image
@@ -11,8 +12,21 @@ from gif_pipeline.chat import WorkshopGroup, Chat
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.message import Message, MessageData
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
-from gif_pipeline.tasks.task_worker import TaskWorker
+from gif_pipeline.tasks.task_worker import TaskWorker, Bottleneck
 from gif_pipeline.telegram_client import TelegramClient
+from gif_pipeline.utils import tqdm_gather
+
+
+def hash_image(image_file: str) -> str:
+    image = Image.open(image_file)
+    image_hash = str(imagehash.dhash(image))
+    return image_hash
+
+
+async def hash_image_async(loop: asyncio.AbstractEventLoop, image_file: str) -> str:
+    # None uses the default executor (ThreadPoolExecutor)
+    image_hash = await loop.run_in_executor(None, hash_image, image_file)
+    return image_hash
 
 
 class DuplicateHelper(Helper):
@@ -20,23 +34,28 @@ class DuplicateHelper(Helper):
 
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
+        self.hash_bottleneck = Bottleneck(4)
 
     async def initialise_hashes(self, workshops: List[WorkshopGroup]):
         # Initialise, get all channels, get all videos, decompose all, add to the master hash
         workshop_ids = {workshop.chat_data.chat_id: workshop for workshop in workshops}
         messages_needing_hashes = self.database.get_messages_needing_hashing()
-        # TODO: asyncio gather this, so we can parallelize more aggressively
-        for message_data in messages_needing_hashes:
-            # Skip any messages in workshops which are disabled
-            workshop = workshop_ids.get(message_data.chat_id)
-            if workshop is not None and not workshop.config.duplicate_detection:
-                continue
-            # Create hashes for message
-            new_hashes = await self.create_message_hashes(message_data)
-            # Send alerts for workshop messages
-            if workshop is not None:
-                message = workshop.message_by_id(message_data.message_id)
-                await self.check_hash_in_store(workshop, new_hashes, message)
+        await tqdm_gather(
+            [self.initialise_message(message_data, workshop_ids) for message_data in messages_needing_hashes],
+            title="Hashing messages"
+        )
+
+    async def initialise_message(self, message_data: MessageData, workshop_dict: Dict[int, WorkshopGroup]) -> None:
+        # Skip any messages in workshops which are disabled
+        workshop = workshop_dict.get(message_data.chat_id)
+        if workshop is not None and not workshop.config.duplicate_detection:
+            return
+        # Create hashes for message
+        new_hashes = await self.create_message_hashes(message_data)
+        # Send alerts for workshop messages
+        if workshop is not None:
+            message = workshop.message_by_id(message_data.message_id)
+            await self.check_hash_in_store(workshop, new_hashes, message)
 
     async def get_or_create_message_hashes(self, message_data: MessageData) -> Set[str]:
         existing_hashes = self.get_message_hashes(message_data)
@@ -58,21 +77,21 @@ class DuplicateHelper(Helper):
         os.makedirs(message_decompose_path, exist_ok=True)
         await self.decompose_video(message_data.file_path, message_decompose_path)
         # Hash the images
-        hashes = set()
-        # TODO stop this being single threaded omg
-        for image_file in glob.glob(f"{message_decompose_path}/*.png"):
-            image = Image.open(image_file)
-            image_hash = str(imagehash.dhash(image))
-            hashes.add(image_hash)
+        loop = self.client.client.loop
+        hash_list = await asyncio.gather(
+            self.hash_bottleneck.await_run(hash_image_async(loop, image_file))
+            for image_file in glob.glob(f"{message_decompose_path}/*.png")
+        )
+        hash_set = set(hash_list)
         # Delete the images
         try:
             shutil.rmtree(message_decompose_path)
         except FileNotFoundError:
             pass
         # Save hashes
-        self.database.save_hashes(message_data, hashes)
+        self.database.save_hashes(message_data, hash_set)
         # Return hashes
-        return hashes
+        return hash_set
 
     async def check_hash_in_store(
             self,
