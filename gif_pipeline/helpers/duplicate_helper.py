@@ -1,7 +1,7 @@
-import asyncio
 import glob
 import os
 import shutil
+from multiprocessing.pool import ThreadPool
 from typing import Optional, List, Set, Dict
 
 import imagehash
@@ -12,7 +12,7 @@ from gif_pipeline.chat import WorkshopGroup, Chat
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.message import Message, MessageData
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
-from gif_pipeline.tasks.task_worker import TaskWorker, Bottleneck
+from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
 from gif_pipeline.utils import tqdm_gather
 
@@ -23,18 +23,12 @@ def hash_image(image_file: str) -> str:
     return image_hash
 
 
-async def hash_image_async(loop: asyncio.AbstractEventLoop, image_file: str) -> str:
-    # None uses the default executor (ThreadPoolExecutor)
-    image_hash = await loop.run_in_executor(None, hash_image, image_file)
-    return image_hash
-
-
 class DuplicateHelper(Helper):
     blank_frame_hash = "0000000000000000"
 
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
-        self.hash_bottleneck = Bottleneck(4)
+        self.hash_pool = ThreadPool(os.cpu_count())
 
     async def initialise_hashes(self, workshops: List[WorkshopGroup]):
         # Initialise, get all channels, get all videos, decompose all, add to the master hash
@@ -77,11 +71,8 @@ class DuplicateHelper(Helper):
         os.makedirs(message_decompose_path, exist_ok=True)
         await self.decompose_video(message_data.file_path, message_decompose_path)
         # Hash the images
-        loop = self.client.client.loop
-        hash_list = await asyncio.gather(
-            self.hash_bottleneck.await_run(hash_image_async(loop, image_file))
-            for image_file in glob.glob(f"{message_decompose_path}/*.png")
-        )
+        image_files = glob.glob(f"{message_decompose_path}/*.png")
+        hash_list = self.hash_pool.map(hash_image, image_files)
         hash_set = set(hash_list)
         # Delete the images
         try:
