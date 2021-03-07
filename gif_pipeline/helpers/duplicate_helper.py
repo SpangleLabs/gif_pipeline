@@ -42,7 +42,7 @@ class DuplicateHelper(Helper):
         messages_needing_hashes = self.database.get_messages_needing_hashing()
         await tqdm_gather(
             [self.initialise_message(message_data, workshop_ids) for message_data in messages_needing_hashes],
-            title="Hashing messages"
+            desc="Hashing messages"
         )
 
     async def initialise_message(self, message_data: MessageData, workshop_dict: Dict[int, WorkshopGroup]) -> None:
