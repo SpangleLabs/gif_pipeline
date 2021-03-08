@@ -266,8 +266,8 @@ class DestinationMenu(Menu):
                             channel.chat_data.title,
                             f"{self.confirm_send}:{channel.chat_data.chat_id}"
                         ))
-                    if channel.config.send_folder.startswith(self.current_folder):
-                        folders.add(channel.config.send_folder[len(self.current_folder):].split("/")[0])
+                    if channel.config.send_folder.startswith(self.current_folder + "/"):
+                        folders.add(channel.config.send_folder[len(self.current_folder + "/"):].split("/")[0])
         for folder in folders:
             buttons.append(Button.inline(
                 "📂: " + folder,
