@@ -43,7 +43,7 @@ class ChannelConfig(ChatConfig):
     def from_json(json_dict) -> 'ChannelConfig':
         return ChannelConfig(
             json_dict['handle'],
-            queue=json_dict['queue'],
+            queue=json_dict.get("queue", False),
             read_only=json_dict.get("read_only", False),
             send_folder=json_dict.get("send_folder")
         )
