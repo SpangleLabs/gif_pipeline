@@ -20,14 +20,14 @@ class MSGHelper(TelegramGifHelper):
 
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         # If message has relevant link in it
-        matching_links = re.findall(r"e621.net/posts/([0-9]+)", message.text, re.IGNORECASE)
+        matching_links = re.findall(r"e621.net/(?:posts|post/show)/([0-9]+)", message.text, re.IGNORECASE)
         if not matching_links:
             return None
         async with self.progress_message(chat, message, "Processing MSG links in message"):
             return await asyncio.gather(*(self.handle_post_link(chat, message, post_id) for post_id in matching_links))
 
     async def handle_post_link(self, chat: Chat, message: Message, post_id: str):
-        api_link = f"https://e621.net/posts/{post_id}.json"
+        api_link = f"https://e621.net/(?:posts|post/show)/{post_id}.json"
         api_resp = requests.get(api_link, headers={"User-Agent": "Gif pipeline (my username is dr-spangle)"})
         api_data = api_resp.json()
         file_ext = api_data["post"]["file"]["ext"]
