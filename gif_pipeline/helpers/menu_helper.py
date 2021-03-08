@@ -273,7 +273,7 @@ class DestinationMenu(Menu):
                 "📂: " + folder,
                 f"{self.folder}:{self.current_folder}/{folder}"
             ))
-        return buttons
+        return [[b] for b in buttons]
 
     async def handle_callback_query(
             self,
