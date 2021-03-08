@@ -66,9 +66,10 @@ class MenuHelper(Helper):
             cmd: Message,
             video: Message,
             send_helper: GifSendHelper,
-            channels: List[Channel]
+            channels: List[Channel],
+            current_folder: Optional[str] = None
     ) -> List[Message]:
-        menu = DestinationMenu(self, chat, cmd, video, send_helper, channels)
+        menu = DestinationMenu(self, chat, cmd, video, send_helper, channels, current_folder)
         menu_msg = await menu.send()
         return [menu_msg]
 
@@ -224,6 +225,7 @@ class NotGifConfirmationMenu(Menu):
 
 class DestinationMenu(Menu):
     confirm_send = "confirm_send"
+    folder = "send_folder"
 
     def __init__(
             self,
@@ -232,11 +234,13 @@ class DestinationMenu(Menu):
             cmd_msg: Message,
             video: Message,
             send_helper: GifSendHelper,
-            channels: List[Channel]
+            channels: List[Channel],
+            current_folder: Optional[str]
     ):
         super().__init__(menu_helper, chat, cmd_msg, video)
         self.send_helper = send_helper
         self.channels = channels
+        self.current_folder = current_folder
 
     @property
     def text(self) -> str:
@@ -244,13 +248,32 @@ class DestinationMenu(Menu):
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
-        return [
-            [Button.inline(
-                channel.chat_data.title,
-                f"{self.confirm_send}:{channel.chat_data.chat_id}"
-            )]
-            for channel in self.channels
-        ]
+        buttons = []
+        folders = set()
+        for channel in self.channels:
+            if channel.config.folder is None:
+                if self.current_folder is None:
+                    buttons.append(Button.inline(
+                        channel.chat_data.title,
+                        f"{self.confirm_send}:{channel.chat_data.chat_id}"
+                    ))
+            else:
+                if self.current_folder is None:
+                    folders += channel.config.folder.split("/")[0]
+                else:
+                    if channel.config.folder == self.current_folder:
+                        buttons.append(Button.inline(
+                            channel.chat_data.title,
+                            f"{self.confirm_send}:{channel.chat_data.chat_id}"
+                        ))
+                    if channel.config.folder.startswith(self.current_folder):
+                        folders += channel.config.folder[len(self.current_folder):].split("/")[0]
+        for folder in folders:
+            buttons.append(Button.inline(
+                "📂: " + folder,
+                f"{self.folder}:{self.current_folder}/{folder}"
+            ))
+        return buttons
 
     async def handle_callback_query(
             self,
@@ -261,6 +284,14 @@ class DestinationMenu(Menu):
             destination_id = split_data[1]
             return await self.menu_helper.confirmation_menu(
                 self.chat, self.cmd, self.video, self.send_helper, destination_id
+            )
+        if split_data[0] == self.folder:
+            next_folder = split_data[1]
+            folder = next_folder
+            if self.current_folder is not None:
+                folder = self.current_folder + "/" + next_folder
+            return await self.menu_helper.destination_menu(
+                self.chat, self.cmd, self.video, self.send_helper, self.channels, folder
             )
 
 
