@@ -273,6 +273,11 @@ class DestinationMenu(Menu):
                 "📂: " + folder,
                 f"{self.folder}:{self.current_folder}/{folder}"
             ))
+        if self.current_folder is not None:
+            buttons.append(Button.inline(
+                "🔙 Back",
+                f"{self.folder}:/"
+            ))
         return [[b] for b in buttons]
 
     async def handle_callback_query(
@@ -287,9 +292,12 @@ class DestinationMenu(Menu):
             )
         if split_data[0] == self.folder:
             next_folder = split_data[1]
-            folder = next_folder
-            if self.current_folder is not None:
-                folder = self.current_folder + "/" + next_folder
+            if next_folder == "/":
+                folder = None
+            else:
+                folder = next_folder
+                if self.current_folder is not None:
+                    folder = self.current_folder + "/" + next_folder
             return await self.menu_helper.destination_menu(
                 self.chat, self.cmd, self.video, self.send_helper, self.channels, folder
             )
