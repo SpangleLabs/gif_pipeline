@@ -99,8 +99,8 @@ class PipelineConfig:
             all_messages = all_messages[message_count:]
             workshops.append(WorkshopGroup(work_data, work_conf, work_messages, client))
 
-        logger.info("Cleaning up excess files")
-        for chat in tqdm([*channels, *workshops], desc="Cleaning up excess files"):
+        logger.info("Cleaning up excess files from chats")
+        for chat in tqdm([*channels, *workshops], desc="Cleaning up excess files from chats"):
             chat.cleanup_excess_files()
 
         logger.info("Initialised channels and workshops")
