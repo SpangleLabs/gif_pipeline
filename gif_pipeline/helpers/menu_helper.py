@@ -251,7 +251,7 @@ class DestinationMenu(Menu):
         buttons = []
         folders = set()
         for channel in self.channels:
-            if channel.config.folder is None:
+            if channel.config.send_folder is None:
                 if self.current_folder is None:
                     buttons.append(Button.inline(
                         channel.chat_data.title,
@@ -259,15 +259,15 @@ class DestinationMenu(Menu):
                     ))
             else:
                 if self.current_folder is None:
-                    folders += channel.config.folder.split("/")[0]
+                    folders += channel.config.send_folder.split("/")[0]
                 else:
-                    if channel.config.folder == self.current_folder:
+                    if channel.config.send_folder == self.current_folder:
                         buttons.append(Button.inline(
                             channel.chat_data.title,
                             f"{self.confirm_send}:{channel.chat_data.chat_id}"
                         ))
-                    if channel.config.folder.startswith(self.current_folder):
-                        folders += channel.config.folder[len(self.current_folder):].split("/")[0]
+                    if channel.config.send_folder.startswith(self.current_folder):
+                        folders += channel.config.send_folder[len(self.current_folder):].split("/")[0]
         for folder in folders:
             buttons.append(Button.inline(
                 "📂: " + folder,
