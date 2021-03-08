@@ -92,6 +92,7 @@ class Channel(Chat):
 
     def __init__(self, chat_data: ChannelData, config: ChannelConfig, messages: List[Message], client: TelegramClient):
         super().__init__(chat_data, config, messages, client)
+        self.config = config
 
 
 class WorkshopGroup(Chat):
