@@ -98,12 +98,8 @@ class Message:
         video_path = message_data.expected_file_path(chat_data)
         if video_path is not None and message_data.file_path is None:
             message_data.file_path = video_path
-        # Delete file, if it should not exist
+        # Ensure file data is blank, if it has no file
         if not message_data.has_file and message_data.file_path:
-            try:
-                os.remove(message_data.file_path)
-            except OSError:
-                pass
             message_data.file_path = None
             message_data.file_size = None
             message_data.file_mime_type = None
