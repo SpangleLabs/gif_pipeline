@@ -18,16 +18,17 @@ R = TypeVar("R")
 def message_data_from_telegram(msg: telethon.tl.custom.message.Message, scheduled: bool = False) -> MessageData:
     chat_id = chat_id_from_telegram(msg)
     sender_id = sender_id_from_telegram(msg)
+    has_file = msg.file is not None and msg.web_preview is None
     return MessageData(
         chat_id,
         msg.id,
         msg.date,
         msg.text,
         msg.forward is not None,
-        msg.file is not None,
+        has_file,
         None,
-        (msg.file or None) and msg.file.mime_type,
-        (msg.file or None) and msg.file.size,
+        has_file and msg.file.mime_type,
+        has_file and msg.file.size,
         msg.reply_to_msg_id,
         sender_id,
         scheduled
