@@ -25,6 +25,7 @@ def message_data_from_row(row: sqlite3.Row) -> MessageData:
         row["file_path"] is not None,
         row["file_path"],
         row["file_mime_type"],
+        row["file_size"],
         row["reply_to"],
         row["sender_id"],
         bool(row["is_scheduled"])
@@ -106,7 +107,7 @@ class Database:
         messages = []
         for row in cur.execute(
                 "SELECT chat_id, message_id, datetime, text, is_forward, "
-                "file_path, file_mime_type, reply_to, sender_id, is_scheduled "
+                "file_path, file_mime_type, file_size, reply_to, sender_id, is_scheduled "
                 "FROM messages WHERE chat_id = ?",
                 (chat_data.chat_id,)
         ):
@@ -157,7 +158,7 @@ class Database:
         messages = []
         for row in cur.execute(
                 "SELECT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
-                "m.file_path, m.file_mime_type, m.reply_to, m.sender_id, m.is_scheduled "
+                "m.file_path, m.file_mime_type, m.file_size, m.reply_to, m.sender_id, m.is_scheduled "
                 "FROM messages m "
                 "LEFT JOIN video_hashes vh ON m.entry_id = vh.entry_id "
                 "WHERE vh.hash IS NULL AND m.file_path IS NOT NULL"
@@ -173,7 +174,7 @@ class Database:
         for image_hash_list in image_hash_lists:
             for row in cur.execute(
                     "SELECT DISTINCT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
-                    "m.file_path, m.file_mime_type, m.reply_to, m.sender_id, m.is_scheduled "
+                    "m.file_path, m.file_mime_type, m.file_size, m.reply_to, m.sender_id, m.is_scheduled "
                     "FROM video_hashes v "
                     "LEFT JOIN messages m on v.entry_id = m.entry_id "
                     f"WHERE v.hash IN ({','.join('?' * len(image_hash_list))}) AND m.datetime IS NOT NULL",
@@ -232,7 +233,7 @@ class Database:
                 "    AND m.chat_id = :chat_id AND m.is_scheduled = :scheduled"
                 ") "
                 "SELECT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
-                "  m.file_path, m.file_mime_type, m.reply_to, m.sender_id, m.is_scheduled "
+                "  m.file_path, m.file_mime_type, m.file_size, m.reply_to, m.sender_id, m.is_scheduled "
                 "FROM parent p "
                 "LEFT JOIN messages m ON m.message_id = p.x "
                 "WHERE m.chat_id = :chat_id AND m.is_scheduled = :scheduled "
@@ -264,7 +265,7 @@ class Database:
                 "  WHERE m.reply_to = children.x AND m.chat_id = :chat_id AND m.is_scheduled = :scheduled"
                 ") "
                 "SELECT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward,"
-                "  m.file_path, m.file_mime_type, m.reply_to, m.sender_id, m.is_scheduled "
+                "  m.file_path, m.file_mime_type, m.file_size, m.reply_to, m.sender_id, m.is_scheduled "
                 "FROM children c "
                 "LEFT JOIN messages m ON m.message_id = c.x "
                 "WHERE m.chat_id = :chat_id AND m.is_scheduled = :scheduled "

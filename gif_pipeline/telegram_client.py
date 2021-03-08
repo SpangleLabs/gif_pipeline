@@ -27,6 +27,7 @@ def message_data_from_telegram(msg: telethon.tl.custom.message.Message, schedule
         msg.file is not None,
         None,
         (msg.file or None) and msg.file.mime_type,
+        (msg.file or None) and msg.file.size,
         msg.reply_to_msg_id,
         sender_id,
         scheduled

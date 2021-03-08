@@ -26,6 +26,7 @@ create table if not exists messages
     is_forward     boolean not null,
     file_path      text,
     file_mime_type text,
+    file_size      integer,
     reply_to       integer
         constraint messages_messages_message_id_fk
             references messages (message_id)

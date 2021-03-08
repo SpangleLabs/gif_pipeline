@@ -27,6 +27,7 @@ class MessageData:
             has_file: bool,
             file_path: Optional[str],
             file_mime_type: Optional[str],
+            file_size: Optional[int],
             reply_to: Optional[int],
             sender_id: int,
             is_scheduled: bool
@@ -39,6 +40,7 @@ class MessageData:
         self.has_file = has_file
         self.file_path = file_path
         self.file_mime_type = file_mime_type
+        self.file_size = file_size
         self.reply_to = reply_to
         self.sender_id = sender_id
         self.is_scheduled = is_scheduled
@@ -59,7 +61,9 @@ class MessageData:
     def __hash__(self) -> int:
         return hash((self.chat_id, self.message_id, self.is_scheduled))
 
-    def expected_file_path(self, chat_data: ChatData):
+    def expected_file_path(self, chat_data: ChatData) -> Optional[str]:
+        if not self.has_file:
+            return None
         file_ext = self.file_mime_type.split("/")[-1]
         file_name = f"{'scheduled-' if self.is_scheduled else ''}{self.message_id:06}.{file_ext}"
         return f"{chat_data.directory}{file_name}"
@@ -90,19 +94,28 @@ class Message:
     @classmethod
     async def from_message_data(cls, message_data: MessageData, chat_data: 'ChatData', client: 'TelegramClient'):
         logging.debug(f"Creating message: {message_data}")
-        if message_data.has_file:
-            if message_data.file_path is None:
-                video_path = message_data.expected_file_path(chat_data)
-                if not os.path.exists(video_path):
-                    logging.info(f"Downloading video from message: {message_data}")
-                    await client.download_media(message_data.chat_id, message_data.message_id, video_path)
-                message_data.file_path = video_path
-            else:
-                if not os.path.exists(message_data.file_path):
-                    logging.info(f"Downloading video from message: {message_data}")
-                    await client.download_media(message_data.chat_id, message_data.message_id, message_data.file_path)
+        # Update file path if not set
+        video_path = message_data.expected_file_path(chat_data)
+        if video_path is not None and message_data.file_path is None:
+            message_data.file_path = video_path
+        # Download file if necessary
+        if cls.needs_download(message_data):
+            logging.info(f"Downloading video from message: {message_data}")
+            await client.download_media(message_data.chat_id, message_data.message_id, video_path)
         # Create message
         return Message(message_data, chat_data)
+
+    @classmethod
+    def needs_download(cls, message_data: MessageData) -> bool:
+        if message_data.has_file:
+            if message_data.file_path is None:
+                return True
+            else:
+                if not os.path.exists(message_data.file_path):
+                    return True
+                if os.path.getsize(message_data.file_path) != message_data.file_size:
+                    return True
+        return False
 
     def delete(self, database: 'Database') -> None:
         if self.message_data.file_path:
