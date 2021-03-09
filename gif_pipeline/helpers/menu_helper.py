@@ -265,12 +265,9 @@ class DestinationMenu(Menu):
                         folders.add(channel.config.send_folder[len(self.current_folder + "/"):].split("/")[0])
         # Create folder buttons
         for folder in folders:
-            full_folder = folder
-            if self.current_folder is not None:
-                full_folder = self.current_folder + "/" + folder
             buttons.append(Button.inline(
                 "📂: " + folder,
-                f"{self.folder}:{full_folder}"
+                f"{self.folder}:{folder}"
             ))
         # Create channel buttons
         for channel in channels:
