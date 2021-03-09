@@ -1,4 +1,5 @@
 from abc import abstractmethod
+import datetime
 from typing import Optional, List, Tuple
 
 from scenedetect import FrameTimecode
@@ -13,6 +14,18 @@ from gif_pipeline.menu_cache import MenuCache, SentMenu
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
+
+
+def delta_to_string(delta: datetime.timedelta) -> str:
+    days, remainder = divmod(delta.total_seconds(), 86400)
+    hours, remainder = divmod(remainder, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    day_word = "day" if days == 1 else "days"
+    hour_word = "hour" if hours == 1 else "hours"
+    minute_word = "minute" if minutes == 1 else "minutes"
+    if days:
+        return f"{days} {day_word}, {hours} {hour_word}"
+    return f"{hours} {hour_word}, {minutes} {minute_word}"
 
 
 class MenuHelper(Helper):
@@ -320,7 +333,7 @@ class SendConfirmationMenu(Menu):
             cmd_msg: Message,
             video: Message,
             send_helper: GifSendHelper,
-            destination: Chat
+            destination: Channel
     ):
         super().__init__(menu_helper, chat, cmd_msg, video)
         self.send_helper = send_helper
@@ -328,7 +341,17 @@ class SendConfirmationMenu(Menu):
 
     @property
     def text(self) -> str:
-        return f"Are you sure you want to send this video to {self.destination.chat_data.title}?"
+        msg = f"Are you sure you want to send this video to {self.destination.chat_data.title}?"
+        if self.destination.config.note_time:
+            last_post = self.destination.latest_message()
+            if last_post is None:
+                msg += "There have been no posts there yet."
+            else:
+                now = datetime.datetime.now()
+                duration = now - last_post.message_data.datetime
+                duration_str = delta_to_string(duration)
+                msg += f"\nThe last post there was {duration_str} ago"
+        return msg
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:

@@ -87,6 +87,9 @@ class Chat(ABC):
     def add_message(self, message: Message) -> None:
         self.messages.append(message)
 
+    def latest_message(self) -> Optional[Message]:
+        return next(iter(sorted(self.messages, key=lambda msg: msg.message_data.msg_datetime, reverse=True)))
+
 
 class Channel(Chat):
 

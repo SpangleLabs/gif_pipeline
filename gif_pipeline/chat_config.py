@@ -33,11 +33,13 @@ class ChannelConfig(ChatConfig):
             queue: bool = False,
             duplicate_detection: bool = True,
             read_only: bool = False,
-            send_folder: Optional[str] = None
+            send_folder: Optional[str] = None,
+            note_time: bool = False
     ):
         super().__init__(handle, queue=queue, duplicate_detection=duplicate_detection)
         self.read_only = read_only
         self.send_folder = send_folder
+        self.note_time = note_time
 
     @staticmethod
     def from_json(json_dict) -> 'ChannelConfig':
@@ -45,7 +47,8 @@ class ChannelConfig(ChatConfig):
             json_dict['handle'],
             queue=json_dict.get("queue", False),
             read_only=json_dict.get("read_only", False),
-            send_folder=json_dict.get("send_folder")
+            send_folder=json_dict.get("send_folder"),
+            note_time=json_dict.get("note_time", False)
         )
 
 
