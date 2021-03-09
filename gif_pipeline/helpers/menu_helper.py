@@ -250,29 +250,35 @@ class DestinationMenu(Menu):
     def buttons(self) -> Optional[List[List[Button]]]:
         buttons = []
         folders = set()
+        channels = set()
         for channel in self.channels:
             if channel.config.send_folder is None:
                 if self.current_folder is None:
-                    buttons.append(Button.inline(
-                        channel.chat_data.title,
-                        f"{self.confirm_send}:{channel.chat_data.chat_id}"
-                    ))
+                    channels.add(channel)
             else:
                 if self.current_folder is None:
                     folders.add(channel.config.send_folder.split("/")[0])
                 else:
                     if channel.config.send_folder == self.current_folder:
-                        buttons.append(Button.inline(
-                            channel.chat_data.title,
-                            f"{self.confirm_send}:{channel.chat_data.chat_id}"
-                        ))
+                        channels.add(channel)
                     if channel.config.send_folder.startswith(self.current_folder + "/"):
                         folders.add(channel.config.send_folder[len(self.current_folder + "/"):].split("/")[0])
+        # Create folder buttons
         for folder in folders:
+            full_folder = folder
+            if self.current_folder is not None:
+                full_folder = self.current_folder + "/" + folder
             buttons.append(Button.inline(
                 "📂: " + folder,
-                f"{self.folder}:{self.current_folder}/{folder}"
+                f"{self.folder}:{full_folder}"
             ))
+        # Create channel buttons
+        for channel in channels:
+            buttons.append(Button.inline(
+                channel.chat_data.title,
+                f"{self.confirm_send}:{channel.chat_data.chat_id}"
+            ))
+        # Create back button
         if self.current_folder is not None:
             buttons.append(Button.inline(
                 "🔙 Back",
