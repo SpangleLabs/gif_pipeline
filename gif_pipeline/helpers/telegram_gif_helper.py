@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Optional, List, ClassVar, Tuple
 
 import requests
@@ -79,17 +80,21 @@ class GifSettings:
     def ffmpeg_options_one_pass(self) -> str:
         return self.ffmpeg_options + " -crf 18"
 
+    @cached_property
+    def pass_log_file(self) -> str:
+        return random_sandbox_video_path("")
+
     @property
     def ffmpeg_options_two_pass(self) -> Tuple[str, str]:
         return self.ffmpeg_options_two_pass_1, self.ffmpeg_options_two_pass_2
 
     @property
     def ffmpeg_options_two_pass_1(self) -> str:
-        return self.ffmpeg_options + f" -b:v {self.bitrate} -pass 1 -f mp4"
+        return self.ffmpeg_options + f" -b:v {self.bitrate} -pass 1 -f mp4 -passlogfile {self.pass_log_file}"
 
     @property
     def ffmpeg_options_two_pass_2(self) -> str:
-        return self.ffmpeg_options + f" -b:v {self.bitrate} -pass 2"
+        return self.ffmpeg_options + f" -b:v {self.bitrate} -pass 2 -passlogfile {self.pass_log_file}"
 
 
 class TelegramGifHelper(Helper):
