@@ -347,7 +347,7 @@ class SendConfirmationMenu(Menu):
             if last_post is None:
                 msg += "There have been no posts there yet."
             else:
-                now = datetime.datetime.now()
+                now = self.cmd.message_data.datetime
                 duration = now - last_post.message_data.datetime
                 duration_str = delta_to_string(duration)
                 msg += f"\nThe last post there was {duration_str} ago"
