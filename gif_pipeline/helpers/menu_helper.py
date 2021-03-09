@@ -270,7 +270,7 @@ class DestinationMenu(Menu):
                 f"{self.folder}:{folder}"
             ))
         # Create channel buttons
-        for channel in sorted(channels):
+        for channel in sorted(channels, key=lambda chan: chan.chat_data.title):
             buttons.append(Button.inline(
                 channel.chat_data.title,
                 f"{self.confirm_send}:{channel.chat_data.chat_id}"
