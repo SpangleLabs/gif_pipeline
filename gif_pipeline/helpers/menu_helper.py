@@ -24,8 +24,8 @@ def delta_to_string(delta: datetime.timedelta) -> str:
     hour_word = "hour" if hours == 1 else "hours"
     minute_word = "minute" if minutes == 1 else "minutes"
     if days:
-        return f"{days} {day_word}, {hours} {hour_word}"
-    return f"{hours} {hour_word}, {minutes} {minute_word}"
+        return f"{days:.0f} {day_word}, {hours:.0f} {hour_word}"
+    return f"{hours:.0f} {hour_word}, {minutes:.0f} {minute_word}"
 
 
 class MenuHelper(Helper):
