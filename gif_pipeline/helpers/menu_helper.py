@@ -296,7 +296,10 @@ class DestinationMenu(Menu):
         if split_data[0] == self.folder:
             next_folder = split_data[1]
             if next_folder == "/":
-                folder = None
+                if self.current_folder is None or "/" not in self.current_folder:
+                    folder = None
+                else:
+                    folder = "/".join(self.current_folder.split("/")[:-1])
             else:
                 folder = next_folder
                 if self.current_folder is not None:
