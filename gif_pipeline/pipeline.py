@@ -42,6 +42,7 @@ class PipelineConfig:
     def __init__(self, config: Dict):
         self.channels = [ChannelConfig.from_json(x) for x in config['channels']]
         self.workshops = [WorkshopConfig.from_json(x) for x in config["workshop_groups"]]
+        self.workshops += [chan.queue for chan in self.channels if chan.queue is not None]
         self.api_id = config["api_id"]
         self.api_hash = config["api_hash"]
         # Pipeline bot, handles video editing and sending to channels
