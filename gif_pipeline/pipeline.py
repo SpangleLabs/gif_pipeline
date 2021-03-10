@@ -66,39 +66,39 @@ class PipelineConfig:
             client: TelegramClient
     ) -> Tuple[List[Channel], List[WorkshopGroup]]:
         download_bottleneck = Bottleneck(3)
-        channel_builder = ChannelBuilder(database, client, download_bottleneck)
         workshop_builder = WorkshopBuilder(database, client, download_bottleneck)
+        channel_builder = ChannelBuilder(database, client, download_bottleneck)
         # Get chat data for chat config
-        logger.info("Initialising channel data")
-        channel_data = await channel_builder.get_chat_data(self.channels)
         logger.info("Initialising workshop data")
         workshop_data = await workshop_builder.get_chat_data(self.workshops)
+        logger.info("Initialising channel data")
+        channel_data = await channel_builder.get_chat_data(self.channels)
 
         message_inits = []
-        logger.info("Listing messages in channels")
-        channel_message_lists = await channel_builder.get_message_inits(self.channels, channel_data)
-        channel_message_counts = [len(x) for x in channel_message_lists]
-        message_inits += [init for message_list in channel_message_lists for init in message_list]
         logger.info("Listing messages in workshops")
         workshop_message_lists = await workshop_builder.get_message_inits(self.workshops, workshop_data)
         workshop_message_counts = [len(x) for x in workshop_message_lists]
         message_inits += [init for message_list in workshop_message_lists for init in message_list]
+        logger.info("Listing messages in channels")
+        channel_message_lists = await channel_builder.get_message_inits(self.channels, channel_data)
+        channel_message_counts = [len(x) for x in channel_message_lists]
+        message_inits += [init for message_list in channel_message_lists for init in message_list]
 
         logger.info("Downloading messages")
         all_messages = await tqdm_gather(message_inits, desc="Downloading messages")
 
-        logger.info("Creating channels")
-        channels = []
-        for chan_conf, chan_data, message_count in zip(self.channels, channel_data, channel_message_counts):
-            chan_messages = all_messages[:message_count]
-            all_messages = all_messages[message_count:]
-            channels.append(Channel(chan_data, chan_conf, chan_messages, client))
         logger.info("Creating workshops")
         workshops = []
         for work_conf, work_data, message_count in zip(self.workshops, workshop_data, workshop_message_counts):
             work_messages = all_messages[:message_count]
             all_messages = all_messages[message_count:]
             workshops.append(WorkshopGroup(work_data, work_conf, work_messages, client))
+        logger.info("Creating channels")
+        channels = []
+        for chan_conf, chan_data, message_count in zip(self.channels, channel_data, channel_message_counts):
+            chan_messages = all_messages[:message_count]
+            all_messages = all_messages[message_count:]
+            channels.append(Channel(chan_data, chan_conf, chan_messages, client))
 
         logger.info("Cleaning up excess files from chats")
         for chat in tqdm([*channels, *workshops], desc="Cleaning up excess files from chats"):
