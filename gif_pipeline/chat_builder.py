@@ -2,7 +2,7 @@ import logging
 import os
 import shutil
 from abc import abstractmethod, ABC
-from typing import List, Awaitable
+from typing import List, Awaitable, TypeVar, Generic
 
 from tqdm import tqdm
 
@@ -16,8 +16,11 @@ from gif_pipeline.telegram_client import TelegramClient
 
 logger = logging.getLogger(__name__)
 
+Conf = TypeVar("Conf", bound=ChatConfig)
+Data = TypeVar("Data", bound=ChatData)
 
-class ChatBuilder(ABC):
+
+class ChatBuilder(ABC, Generic[Conf, Data]):
     chat_type = "chat"
 
     def __init__(self, database: Database, client: TelegramClient, download_bottleneck: Bottleneck):
@@ -26,10 +29,10 @@ class ChatBuilder(ABC):
         self.download_bottleneck = download_bottleneck
 
     @abstractmethod
-    def list_chats(self) -> List[ChatData]:
+    def list_chats(self) -> List[Data]:
         pass
 
-    def delete_chats(self, chats: List[ChatData]) -> None:
+    def delete_chats(self, chats: List[Data]) -> None:
         for chat in tqdm(chats, desc=f"Deleting excess {self.chat_type}s"):
             messages = self.database.list_messages_for_chat(chat)
             for message in tqdm(messages, position=1, desc=f"Removing {chat.title} messages"):
@@ -39,10 +42,10 @@ class ChatBuilder(ABC):
             shutil.rmtree(chat.directory, ignore_errors=True)
 
     @abstractmethod
-    async def create_chat_data(self, chat_config: ChatConfig) -> ChatData:
+    async def create_chat_data(self, chat_config: Conf) -> ChatData:
         pass
 
-    async def get_chat_data(self, chat_confs: List[ChatConfig]) -> List[ChatData]:
+    async def get_chat_data(self, chat_confs: List[Conf]) -> List[Data]:
         db_data = self.list_chats()
         chat_data_list = []
         logger.info(f"Creating {self.chat_type} data")
@@ -65,8 +68,8 @@ class ChatBuilder(ABC):
 
     async def get_message_inits(
             self,
-            chat_confs: List[ChatConfig],
-            chat_data_list: List[ChatData]
+            chat_confs: List[Conf],
+            chat_data_list: List[Data]
     ) -> List[List[Awaitable[Message]]]:
         message_inits = []
         total = len(chat_confs)
@@ -81,7 +84,7 @@ class ChatBuilder(ABC):
         return message_inits
 
 
-class ChannelBuilder(ChatBuilder):
+class ChannelBuilder(ChatBuilder[ChannelConfig, ChannelData]):
     chat_type = "channel"
 
     def list_chats(self) -> List[ChannelData]:
@@ -90,11 +93,8 @@ class ChannelBuilder(ChatBuilder):
     async def create_chat_data(self, chat_config: ChannelConfig) -> ChannelData:
         return await self.client.get_channel_data(chat_config.handle)
 
-    async def get_chat_data(self, chat_confs: List[ChannelConfig]) -> List[ChannelData]:
-        ...
 
-
-class WorkshopBuilder(ChatBuilder):
+class WorkshopBuilder(ChatBuilder[WorkshopConfig, WorkshopData]):
     chat_type = "workshop"
 
     def list_chats(self) -> List[WorkshopData]:
@@ -102,6 +102,3 @@ class WorkshopBuilder(ChatBuilder):
 
     async def create_chat_data(self, chat_config: WorkshopConfig) -> WorkshopData:
         return await self.client.get_workshop_data(chat_config.handle)
-
-    async def get_chat_data(self, chat_confs: List[WorkshopConfig]) -> List[WorkshopData]:
-        ...
