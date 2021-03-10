@@ -64,25 +64,19 @@ class WorkshopConfig(ChatConfig):
         )
 
 
-class QueueConfig(ChatConfig):
+class QueueConfig(WorkshopConfig):
     def __init__(
             self,
             handle: Union[str, int],
             *,
             duplicate_detection: bool = True,
-            auto_post: bool = False,
-            workshop: bool = False
     ):
         super().__init__(handle, duplicate_detection=duplicate_detection)
         self.handle = handle
-        self.auto_post = auto_post
-        self.workshop = workshop
 
     @staticmethod
     def from_json(json_dict: Dict[str, Any]) -> 'QueueConfig':
         return QueueConfig(
             json_dict["handle"],
             duplicate_detection=json_dict.get("duplicate_detection", True),
-            auto_post=json_dict.get("auto_post", ),
-            workshop=json_dict.get("workshop")
         )
