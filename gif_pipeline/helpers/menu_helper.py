@@ -325,6 +325,7 @@ class DestinationMenu(Menu):
 class SendConfirmationMenu(Menu):
     clear_confirm_menu = b"clear_menu"
     send_callback = b"send"
+    send_queue = b"queue"
 
     def __init__(
             self,
@@ -355,10 +356,17 @@ class SendConfirmationMenu(Menu):
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
-        return [
+        buttons = [
             [Button.inline("I am sure", self.send_callback)],
-            [Button.inline("No thanks", self.clear_confirm_menu)]
         ]
+        if self.destination.has_queue:
+            buttons.append(
+                [Button.inline("Send to queue", self.send_queue)]
+            )
+        buttons.append(
+            [Button.inline("No thanks", self.clear_confirm_menu)]
+        )
+        return buttons
 
     async def handle_callback_query(
             self,
@@ -370,6 +378,10 @@ class SendConfirmationMenu(Menu):
         if callback_query == self.send_callback:
             return await self.send_helper.send_video(
                 self.chat, self.video, self.cmd, self.destination, self.owner_id
+            )
+        if callback_query == self.send_queue:
+            return await self.send_helper.send_video(
+                self.chat, self.video, self.cmd, self.destination.queue, self.owner_id
             )
 
 
