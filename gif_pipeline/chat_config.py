@@ -34,19 +34,20 @@ class ChannelConfig(ChatConfig):
             note_time: bool = False
     ):
         super().__init__(handle)
+        self.queue = queue
         self.read_only = read_only
         self.send_folder = send_folder
         self.note_time = note_time
-        self.queue = queue
 
     @staticmethod
     def from_json(json_dict) -> 'ChannelConfig':
+        handle = json_dict["handle"]
         queue_val = json_dict.get("queue")
         queue = None
         if queue_val:
-            queue = QueueConfig.from_json(queue_val)
+            queue = QueueConfig.from_json(queue_val, handle)
         return ChannelConfig(
-            json_dict['handle'],
+            handle,
             queue=queue,
             read_only=json_dict.get("read_only", False),
             send_folder=json_dict.get("send_folder"),
@@ -68,15 +69,17 @@ class QueueConfig(WorkshopConfig):
     def __init__(
             self,
             handle: Union[str, int],
+            channel_handle: Union[str, int],
             *,
             duplicate_detection: bool = True,
     ):
         super().__init__(handle, duplicate_detection=duplicate_detection)
-        self.handle = handle
+        self.channel_handle = channel_handle
 
     @staticmethod
-    def from_json(json_dict: Dict[str, Any]) -> 'QueueConfig':
+    def from_json(json_dict: Dict[str, Any], channel_handle: Union[str, int]) -> 'QueueConfig':
         return QueueConfig(
             json_dict["handle"],
+            channel_handle,
             duplicate_detection=json_dict.get("duplicate_detection", True),
         )
