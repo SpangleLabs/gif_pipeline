@@ -7,11 +7,9 @@ class ChatConfig(ABC):
             self,
             handle: Union[str, int],
             *,
-            queue: bool = False,
             duplicate_detection: bool = True
     ):
         self.handle = handle
-        self.queue = queue
         self.duplicate_detection = duplicate_detection
         self.read_only = False
 
@@ -30,22 +28,26 @@ class ChannelConfig(ChatConfig):
             self,
             handle: Union[str, int],
             *,
-            queue: bool = False,
-            duplicate_detection: bool = True,
+            queue: 'QueueConfig' = None,
             read_only: bool = False,
             send_folder: Optional[str] = None,
             note_time: bool = False
     ):
-        super().__init__(handle, queue=queue, duplicate_detection=duplicate_detection)
+        super().__init__(handle)
         self.read_only = read_only
         self.send_folder = send_folder
         self.note_time = note_time
+        self.queue = queue
 
     @staticmethod
     def from_json(json_dict) -> 'ChannelConfig':
+        queue_val = json_dict.get("queue")
+        queue = None
+        if queue_val:
+            queue = QueueConfig.from_json(queue_val)
         return ChannelConfig(
             json_dict['handle'],
-            queue=json_dict.get("queue", False),
+            queue=queue,
             read_only=json_dict.get("read_only", False),
             send_folder=json_dict.get("send_folder"),
             note_time=json_dict.get("note_time", False)
@@ -56,4 +58,31 @@ class WorkshopConfig(ChatConfig):
 
     @staticmethod
     def from_json(json_dict) -> 'WorkshopConfig':
-        return WorkshopConfig(json_dict['handle'], duplicate_detection=json_dict.get("duplicate_detection", True))
+        return WorkshopConfig(
+            json_dict['handle'],
+            duplicate_detection=json_dict.get("duplicate_detection", True)
+        )
+
+
+class QueueConfig(ChatConfig):
+    def __init__(
+            self,
+            handle: Union[str, int],
+            *,
+            duplicate_detection: bool = True,
+            auto_post: bool = False,
+            workshop: bool = False
+    ):
+        super().__init__(handle, duplicate_detection=duplicate_detection)
+        self.handle = handle
+        self.auto_post = auto_post
+        self.workshop = workshop
+
+    @staticmethod
+    def from_json(json_dict: Dict[str, Any]) -> 'QueueConfig':
+        return QueueConfig(
+            json_dict["handle"],
+            duplicate_detection=json_dict.get("duplicate_detection", True),
+            auto_post=json_dict.get("auto_post", ),
+            workshop=json_dict.get("workshop")
+        )
