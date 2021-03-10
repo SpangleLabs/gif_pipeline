@@ -2,7 +2,7 @@ import asyncio
 import os
 import re
 from dataclasses import dataclass
-from functools import cached_property
+from functools import lru_cache
 from typing import Optional, List, ClassVar, Tuple
 
 import requests
@@ -80,7 +80,8 @@ class GifSettings:
     def ffmpeg_options_one_pass(self) -> str:
         return self.ffmpeg_options + " -crf 18"
 
-    @cached_property
+    @property
+    @lru_cache()
     def pass_log_file(self) -> str:
         return random_sandbox_video_path("")
 
