@@ -88,17 +88,21 @@ class PipelineConfig:
         all_messages = await tqdm_gather(message_inits, desc="Downloading messages")
 
         logger.info("Creating workshops")
-        workshops = []
+        workshop_dict = {}
         for work_conf, work_data, message_count in zip(self.workshops, workshop_data, workshop_message_counts):
             work_messages = all_messages[:message_count]
             all_messages = all_messages[message_count:]
-            workshops.append(WorkshopGroup(work_data, work_conf, work_messages, client))
+            workshop_dict[work_conf.handle] = WorkshopGroup(work_data, work_conf, work_messages, client)
         logger.info("Creating channels")
         channels = []
         for chan_conf, chan_data, message_count in zip(self.channels, channel_data, channel_message_counts):
             chan_messages = all_messages[:message_count]
             all_messages = all_messages[message_count:]
-            channels.append(Channel(chan_data, chan_conf, chan_messages, client))
+            queue = None
+            if chan_conf.queue:
+                queue = workshop_dict[chan_conf.queue.handle]
+            channels.append(Channel(chan_data, chan_conf, chan_messages, client, queue))
+        workshops = list(workshop_dict.values())
 
         logger.info("Cleaning up excess files from chats")
         for chat in tqdm([*channels, *workshops], desc="Cleaning up excess files from chats"):

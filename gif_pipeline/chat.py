@@ -93,9 +93,21 @@ class Chat(ABC):
 
 class Channel(Chat):
 
-    def __init__(self, chat_data: ChannelData, config: ChannelConfig, messages: List[Message], client: TelegramClient):
+    def __init__(
+            self,
+            chat_data: ChannelData,
+            config: ChannelConfig,
+            messages: List[Message],
+            client: TelegramClient,
+            queue: Optional[WorkshopGroup] = None
+    ):
         super().__init__(chat_data, config, messages, client)
         self.config = config
+        self.queue = queue
+
+    @property
+    def has_queue(self) -> bool:
+        return self.config.queue is not None
 
 
 class WorkshopGroup(Chat):
