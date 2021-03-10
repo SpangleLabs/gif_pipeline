@@ -9,7 +9,7 @@ from tqdm import tqdm
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
 from gif_pipeline.chat_data import ChatData, ChannelData, WorkshopData
-from gif_pipeline.chat_config import ChatConfig
+from gif_pipeline.chat_config import ChatConfig, ChannelConfig, WorkshopConfig
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.task_worker import Bottleneck
 from gif_pipeline.telegram_client import TelegramClient
@@ -84,18 +84,24 @@ class ChatBuilder(ABC):
 class ChannelBuilder(ChatBuilder):
     chat_type = "channel"
 
-    def list_chats(self) -> List[ChatData]:
+    def list_chats(self) -> List[ChannelData]:
         return self.database.list_channels()
 
-    async def create_chat_data(self, chat_config: ChatConfig) -> ChannelData:
+    async def create_chat_data(self, chat_config: ChannelConfig) -> ChannelData:
         return await self.client.get_channel_data(chat_config.handle)
+
+    async def get_chat_data(self, chat_confs: List[ChannelConfig]) -> List[ChannelData]:
+        ...
 
 
 class WorkshopBuilder(ChatBuilder):
     chat_type = "workshop"
 
-    def list_chats(self) -> List[ChatData]:
+    def list_chats(self) -> List[WorkshopData]:
         return self.database.list_workshops()
 
-    async def create_chat_data(self, chat_config: ChatConfig) -> WorkshopData:
+    async def create_chat_data(self, chat_config: WorkshopConfig) -> WorkshopData:
         return await self.client.get_workshop_data(chat_config.handle)
+
+    async def get_chat_data(self, chat_confs: List[WorkshopConfig]) -> List[WorkshopData]:
+        ...
