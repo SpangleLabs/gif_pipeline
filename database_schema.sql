@@ -48,3 +48,19 @@ create table if not exists video_hashes
 
 create unique index if not exists video_hashes_hash_entry_id_uindex
 	on video_hashes (hash, entry_id);
+
+create table if not exists video_tags
+(
+    tag_id    integer not null
+        constraint video_tags_pk
+            primary key autoincrement,
+    entry_id  integer not null,
+    tag_name  text    not null,
+    tag_value text    not null
+-- Maybe add order?
+        references messages
+            on update restrict on delete cascade
+);
+
+create unique index if not exists video_tags_tag_id_uindex
+    on video_tags (tag_id);
