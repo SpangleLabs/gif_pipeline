@@ -6,6 +6,7 @@ import dateutil.parser
 
 from gif_pipeline.chat_data import ChatData, ChannelData, WorkshopData
 from gif_pipeline.message import MessageData
+from gif_pipeline.tag_manager import VideoTags
 
 chat_types = {
     "channel": ChannelData,
@@ -131,8 +132,33 @@ class Database:
         )
         self.conn.commit()
 
+    def save_tags(self, message: MessageData, tags: VideoTags) -> None:
+        entry_id = self.get_entry_id_for_message(message)
+        # Delete tags
+        self._remove_tags_by_entry_id(entry_id)
+        # Add tags
+        cur = self.conn.cursor()
+        for tag in tags.to_entries():
+            cur.execute(
+                "INSERT INTO video_tags (entry_id, tag_name, tag_value) "
+                "VALUES (?, ?, ?)",
+                (entry_id, tag.tag_name, tag.tag_value)
+            )
+        self.conn.commit()
+
+    def remove_tags(self, message: MessageData) -> None:
+        entry_id = self.get_entry_id_for_message(message)
+        self._remove_tags_by_entry_id(entry_id)
+
+    def _remove_tags_by_entry_id(self, entry_id: int) -> None:
+        cur = self.conn.cursor()
+        cur.execute("DROP FROM video_tags WHERE entry_id = ?", (entry_id,))
+        self.conn.commit()
+
     def remove_message(self, message: MessageData) -> None:
-        self.remove_message_hashes(message)
+        entry_id = self.get_entry_id_for_message(message)
+        self._remove_message_hashes_by_entry_id(entry_id)
+        self._remove_tags_by_entry_id(entry_id)
         cur = self.conn.cursor()
         cur.execute(
             "DELETE FROM messages WHERE chat_id = ? AND message_id = ? AND is_scheduled = ?",
@@ -183,7 +209,7 @@ class Database:
                 messages[row["chat_id"]][row["message_id"]] = message_data_from_row(row)
         return [msg for chat_id, chat_msgs in messages.items() for msg_id, msg in chat_msgs.items()]
 
-    def save_hashes(self, message: MessageData, hashes: Set[str]) -> None:
+    def get_entry_id_for_message(self, message: MessageData) -> Optional[int]:
         cur = self.conn.cursor()
         cur.execute(
             "SELECT entry_id FROM messages WHERE chat_id = ? AND message_id = ? AND is_scheduled = ?",
@@ -192,7 +218,10 @@ class Database:
         result = cur.fetchone()
         if result is None:
             return
-        entry_id = result["entry_id"]
+        return result["entry_id"]
+
+    def save_hashes(self, message: MessageData, hashes: Set[str]) -> None:
+        entry_id = self.get_entry_id_for_message(message)
         cur = self.conn.cursor()
         for hash_str in hashes:
             cur.execute(
@@ -202,15 +231,10 @@ class Database:
         self.conn.commit()
 
     def remove_message_hashes(self, message: MessageData) -> None:
-        cur = self.conn.cursor()
-        cur.execute(
-            "SELECT entry_id FROM messages WHERE chat_id = ? AND message_id = ? AND is_scheduled = ?",
-            (message.chat_id, message.message_id, message.is_scheduled)
-        )
-        result = cur.fetchone()
-        if result is None:
-            return
-        entry_id = result["entry_id"]
+        entry_id = self.get_entry_id_for_message(message)
+        self._remove_message_hashes_by_entry_id(entry_id)
+
+    def _remove_message_hashes_by_entry_id(self, entry_id: int) -> None:
         cur = self.conn.cursor()
         cur.execute("DELETE FROM video_hashes WHERE entry_id = ?", (entry_id,))
         self.conn.commit()

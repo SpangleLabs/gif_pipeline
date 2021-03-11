@@ -11,6 +11,7 @@ from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
 from gif_pipeline.menu_cache import SentMenu
 from gif_pipeline.message import Message
+from gif_pipeline.tag_manager import VideoTags
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram
 
@@ -53,12 +54,20 @@ class Helper(ABC):
             buttons=buttons
         )
 
-    async def send_video_reply(self, chat: Chat, message: Message, video_path: str, text: str = None) -> Message:
+    async def send_video_reply(
+            self,
+            chat: Chat,
+            message: Message,
+            video_path: str,
+            text: str = None,
+            tags: VideoTags = None  # TODO: Make this required
+    ) -> Message:
         return await self.send_message(
             chat,
             video_path=video_path,
             reply_to_msg=message,
-            text=text
+            text=text,
+            tags=tags
         )
 
     async def send_message(
@@ -68,7 +77,8 @@ class Helper(ABC):
             text: Optional[str] = None,
             video_path: Optional[str] = None,
             reply_to_msg: Optional[Message] = None,
-            buttons: Optional[List[List[Button]]] = None
+            buttons: Optional[List[List[Button]]] = None,
+            tags: Optional[VideoTags] = None
     ) -> Message:
         reply_id = None
         if reply_to_msg is not None:
@@ -97,6 +107,7 @@ class Helper(ABC):
         # Set up message object
         new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
         self.database.save_message(new_message.message_data)
+        self.database.save_tags(new_message.message_data, tags)
         chat.add_message(new_message)
         return new_message
 
