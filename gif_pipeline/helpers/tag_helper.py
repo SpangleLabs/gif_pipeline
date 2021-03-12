@@ -9,10 +9,17 @@ class TagHelper(Helper):
 
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         clean_text = message.text.lower().strip()
-        if not clean_text.startswith("tag"):
+        clean_args = clean_text.split()
+        if clean_args[0] not in ["tag", "tags"]:
             return
-        args = clean_text[len("tag"):].strip()
-        video = self.get_video(chat, message, args)
+        args = clean_args[1:]
+        video = chat.message_by_id(message.message_data.reply_to)
+        if video is None:
+            link = next(iter(args), None)
+            if link:
+                # TODO: needs to be global, not just this chat
+                video = chat.message_by_link(link)
+                args = args[1:]
         if not video:
             return [await self.send_text_reply(
                 chat,
@@ -27,12 +34,3 @@ class TagHelper(Helper):
             for key, values in tags.tags.items()
         )
         return [await self.send_text_reply(chat, message, text)]
-
-    def get_video(self, chat: Chat, message: Message, args: str) -> Optional[Message]:
-        reply_to = chat.message_by_id(message.message_data.reply_to)
-        if reply_to is not None:
-            return reply_to
-        link = next(iter(args.split()), None)
-        if link:
-            return chat.message_by_link(link)
-        return None
