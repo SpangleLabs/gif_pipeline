@@ -1,7 +1,6 @@
 from typing import List, Optional
 
 from gif_pipeline.chat import Channel, WorkshopGroup, Chat
-from gif_pipeline.chat_config import ChatConfig
 from gif_pipeline.message import Message
 
 
@@ -17,8 +16,7 @@ class TagManager:
         message_id = int(link_split[-1])
         handle = link_split[-2]
         all_chats: List[Chat] = [*self.channels, *self.workshops]
-        chat_config = ChatConfig(handle)
         for chat in all_chats:
-            if chat.chat_data.matches_config(chat_config):
+            if chat.chat_data.matches_handle(handle):
                 return chat.message_by_id(message_id)
         return None
