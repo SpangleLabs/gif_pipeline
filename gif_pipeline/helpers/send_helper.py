@@ -9,6 +9,7 @@ from gif_pipeline.helpers.helpers import Helper, find_video_for_message
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram
+from gif_pipeline.video_tags import VideoTags
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.menu_helper import MenuHelper
@@ -136,9 +137,10 @@ class GifSendHelper(Helper):
             error_text = "You need to be an admin of both channels to send a forwarded video."
             return [await self.send_text_reply(chat, cmd_msg, error_text)]
         # Send initial message
-        initial_message = await self.send_message(chat_from, video_path=video.message_data.file_path)
+        tags = video.tags(self.database)
+        initial_message = await self.send_message(chat_from, video_path=video.message_data.file_path, tags=tags)
         # Forward message
-        new_message = await self.forward_message(chat_to, initial_message)
+        new_message = await self.forward_message(chat_to, initial_message, tags)
         # Delete initial message
         await self.client.delete_message(initial_message.message_data)
         initial_message.delete(self.database)
@@ -161,7 +163,8 @@ class GifSendHelper(Helper):
         if sender_id not in dest_admin_ids:
             await self.menu_helper.delete_menu_for_video(video)
             return [await self.send_text_reply(chat, cmd, "You do not have permission to post in that channel.")]
-        new_message = await self.send_message(destination, video_path=video.message_data.file_path)
+        tags = video.tags(self.database)
+        new_message = await self.send_message(destination, video_path=video.message_data.file_path, tags=tags)
         confirm_text = f"This gif has been sent to {destination.chat_data.title}."
         confirm_message = await self.menu_helper.after_send_delete_menu(chat, cmd, video, confirm_text)
         messages = [new_message]
@@ -180,7 +183,7 @@ class GifSendHelper(Helper):
                 break
         return destination
 
-    async def forward_message(self, destination: Chat, message: Message) -> Message:
+    async def forward_message(self, destination: Chat, message: Message, tags: VideoTags) -> Message:
         msg = await self.client.forward_message(destination.chat_data, message.message_data)
         message_data = message_data_from_telegram(msg)
         if message.has_video:
@@ -191,6 +194,7 @@ class GifSendHelper(Helper):
         # Set up message object
         new_message = await Message.from_message_data(message_data, destination.chat_data, self.client)
         self.database.save_message(new_message.message_data)
+        self.database.save_tags(new_message.message_data, tags)
         destination.add_message(new_message)
         return new_message
 
