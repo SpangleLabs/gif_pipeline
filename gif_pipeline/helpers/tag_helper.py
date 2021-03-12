@@ -24,7 +24,7 @@ class TagHelper(Helper):
         text = "List of tags:\n"
         text += "\n".join(
             f"{key}: " + ", ".join(values)
-            for key, values in tags.tags
+            for key, values in tags.tags.items()
         )
         return [await self.send_text_reply(chat, message, text)]
 

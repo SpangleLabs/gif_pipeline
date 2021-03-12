@@ -32,6 +32,6 @@ class VideoTags:
     def to_entries(self) -> List[TagEntry]:
         return [
             TagEntry(key, value)
-            for key, values in self.tags
+            for key, values in self.tags.items()
             for value in values
         ]

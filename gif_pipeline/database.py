@@ -163,7 +163,7 @@ class Database:
 
     def _remove_tags_by_entry_id(self, entry_id: int) -> None:
         cur = self.conn.cursor()
-        cur.execute("DROP FROM video_tags WHERE entry_id = ?", (entry_id,))
+        cur.execute("DELETE FROM video_tags WHERE entry_id = ?", (entry_id,))
         self.conn.commit()
 
     def remove_message(self, message: MessageData) -> None:

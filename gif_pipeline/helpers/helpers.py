@@ -107,7 +107,8 @@ class Helper(ABC):
         # Set up message object
         new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
         self.database.save_message(new_message.message_data)
-        self.database.save_tags(new_message.message_data, tags)
+        if tags:
+            self.database.save_tags(new_message.message_data, tags)
         chat.add_message(new_message)
         return new_message
 
