@@ -91,4 +91,3 @@ class TagHelper(Helper):
         self.database.save_tags(video.message_data, tags)
         text = f"Added \"{tag_name}\" tag: \"{tag_value}\"."
         return [await self.send_text_reply(chat, message, text)]
-
