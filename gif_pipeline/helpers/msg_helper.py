@@ -45,4 +45,4 @@ class MSGHelper(TelegramGifHelper):
             file_path = await self.convert_video_to_telegram_gif(file_path)
         tags = VideoTags()
         tags.add_tag_value(VideoTags.source, f"https://e621.net/posts/{post_id}")
-        return await self.send_video_reply(chat, message, file_path)
+        return await self.send_video_reply(chat, message, file_path, tags=tags)

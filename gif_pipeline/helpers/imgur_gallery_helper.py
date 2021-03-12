@@ -8,6 +8,7 @@ from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.message import Message
+from gif_pipeline.tag_manager import VideoTags
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
 
@@ -37,13 +38,16 @@ class ImgurGalleryHelper(Helper):
         images = [image for image in api_data["data"]["images"] if "mp4" in image]
         if len(images) == 0:
             return [await self.send_text_reply(chat, message, "That imgur gallery contains no videos.")]
-        return await asyncio.gather(*(self.send_imgur_video(chat, message, image) for image in images))
+        gallery_link = f"https://imgur.com/gallery/{gallery_id}/"
+        return await asyncio.gather(*(self.send_imgur_video(chat, message, image, gallery_link) for image in images))
 
-    async def send_imgur_video(self, chat: Chat, message: Message, image: Dict[str, str]) -> Message:
+    async def send_imgur_video(self, chat: Chat, message: Message, image: Dict[str, str], gallery_link: str) -> Message:
         file_url = image["mp4"]
         file_ext = file_url.split(".")[-1]
         resp = requests.get(file_url)
         file_path = random_sandbox_video_path(file_ext)
         with open(file_path, "wb") as f:
             f.write(resp.content)
-        return await self.send_video_reply(chat, message, file_path)
+        tags = VideoTags()
+        tags.add_tag_value(VideoTags.source, gallery_link)
+        return await self.send_video_reply(chat, message, file_path, tags=tags)
