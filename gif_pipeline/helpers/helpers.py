@@ -2,7 +2,7 @@ import os
 import shutil
 import uuid
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import Optional, List, Set
 
 from async_generator import asynccontextmanager
 from telethon import Button
@@ -78,7 +78,8 @@ class Helper(ABC):
             video_path: Optional[str] = None,
             reply_to_msg: Optional[Message] = None,
             buttons: Optional[List[List[Button]]] = None,
-            tags: Optional[VideoTags] = None
+            tags: Optional[VideoTags] = None,
+            video_hashes: Optional[Set[str]] = None,
     ) -> Message:
         reply_id = None
         if reply_to_msg is not None:
@@ -109,6 +110,8 @@ class Helper(ABC):
         self.database.save_message(new_message.message_data)
         if tags:
             self.database.save_tags(new_message.message_data, tags)
+        if video_hashes:
+            self.database.save_hashes(new_message.message_data, video_hashes)
         chat.add_message(new_message)
         return new_message
 

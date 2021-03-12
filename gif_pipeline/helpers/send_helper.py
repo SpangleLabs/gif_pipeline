@@ -1,7 +1,7 @@
 from __future__ import annotations
 import asyncio
 import shutil
-from typing import Optional, List, Union, TYPE_CHECKING
+from typing import Optional, List, Union, TYPE_CHECKING, Set
 
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat, Channel
@@ -138,9 +138,12 @@ class GifSendHelper(Helper):
             return [await self.send_text_reply(chat, cmd_msg, error_text)]
         # Send initial message
         tags = video.tags(self.database)
-        initial_message = await self.send_message(chat_from, video_path=video.message_data.file_path, tags=tags)
+        hashes = set(self.database.get_hashes_for_message(video.message_data))
+        initial_message = await self.send_message(
+            chat_from, video_path=video.message_data.file_path, tags=tags, video_hashes=hashes
+        )
         # Forward message
-        new_message = await self.forward_message(chat_to, initial_message, tags)
+        new_message = await self.forward_message(chat_to, initial_message, tags, hashes)
         # Delete initial message
         await self.client.delete_message(initial_message.message_data)
         initial_message.delete(self.database)
@@ -164,7 +167,10 @@ class GifSendHelper(Helper):
             await self.menu_helper.delete_menu_for_video(video)
             return [await self.send_text_reply(chat, cmd, "You do not have permission to post in that channel.")]
         tags = video.tags(self.database)
-        new_message = await self.send_message(destination, video_path=video.message_data.file_path, tags=tags)
+        hashes = set(self.database.get_hashes_for_message(video.message_data))
+        new_message = await self.send_message(
+            destination, video_path=video.message_data.file_path, tags=tags, video_hashes=hashes
+        )
         confirm_text = f"This gif has been sent to {destination.chat_data.title}."
         confirm_message = await self.menu_helper.after_send_delete_menu(chat, cmd, video, confirm_text)
         messages = [new_message]
@@ -183,7 +189,13 @@ class GifSendHelper(Helper):
                 break
         return destination
 
-    async def forward_message(self, destination: Chat, message: Message, tags: VideoTags) -> Message:
+    async def forward_message(
+            self,
+            destination: Chat,
+            message: Message,
+            tags: VideoTags,
+            video_hashes: Set[str]
+    ) -> Message:
         msg = await self.client.forward_message(destination.chat_data, message.message_data)
         message_data = message_data_from_telegram(msg)
         if message.has_video:
@@ -195,6 +207,7 @@ class GifSendHelper(Helper):
         new_message = await Message.from_message_data(message_data, destination.chat_data, self.client)
         self.database.save_message(new_message.message_data)
         self.database.save_tags(new_message.message_data, tags)
+        self.database.save_hashes(new_message.message_data, video_hashes)
         destination.add_message(new_message)
         return new_message
 
