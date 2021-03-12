@@ -4,10 +4,10 @@ import logging
 import os
 from abc import ABC
 from typing import TYPE_CHECKING, Awaitable
-from typing import TypeVar, List, Optional, Coroutine, Callable
+from typing import TypeVar, List, Optional
 
 from gif_pipeline.chat_config import ChatConfig, ChannelConfig, WorkshopConfig
-from gif_pipeline.chat_data import C, ChatData, ChannelData, WorkshopData
+from gif_pipeline.chat_data import ChatData, ChannelData, WorkshopData
 from gif_pipeline.message import Message
 
 if TYPE_CHECKING:

@@ -11,7 +11,7 @@ from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
 from gif_pipeline.menu_cache import SentMenu
 from gif_pipeline.message import Message
-from gif_pipeline.tag_manager import VideoTags
+from gif_pipeline.video_tags import VideoTags
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram
 

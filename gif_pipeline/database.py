@@ -6,7 +6,7 @@ import dateutil.parser
 
 from gif_pipeline.chat_data import ChatData, ChannelData, WorkshopData
 from gif_pipeline.message import MessageData
-from gif_pipeline.tag_manager import VideoTags, TagEntry
+from gif_pipeline.video_tags import TagEntry, VideoTags
 
 chat_types = {
     "channel": ChannelData,

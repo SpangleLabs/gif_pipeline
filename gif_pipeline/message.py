@@ -6,7 +6,7 @@ import os
 from typing import Optional
 from typing import TYPE_CHECKING
 
-from gif_pipeline.tag_manager import VideoTags
+from gif_pipeline.video_tags import VideoTags
 
 if TYPE_CHECKING:
     from telegram_client import TelegramClient
