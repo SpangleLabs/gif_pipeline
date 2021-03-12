@@ -54,6 +54,35 @@ class TagHelper(Helper):
                 text = f"List of \"{tag_name}\" tags:\n"
                 text += "\n".join("- "+t for t in tags.tags[tag_name])
             return [await self.send_text_reply(chat, message, text)]
+        # Remove
+        if args[0].lower() in ["remove", "delete", "unset"]:
+            args = args[1:]
+            # Remove all tags for a category
+            if len(args) == 1:
+                tag_name = args[0]
+                tags = video.tags(self.database)
+                if tag_name not in tags.tags:
+                    text = f"This video has no tags for \"{tag_name}\"."
+                else:
+                    text = f"Removed all \"{tag_name}\" tags:\n"
+                    text += "\n".join("- "+t for t in tags.tags[tag_name])
+                    text += "\nFrom this video."
+                    del tags.tags[tag_name]
+                    self.database.save_tags(video.message_data, tags)
+                return [await self.send_text_reply(chat, message, text)]
+            # Remove a specific tag value
+            tag_name = args[0]
+            tag_value = " ".join(args[1:])
+            tags = video.tags(self.database)
+            if tag_name not in tags.tags:
+                text = f"This video has no tags for \"{tag_name}\"."
+            elif tag_value not in tags.tags[tag_name]:
+                text = f"This video does not have a \"{tag_name}\" tag for \"{tag_value}\"."
+            else:
+                tags.tags[tag_name].remove(tag_value)
+                text = f"Removed the \"{tag_name}\" tag for \"{tag_value}\" from this video."
+                self.database.save_tags(video.message_data, tags)
+            return [await self.send_text_reply(chat, message, text)]
         # Set/add a tag value
         tag_name = args[0]
         tag_value = " ".join(args[1:])
