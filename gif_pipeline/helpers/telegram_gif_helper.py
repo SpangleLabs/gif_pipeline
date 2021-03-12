@@ -15,6 +15,7 @@ from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
 from gif_pipeline.tasks.ffmprobe_task import FFprobeTask
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
+from gif_pipeline.video_tags import VideoTags
 
 
 @dataclass
@@ -121,7 +122,7 @@ class TelegramGifHelper(Helper):
             if video is not None:
                 async with self.progress_message(chat, message, "Converting video to telegram gif"):
                     new_path = await self.convert_video_to_telegram_gif(video.message_data.file_path, gif_settings)
-                    video_reply = await self.send_video_reply(chat, message, new_path)
+                    video_reply = await self.send_video_reply(chat, message, new_path, video.tags(self.database))
                 return [video_reply]
             reply = await self.send_text_reply(
                 chat,
@@ -139,7 +140,9 @@ class TelegramGifHelper(Helper):
         with open(gif_path, "wb") as f:
             f.write(resp.content)
         new_path = await self.convert_video_to_telegram_gif(gif_path)
-        return await self.send_video_reply(chat, message, new_path)
+        tags = VideoTags()
+        tags.add_tag_value(VideoTags.source, gif_link)
+        return await self.send_video_reply(chat, message, new_path, tags)
 
     async def convert_video_to_telegram_gif(
             self, video_path: str, gif_settings: GifSettings = None

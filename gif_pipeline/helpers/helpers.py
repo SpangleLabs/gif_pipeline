@@ -59,8 +59,8 @@ class Helper(ABC):
             chat: Chat,
             message: Message,
             video_path: str,
+            tags: VideoTags,
             text: str = None,
-            tags: VideoTags = None  # TODO: Make this required
     ) -> Message:
         return await self.send_message(
             chat,

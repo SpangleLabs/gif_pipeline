@@ -87,5 +87,5 @@ class SceneSplitHelper(VideoCutHelper):
         ])
         video_replies = []
         for new_path in cut_videos:
-            video_replies.append(await self.send_video_reply(chat, message, new_path))
+            video_replies.append(await self.send_video_reply(chat, message, new_path, video.tags(self.database)))
         return video_replies

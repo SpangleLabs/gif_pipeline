@@ -9,6 +9,7 @@ from gif_pipeline.helpers.helpers import random_sandbox_video_path
 from gif_pipeline.helpers.telegram_gif_helper import TelegramGifHelper
 from gif_pipeline.message import Message, mime_type_is_video
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
+from gif_pipeline.video_tags import VideoTags
 
 
 class ZipHelper(TelegramGifHelper):
@@ -35,7 +36,7 @@ class ZipHelper(TelegramGifHelper):
         processed_paths = await asyncio.gather(*(self.convert_file(path) for path in video_paths))
         # Send them
         if processed_paths:
-            return await asyncio.gather(*(self.send_video_reply(chat, message, path) for path in processed_paths))
+            return await asyncio.gather(*(self.send_video_reply(chat, message, path, VideoTags()) for path in processed_paths))
         return None
 
     async def convert_file(self, video_path: str) -> str:

@@ -34,7 +34,7 @@ class VideoHelper(Helper):
                 tasks = video_to_video(video.message_data.file_path, output_path, gif_settings)
                 for task in tasks:
                     await self.worker.await_task(task)
-            return [await self.send_video_reply(chat, message, output_path)]
+            return [await self.send_video_reply(chat, message, output_path, video.tags(self.database))]
 
     async def video_has_audio_track(self, video: Message) -> bool:
         task = video_has_audio_track_task(video.message_data.file_path)

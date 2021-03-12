@@ -47,7 +47,7 @@ class VideoRotateHelper(Helper):
                 outputs={output_path: f"-vf \"{transpose}\""}
             )
             await self.worker.await_task(task)
-            return [await self.send_video_reply(chat, message, output_path)]
+            return [await self.send_video_reply(chat, message, output_path, video.tags(self.database))]
 
     @staticmethod
     def get_rotate_direction(text_clean: str) -> Optional[str]:

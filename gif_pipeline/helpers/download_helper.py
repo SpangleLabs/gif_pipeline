@@ -68,7 +68,7 @@ class DownloadHelper(Helper):
             download_filename = await self.download_link(link)
             tags = VideoTags()
             tags.add_tag_value(VideoTags.source, link)
-            return await self.send_video_reply(chat, message, download_filename, tags=tags)
+            return await self.send_video_reply(chat, message, download_filename, tags)
         except (youtube_dl.utils.DownloadError, IndexError):
             return await self.send_text_reply(chat, message, f"Could not download video from link: {link}")
 

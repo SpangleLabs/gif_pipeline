@@ -110,7 +110,9 @@ class MergeHelper(Helper):
                 outputs={output_path: output_args}
             )
             await self.worker.await_task(task)
-            return [await self.send_video_reply(chat, cmd_message, output_path)]
+            tags = messages_to_merge[0].tags(self.database)
+            tags.merge_all([msg.tags(self.database) for msg in messages_to_merge[1:]])
+            return [await self.send_video_reply(chat, cmd_message, output_path, tags)]
 
     async def align_video_dimensions(self, file_paths: List[str]) -> List[str]:
         first = file_paths[0]

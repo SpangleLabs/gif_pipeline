@@ -50,4 +50,4 @@ class ImgurGalleryHelper(Helper):
             f.write(resp.content)
         tags = VideoTags()
         tags.add_tag_value(VideoTags.source, gallery_link)
-        return await self.send_video_reply(chat, message, file_path, tags=tags)
+        return await self.send_video_reply(chat, message, file_path, tags)

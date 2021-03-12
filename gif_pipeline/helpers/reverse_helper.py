@@ -21,4 +21,4 @@ class ReverseHelper(Helper):
         )
         async with self.progress_message(chat, message, "Reversing video"):
             await self.worker.await_task(reverse_task)
-            return [await self.send_video_reply(chat, message, output_path)]
+            return [await self.send_video_reply(chat, message, output_path, video.tags(self.database))]

@@ -22,4 +22,4 @@ class StabiliseHelper(Helper):
                 outputs={output_path: "-vf deshake"}
             )
             await self.worker.await_task(task)
-            return [await self.send_video_reply(chat, message, output_path)]
+            return [await self.send_video_reply(chat, message, output_path, video.tags(self.database))]

@@ -49,13 +49,14 @@ class VideoCutHelper(Helper):
             else:
                 end = start
                 start = None
+        tags = video.tags(self.database)
         if not cut_out:
             async with self.progress_message(chat, message, "Cutting video"):
                 new_path = await self.cut_video(video, start, end)
-                return [await self.send_video_reply(chat, message, new_path)]
+                return [await self.send_video_reply(chat, message, new_path, tags)]
         async with self.progress_message(chat, message, "Cutting out video section"):
             output_path = await self.cut_out_video(video, start, end)
-            return [await self.send_video_reply(chat, message, output_path)]
+            return [await self.send_video_reply(chat, message, output_path, tags)]
 
     async def cut_video(self, video: Message, start: Optional[str], end: Optional[str]) -> str:
         new_path = random_sandbox_video_path()
