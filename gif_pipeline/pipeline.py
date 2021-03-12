@@ -31,6 +31,7 @@ from gif_pipeline.helpers.video_rotate_helper import VideoRotateHelper
 from gif_pipeline.helpers.zip_helper import ZipHelper
 from gif_pipeline.menu_cache import MenuCache
 from gif_pipeline.message import Message
+from gif_pipeline.tag_manager import TagManager
 from gif_pipeline.tasks.task_worker import TaskWorker, Bottleneck
 from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram, chat_id_from_telegram
 from gif_pipeline.utils import tqdm_gather
@@ -152,6 +153,7 @@ class Pipeline:
         logging.info("Initialising helpers")
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
         menu_helper = MenuHelper(self.database, self.client, self.worker, self.menu_cache)
+        tag_manager = TagManager(self.channels, self.workshops)
         helpers = [
             duplicate_helper,
             menu_helper,
@@ -171,7 +173,7 @@ class Pipeline:
             ReverseHelper(self.database, self.client, self.worker),
             FFProbeHelper(self.database, self.client, self.worker),
             ZipHelper(self.database, self.client, self.worker),
-            TagHelper(self.database, self.client, self.worker)
+            TagHelper(self.database, self.client, self.worker, tag_manager)
         ]
         if "imgur" in self.api_keys:
             helpers.append(

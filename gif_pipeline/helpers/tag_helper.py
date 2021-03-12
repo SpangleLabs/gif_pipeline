@@ -1,11 +1,19 @@
 from typing import Optional, List
 
 from gif_pipeline.chat import Chat
+from gif_pipeline.database import Database
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.message import Message
+from gif_pipeline.tag_manager import TagManager
+from gif_pipeline.tasks.task_worker import TaskWorker
+from gif_pipeline.telegram_client import TelegramClient
 
 
 class TagHelper(Helper):
+
+    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, tag_manager: TagManager):
+        super().__init__(database, client, worker)
+        self.tag_manager = tag_manager
 
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         clean_text = message.text.lower().strip()
@@ -17,8 +25,7 @@ class TagHelper(Helper):
         if video is None:
             link = next(iter(args), None)
             if link:
-                # TODO: needs to be global, not just this chat
-                video = chat.message_by_link(link)
+                video = self.tag_manager.get_message_for_link(link)
                 args = args[1:]
         if not video:
             return [await self.send_text_reply(
