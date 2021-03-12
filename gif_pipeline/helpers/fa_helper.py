@@ -9,6 +9,7 @@ from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import random_sandbox_video_path
 from gif_pipeline.helpers.telegram_gif_helper import TelegramGifHelper
 from gif_pipeline.message import Message
+from gif_pipeline.tag_manager import VideoTags
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
 
@@ -42,4 +43,6 @@ class FAHelper(TelegramGifHelper):
         # If gif, convert to telegram gif
         if file_ext == "gif":
             file_path = await self.convert_video_to_telegram_gif(file_path)
+        tags = VideoTags()
+        tags.add_tag_value(VideoTags.source, f"https://furaffinity.net/view/{post_id}/")
         return await self.send_video_reply(chat, message, file_path)

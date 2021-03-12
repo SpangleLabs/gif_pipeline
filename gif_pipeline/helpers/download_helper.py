@@ -6,6 +6,7 @@ from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.message import Message
+from gif_pipeline.tag_manager import VideoTags
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.tasks.youtube_dl_task import YoutubeDLTask
 from gif_pipeline.telegram_client import TelegramClient
@@ -18,7 +19,7 @@ class DownloadHelper(Helper):
     LINK_REGEX += r'(?:www\.)?'
     # Capture domain name or IP. [Group 1...]
     LINK_REGEX += r'('
-    # Domain and subdomains (Each up to 64 chars, hypens not allowed on either end)
+    # Domain and subdomains (Each up to 64 chars, hyphens not allowed on either end)
     LINK_REGEX += r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+)'
     # TLD: [Group 2]
     LINK_REGEX += r'([A-Z]{2,63})'
@@ -65,7 +66,9 @@ class DownloadHelper(Helper):
     async def handle_link(self, chat: Chat, message: Message, link: str) -> Message:
         try:
             download_filename = await self.download_link(link)
-            return await self.send_video_reply(chat, message, download_filename)
+            tags = VideoTags()
+            tags.add_tag_value(VideoTags.source, link)
+            return await self.send_video_reply(chat, message, download_filename, tags=tags)
         except (youtube_dl.utils.DownloadError, IndexError):
             return await self.send_text_reply(chat, message, f"Could not download video from link: {link}")
 

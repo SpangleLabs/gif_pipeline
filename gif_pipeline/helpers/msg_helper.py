@@ -9,6 +9,7 @@ from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import random_sandbox_video_path
 from gif_pipeline.helpers.telegram_gif_helper import TelegramGifHelper
 from gif_pipeline.message import Message
+from gif_pipeline.tag_manager import VideoTags
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
 
@@ -27,7 +28,7 @@ class MSGHelper(TelegramGifHelper):
             return await asyncio.gather(*(self.handle_post_link(chat, message, post_id) for post_id in matching_links))
 
     async def handle_post_link(self, chat: Chat, message: Message, post_id: str):
-        api_link = f"https://e621.net/(?:posts|post/show)/{post_id}.json"
+        api_link = f"https://e621.net/posts/{post_id}.json"
         api_resp = requests.get(api_link, headers={"User-Agent": "Gif pipeline (my username is dr-spangle)"})
         api_data = api_resp.json()
         file_ext = api_data["post"]["file"]["ext"]
@@ -42,4 +43,6 @@ class MSGHelper(TelegramGifHelper):
         # If gif, convert to telegram gif
         if file_ext == "gif":
             file_path = await self.convert_video_to_telegram_gif(file_path)
+        tags = VideoTags()
+        tags.add_tag_value(VideoTags.source, f"https://e621.net/posts/{post_id}")
         return await self.send_video_reply(chat, message, file_path)
