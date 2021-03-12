@@ -6,6 +6,8 @@ import os
 from typing import Optional
 from typing import TYPE_CHECKING
 
+from gif_pipeline.tag_manager import VideoTags
+
 if TYPE_CHECKING:
     from telegram_client import TelegramClient
     from gif_pipeline.database import Database
@@ -129,6 +131,11 @@ class Message:
             except OSError:
                 pass
         database.remove_message(self.message_data)
+
+    def tags(self, database: 'Database') -> VideoTags:
+        tag_entries = database.get_tags_for_message(self.message_data)
+        tags = VideoTags.from_database(tag_entries)
+        return tags
 
     def __repr__(self) -> str:
         return f"Message({self.message_data})"

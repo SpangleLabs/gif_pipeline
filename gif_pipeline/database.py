@@ -6,7 +6,7 @@ import dateutil.parser
 
 from gif_pipeline.chat_data import ChatData, ChannelData, WorkshopData
 from gif_pipeline.message import MessageData
-from gif_pipeline.tag_manager import VideoTags
+from gif_pipeline.tag_manager import VideoTags, TagEntry
 
 chat_types = {
     "channel": ChannelData,
@@ -131,6 +131,17 @@ class Database:
             )
         )
         self.conn.commit()
+
+    def get_tags_for_message(self, message: MessageData) -> List[TagEntry]:
+        entry_id = self.get_entry_id_for_message(message)
+        cur = self.conn.cursor()
+        entries = []
+        for row in cur.execute("SELECT tag_name, tag_value FROM video_tags WHERE entry_id = ?", (entry_id,)):
+            entries.append(TagEntry(
+                row["tag_name"],
+                row["tag_value"]
+            ))
+        return entries
 
     def save_tags(self, message: MessageData, tags: VideoTags) -> None:
         entry_id = self.get_entry_id_for_message(message)

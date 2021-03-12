@@ -22,6 +22,7 @@ from gif_pipeline.helpers.reverse_helper import ReverseHelper
 from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
 from gif_pipeline.helpers.send_helper import GifSendHelper
 from gif_pipeline.helpers.stabilise_helper import StabiliseHelper
+from gif_pipeline.helpers.tag_helper import TagHelper
 from gif_pipeline.helpers.telegram_gif_helper import TelegramGifHelper
 from gif_pipeline.helpers.video_crop_helper import VideoCropHelper
 from gif_pipeline.helpers.video_cut_helper import VideoCutHelper
@@ -169,7 +170,8 @@ class Pipeline:
             MergeHelper(self.database, self.client, self.worker),
             ReverseHelper(self.database, self.client, self.worker),
             FFProbeHelper(self.database, self.client, self.worker),
-            ZipHelper(self.database, self.client, self.worker)
+            ZipHelper(self.database, self.client, self.worker),
+            TagHelper(self.database, self.client, self.worker)
         ]
         if "imgur" in self.api_keys:
             helpers.append(
