@@ -21,6 +21,7 @@ class TagHelper(Helper):
         if clean_args[0] not in ["tag", "tags"]:
             return
         args = clean_args[1:]
+        # Get video
         video = chat.message_by_id(message.message_data.reply_to)
         if video is None:
             link = next(iter(args), None)
@@ -34,10 +35,31 @@ class TagHelper(Helper):
                 "No message specified. Please reply to the message you want to view the tags for, or provide a "
                 "link to it."
             )]
+        # List all tags
+        if not args:
+            tags = video.tags(self.database)
+            text = "List of tags:\n"
+            text += "\n".join(
+                f"{key}: " + ", ".join(values)
+                for key, values in tags.tags.items()
+            )
+            return [await self.send_text_reply(chat, message, text)]
+        # List tags for 1 category
+        if len(args) == 1:
+            tag_name = args[0]
+            tags = video.tags(self.database)
+            if tag_name not in tags.tags:
+                text = f"This video has no tags for \"{tag_name}\"."
+            else:
+                text = f"List of \"{tag_name}\" tags:\n"
+                text += "\n".join("- "+t for t in tags.tags[tag_name])
+            return [await self.send_text_reply(chat, message, text)]
+        # Set/add a tag value
+        tag_name = args[0]
+        tag_value = " ".join(args[1:])
         tags = video.tags(self.database)
-        text = "List of tags:\n"
-        text += "\n".join(
-            f"{key}: " + ", ".join(values)
-            for key, values in tags.tags.items()
-        )
+        tags.add_tag_value(tag_name, tag_value)
+        self.database.save_tags(video.message_data, tags)
+        text = f"Added \"{tag_name}\" tag: \"{tag_value}\"."
         return [await self.send_text_reply(chat, message, text)]
+
