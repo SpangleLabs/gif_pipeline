@@ -1,8 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List, Dict
-
-from gif_pipeline.message import Message
+from typing import List, Dict, Optional
 
 
 @dataclass
@@ -12,17 +10,22 @@ class TagEntry:
 
 
 class VideoTags:
-    def __init__(self, video: Message, tags: Dict[str, List[str]]):
-        self.video = video
-        self.tags = tags
+    source = "source"
+
+    def __init__(self, tags: Optional[Dict[str, List[str]]] = None):
+        self.tags = tags or {}
+
+    def add_tag_value(self, tag_name: str, tag_value: str) -> None:
+        if tag_name not in self.tags:
+            self.tags[tag_name] = []
+        self.tags[tag_name].append(tag_value)
 
     @classmethod
-    def from_database(cls, video: Message, tag_data: List[TagEntry]) -> 'VideoTags':
+    def from_database(cls, tag_data: List[TagEntry]) -> 'VideoTags':
         tags_dict = defaultdict(lambda: [])
         for tag in tag_data:
             tags_dict[tag.tag_name].append(tag.tag_value)
         return VideoTags(
-            video,
             tags_dict
         )
 
