@@ -14,6 +14,9 @@ if TYPE_CHECKING:
     from gif_pipeline.chat_data import ChatData
 
 
+logger = logging.getLogger(__name__)
+
+
 def mime_type_is_video(mime_type: str) -> bool:
     return mime_type.startswith("video") or mime_type == "image/gif"
 
@@ -95,7 +98,7 @@ class Message:
 
     @classmethod
     async def from_message_data(cls, message_data: MessageData, chat_data: 'ChatData', client: 'TelegramClient'):
-        logging.debug(f"Creating message: {message_data}")
+        logger.debug(f"Creating message: {message_data}")
         # Update file path if not set
         video_path = message_data.expected_file_path(chat_data)
         if video_path is not None and message_data.file_path is None:
@@ -107,7 +110,7 @@ class Message:
             message_data.file_mime_type = None
         # Download file if necessary
         if cls.needs_download(message_data):
-            logging.info(f"Downloading video from message: {message_data}")
+            logger.info(f"Downloading video from message: {message_data}")
             await client.download_media(message_data.chat_id, message_data.message_id, video_path)
         # Create message
         return Message(message_data, chat_data)
@@ -116,11 +119,14 @@ class Message:
     def needs_download(cls, message_data: MessageData) -> bool:
         if message_data.has_file:
             if message_data.file_path is None:
+                logger.info(f"Download required: file path unset for message: {message_data}")
                 return True
             else:
                 if not os.path.exists(message_data.file_path):
+                    logger.info(f"Download required: file missing for message: {message_data}")
                     return True
                 if os.path.getsize(message_data.file_path) != message_data.file_size:
+                    logger.info(f"Download required: file is the wrong size for message: {message_data}")
                     return True
         return False
 
