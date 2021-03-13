@@ -25,6 +25,7 @@ class GifSettings:
     bitrate: float
     fps: float
     audio: bool = False
+    _pass_log_file: Optional[str] = None
     # Maximum gif dimension on android telegram is 1280px (width, or height, or both)
     # Maximum gif dimension on desktop telegram is 1440px (width, or height, or both)
     # On iOS, there is no maximum gif dimension. Even 5000px gifs display fine
@@ -82,9 +83,10 @@ class GifSettings:
         return self.ffmpeg_options + " -crf 18"
 
     @property
-    @lru_cache()
     def pass_log_file(self) -> str:
-        return random_sandbox_video_path("")
+        if self._pass_log_file is None:
+            self._pass_log_file = random_sandbox_video_path("")
+        return self._pass_log_file
 
     @property
     def ffmpeg_options_two_pass(self) -> Tuple[str, str]:
@@ -179,18 +181,10 @@ class TelegramGifHelper(Helper):
         # Calculate new bitrate
         max_bitrate = file_size_mb / duration * 1000000 * 8
         if not gif_settings.bitrate:
-            new_bitrate = max_bitrate
-        else:
-            new_bitrate = min(
-                max_bitrate,
-                gif_settings.bitrate
-            )
-        gif_settings = GifSettings(
-            width=gif_settings.width,
-            height=gif_settings.height,
-            bitrate=new_bitrate,
-            fps=gif_settings.fps,
-            audio=gif_settings.audio
+            gif_settings.bitrate = max_bitrate
+        gif_settings.bitrate = min(
+            max_bitrate,
+            gif_settings.bitrate
         )
         return await self.two_pass_convert(video_path, gif_settings)
 
