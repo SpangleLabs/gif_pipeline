@@ -125,8 +125,12 @@ class Message:
                 if not os.path.exists(message_data.file_path):
                     logger.info(f"Download required: file missing for message: {message_data}")
                     return True
-                if os.path.getsize(message_data.file_path) != message_data.file_size:
-                    logger.info(f"Download required: file is the wrong size for message: {message_data}")
+                size_on_disc = os.path.getsize(message_data.file_path)
+                if size_on_disc != message_data.file_size:
+                    logger.info(
+                        f"Download required: file is the wrong size for message: {message_data}. "
+                        f"{size_on_disc}b locally, {message_data.file_size}b according to Telegram"
+                    )
                     return True
         return False
 
