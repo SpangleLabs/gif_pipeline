@@ -18,7 +18,7 @@ class TagHelper(Helper):
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         clean_text = message.text.lower().strip()
         clean_args = clean_text.split()
-        if clean_args[0] not in ["tag", "tags"]:
+        if not clean_args or clean_args[0] not in ["tag", "tags"]:
             return
         args = clean_args[1:]
         # Get video
