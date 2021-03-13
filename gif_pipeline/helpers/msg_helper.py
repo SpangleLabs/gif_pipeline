@@ -20,6 +20,9 @@ class MSGHelper(TelegramGifHelper):
         super().__init__(database, client, worker)
 
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
+        # Ignore messages the bot has sent.
+        if message.message_data.sender_id == self.client.pipeline_bot_id:
+            return
         # If message has relevant link in it
         matching_links = re.findall(r"e621.net/(?:posts|post/show)/([0-9]+)", message.text, re.IGNORECASE)
         if not matching_links:
