@@ -179,10 +179,18 @@ class TelegramGifHelper(Helper):
         # Calculate new bitrate
         max_bitrate = file_size_mb / duration * 1000000 * 8
         if not gif_settings.bitrate:
-            gif_settings.bitrate = max_bitrate
-        gif_settings.bitrate = min(
-            max_bitrate,
-            gif_settings.bitrate
+            new_bitrate = max_bitrate
+        else:
+            new_bitrate = min(
+                max_bitrate,
+                gif_settings.bitrate
+            )
+        gif_settings = GifSettings(
+            width=gif_settings.width,
+            height=gif_settings.height,
+            bitrate=new_bitrate,
+            fps=gif_settings.fps,
+            audio=gif_settings.audio
         )
         return await self.two_pass_convert(video_path, gif_settings)
 
