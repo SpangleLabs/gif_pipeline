@@ -15,6 +15,9 @@ from gif_pipeline.message import MessageData
 R = TypeVar("R")
 
 
+logger = logging.getLogger(__name__)
+
+
 def message_data_from_telegram(msg: telethon.tl.custom.message.Message, scheduled: bool = False) -> MessageData:
     chat_id = chat_id_from_telegram(msg)
     sender_id = sender_id_from_telegram(msg)
@@ -121,11 +124,11 @@ class TelegramClient:
         async def function_wrapper(event: events.NewMessage.Event):
             chat_id = chat_id_from_telegram(event.message)
             if chat_id not in chat_ids:
-                logging.debug("Ignoring new message in other chat")
+                logger.debug("Ignoring new message in other chat")
                 return
             sender_id = sender_id_from_telegram(event.message)
             if sender_id == self.pipeline_bot_id:
-                logging.debug("Ignoring new message from bot")
+                logger.debug("Ignoring new message from bot")
                 return
             self._save_message(event.message)
             await function(event)
@@ -136,11 +139,11 @@ class TelegramClient:
         async def function_wrapper(event: events.NewMessage.Event):
             chat_id = chat_id_from_telegram(event.message)
             if chat_id not in chat_ids:
-                logging.debug("Ignoring new message in other chat")
+                logger.debug("Ignoring new message in other chat")
                 return
             sender_id = sender_id_from_telegram(event.message)
             if sender_id == self.pipeline_bot_id:
-                logging.debug("Ignoring new message from bot")
+                logger.debug("Ignoring new message from bot")
                 return
             self._save_message(event.message)
             await function(event)

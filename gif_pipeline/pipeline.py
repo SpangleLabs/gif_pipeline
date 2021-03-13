@@ -150,7 +150,7 @@ class Pipeline:
         return None
 
     def initialise_helpers(self) -> None:
-        logging.info("Initialising helpers")
+        logger.info("Initialising helpers")
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
         menu_helper = MenuHelper(self.database, self.client, self.worker, self.menu_cache)
         tag_manager = TagManager(self.channels, self.workshops)
@@ -180,17 +180,17 @@ class Pipeline:
                 ImgurGalleryHelper(self.database, self.client, self.worker, self.api_keys["imgur"]["client_id"]))
         for helper in helpers:
             self.helpers[helper.name] = helper
-        logging.info(f"Initialised {len(self.helpers)} helpers")
+        logger.info(f"Initialised {len(self.helpers)} helpers")
 
     async def initialise_duplicate_detector(self) -> DuplicateHelper:
         helper = DuplicateHelper(self.database, self.client, self.worker)
-        logging.info("Initialising DuplicateHelper")
+        logger.info("Initialising DuplicateHelper")
         await helper.initialise_hashes(self.workshops)
-        logging.info("Initialised DuplicateHelper")
+        logger.info("Initialised DuplicateHelper")
         return helper
 
     def watch_workshop(self) -> None:
-        logging.info("Watching workshop")
+        logger.info("Watching workshop")
         self.client.add_message_handler(self.on_new_message, self.all_chat_ids)
         self.client.add_edit_handler(self.on_edit_message, self.all_chat_ids)
         self.client.add_delete_handler(self.on_deleted_message)
@@ -201,31 +201,31 @@ class Pipeline:
         # Get chat, check it's one we know
         chat = self.chat_by_id(chat_id_from_telegram(event.message))
         if chat is None:
-            logging.debug("Ignoring edited message in other chat, which must have slipped through")
+            logger.debug("Ignoring edited message in other chat, which must have slipped through")
             return
         # Convert to our custom Message object. This will update message data, but not the video, for edited messages
-        logging.info(f"Edited message in chat: {chat}")
+        logger.info(f"Edited message in chat: {chat}")
         message_data = message_data_from_telegram(event.message)
         new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
         chat.remove_message(message_data)
         chat.add_message(new_message)
         self.database.save_message(new_message.message_data)
-        logging.info(f"Edited message initialised: {new_message}")
+        logger.info(f"Edited message initialised: {new_message}")
 
     async def on_new_message(self, event: events.NewMessage.Event) -> None:
         # This is called just for new messages
         # Get chat, check it's one we know
         chat = self.chat_by_id(chat_id_from_telegram(event.message))
         if chat is None:
-            logging.debug("Ignoring new message in other chat, which must have slipped through")
+            logger.debug("Ignoring new message in other chat, which must have slipped through")
             return
         # Convert to our custom Message object. This will update message data, but not the video, for edited messages
-        logging.info(f"New message in chat: {chat}")
+        logger.info(f"New message in chat: {chat}")
         message_data = message_data_from_telegram(event.message)
         new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
         chat.add_message(new_message)
         self.database.save_message(new_message.message_data)
-        logging.info(f"New message initialised: {new_message}")
+        logger.info(f"New message initialised: {new_message}")
         # Pass to helpers
         await self.pass_message_to_handlers(new_message, chat)
 
@@ -238,7 +238,7 @@ class Pipeline:
         )
         for helper, result in zip(self.helpers.keys(), helper_results):
             if isinstance(result, BaseException):
-                logging.error(
+                logger.error(
                     f"Helper {helper} threw an exception trying to handle message {new_message}.",
                     exc_info=result
                 )
@@ -259,12 +259,12 @@ class Pipeline:
             results_dict = dict(zip(self.helpers.keys(), helper_results))
             for helper, result in results_dict.items():
                 if isinstance(result, Exception):
-                    logging.error(
+                    logger.error(
                         f"Helper {helper} threw an exception trying to handle deleting message {message}.",
                         exc_info=result
                     )
             # Remove messages from store
-            logging.info(f"Deleting message {message} from chat: {message.chat_data}")
+            logger.info(f"Deleting message {message} from chat: {message.chat_data}")
             message.delete(self.database)
             chat.remove_message(message.message_data)
 
@@ -286,23 +286,23 @@ class Pipeline:
         # Get chat, check it's one we know
         chat = self.chat_by_id(chat_id_from_telegram(event))
         if chat is None:
-            logging.debug("Ignoring new message in other chat, which must have slipped through")
+            logger.debug("Ignoring new message in other chat, which must have slipped through")
             return
         # Get the menu
         menu = self.menu_cache.get_menu_by_message_id(event.chat_id, event.message_id)
         if not menu:
-            logging.warning("Received a callback for a menu missing from cache")
+            logger.warning("Received a callback for a menu missing from cache")
             await event.answer("That menu is unrecognised.")
             return
         # Check button was pressed by the person who requested the menu
         if event.sender_id != menu.menu.owner_id:
-            logging.info("User tried to press a button on a menu that wasn't theirs")
+            logger.info("User tried to press a button on a menu that wasn't theirs")
             await event.answer("This is not your menu, you are not authorised to use it.")
             return
         # Check if menu has already been clicked
         if menu.clicked:
             # Menu already clicked
-            logging.info("Callback received for a menu which has already been clicked")
+            logger.info("Callback received for a menu which has already been clicked")
             await event.answer("That menu has already been clicked.")
             return
         # Hand callback queries to helpers
@@ -313,7 +313,7 @@ class Pipeline:
         answered = False
         for helper, result in zip(self.helpers.keys(), helper_results):
             if isinstance(result, BaseException):
-                logging.error(
+                logger.error(
                     f"Helper {helper} threw an exception trying to handle callback query {event}.",
                     exc_info=result
                 )

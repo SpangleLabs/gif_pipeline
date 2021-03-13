@@ -17,6 +17,9 @@ if TYPE_CHECKING:
 T = TypeVar('T', bound='Group')
 
 
+logger = logging.getLogger(__name__)
+
+
 class Chat(ABC):
     def __init__(
             self,
@@ -37,7 +40,7 @@ class Chat(ABC):
             client: TelegramClient,
             database: 'Database',
     ) -> List[Awaitable[Message]]:
-        logging.info(f"Initialising chat: {config}")
+        logger.info(f"Initialising chat: {config}")
         # Ensure bot is in chat
         if not config.read_only:
             await client.invite_pipeline_bot_to_chat(chat_data)
