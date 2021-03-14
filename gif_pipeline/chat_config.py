@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Union, Dict, Any, Optional
+from typing import Union, Dict, Any, Optional, List
 
 
 class ChatConfig(ABC):
@@ -31,13 +31,15 @@ class ChannelConfig(ChatConfig):
             queue: 'QueueConfig' = None,
             read_only: bool = False,
             send_folder: Optional[str] = None,
-            note_time: bool = False
+            note_time: bool = False,
+            tags: Optional[List[str]] = None,
     ):
         super().__init__(handle)
         self.queue = queue
         self.read_only = read_only
         self.send_folder = send_folder
         self.note_time = note_time
+        self.tags = tags or []
 
     @staticmethod
     def from_json(json_dict) -> 'ChannelConfig':
@@ -51,7 +53,8 @@ class ChannelConfig(ChatConfig):
             queue=queue,
             read_only=json_dict.get("read_only", False),
             send_folder=json_dict.get("send_folder"),
-            note_time=json_dict.get("note_time", False)
+            note_time=json_dict.get("note_time", False),
+            tags=json_dict.get("tags", [])
         )
 
 

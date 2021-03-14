@@ -1,6 +1,6 @@
 from abc import abstractmethod
 import datetime
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Set
 
 from scenedetect import FrameTimecode
 from telethon import Button
@@ -86,15 +86,27 @@ class MenuHelper(Helper):
         menu_msg = await menu.send()
         return [menu_msg]
 
+    async def additional_tags_menu(
+            self,
+            chat: Chat,
+            cmd_msg: Message,
+            video: Message,
+            send_helper: GifSendHelper,
+            destination: Channel,
+            missing_tags: Set[str]
+    ):
+        menu = AddTagsMenu(self, chat, cmd_msg, video, send_helper, destination, missing_tags)
+        menu_msg = await menu.send()
+        return [menu_msg]
+
     async def confirmation_menu(
             self,
             chat: Chat,
             cmd_msg: Message,
             video: Message,
             send_helper: GifSendHelper,
-            destination_id: str,
+            destination: Channel,
     ) -> List[Message]:
-        destination = send_helper.get_destination_from_name(destination_id)
         menu = SendConfirmationMenu(self, chat, cmd_msg, video, send_helper, destination)
         menu_msg = await menu.send()
         return [menu_msg]
@@ -303,8 +315,14 @@ class DestinationMenu(Menu):
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.confirm_send:
             destination_id = split_data[1]
+            destination = self.send_helper.get_destination_from_name(destination_id)
+            missing_tags = self.send_helper.missing_tags_for_video(self.video, destination)
+            if missing_tags:
+                return await self.menu_helper.additional_tags_menu(
+                    self.chat, self.cmd, self.video, self.send_helper, destination, missing_tags
+                )
             return await self.menu_helper.confirmation_menu(
-                self.chat, self.cmd, self.video, self.send_helper, destination_id
+                self.chat, self.cmd, self.video, self.send_helper, destination
             )
         if split_data[0] == self.folder:
             next_folder = split_data[1]
@@ -319,6 +337,60 @@ class DestinationMenu(Menu):
                     folder = self.current_folder + "/" + next_folder
             return await self.menu_helper.destination_menu(
                 self.chat, self.cmd, self.video, self.send_helper, self.channels, folder
+            )
+
+
+class AddTagsMenu(Menu):
+    send_callback = b"send"
+    cancel_callback = b"cancel"
+
+    def __init__(
+            self,
+            menu_helper: MenuHelper,
+            chat: Chat,
+            cmd_msg: Message,
+            video: Message,
+            send_helper: GifSendHelper,
+            destination: Channel,
+            missing_tags: Set[str]
+    ):
+        super().__init__(menu_helper, chat, cmd_msg, video)
+        self.send_helper = send_helper
+        self.destination = destination
+        self.missing_tags = missing_tags
+        self.cancelled = False
+
+    @property
+    def text(self) -> str:
+        dest_tags = self.destination.config.tags
+        msg = f"The destination suggests videos should be tagged with:\n"
+        for tag in dest_tags:
+            if tag in self.missing_tags:
+                msg += f" - <b>{tag}</b>\n"
+            else:
+                msg += f" - {tag}\n"
+        msg += f"This video is missing {len(self.missing_tags)} tags, bold in the above list"
+        return msg
+
+    @property
+    def buttons(self) -> Optional[List[List[Button]]]:
+        if not self.cancelled:
+            return [
+                [Button.inline("Send anyway", self.send_callback)],
+                [Button.inline("Cancel", self.cancel_callback)]
+            ]
+
+    async def handle_callback_query(
+            self,
+            callback_query: bytes
+    ) -> Optional[List[Message]]:
+        if callback_query == self.cancel_callback:
+            self.cancelled = True
+            sent_msg = await self.send()
+            return [sent_msg]
+        if callback_query == self.send_callback:
+            return await self.menu_helper.confirmation_menu(
+                self.chat, self.cmd, self.video, self.send_helper, self.destination
             )
 
 

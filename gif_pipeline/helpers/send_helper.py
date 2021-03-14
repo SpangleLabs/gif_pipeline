@@ -178,16 +178,19 @@ class GifSendHelper(Helper):
             messages.append(confirm_message)
         return messages
 
-    def get_destination_from_name(self, destination_id: Union[str, int]) -> Optional[Chat]:
+    def get_destination_from_name(self, destination_id: Union[str, int]) -> Optional[Channel]:
         destination = None
         for channel in self.writable_channels:
-            if channel.chat_data.username == destination_id:
-                destination = channel
-                break
-            if str(channel.chat_data.chat_id) == str(destination_id):
+            if channel.chat_data.matches_handle(destination_id):
                 destination = channel
                 break
         return destination
+
+    def missing_tags_for_video(self, video: Message, destination: Channel) -> Set[str]:
+        tags = video.tags(self.database)
+        dest_tags = destination.config.tags
+        missing_tags = set(dest_tags) - set(tags.tags.keys())
+        return missing_tags
 
     async def forward_message(
             self,

@@ -171,8 +171,13 @@ class TelegramClient:
             reply_to_msg_id: Optional[int] = None,
             buttons: Optional[List[List[Button]]] = None
     ) -> telethon.tl.custom.message.Message:
-        return await self.pipeline_bot_client.send_message(chat.chat_id, text, reply_to=reply_to_msg_id,
-                                                           buttons=buttons)
+        return await self.pipeline_bot_client.send_message(
+            chat.chat_id,
+            text,
+            reply_to=reply_to_msg_id,
+            buttons=buttons,
+            parse_mode="html"
+        )
 
     async def send_video_message(
             self,
@@ -184,7 +189,13 @@ class TelegramClient:
             buttons: Optional[List[List[Button]]] = None
     ) -> telethon.tl.custom.message.Message:
         return await self.pipeline_bot_client.send_file(
-            chat.chat_id, video_path, caption=text, reply_to=reply_to_msg_id, allow_cache=False, buttons=buttons
+            chat.chat_id,
+            video_path,
+            caption=text,
+            reply_to=reply_to_msg_id,
+            allow_cache=False,
+            buttons=buttons,
+            parse_mode="html"
         )
 
     async def delete_message(self, message_data: MessageData) -> None:
@@ -208,7 +219,8 @@ class TelegramClient:
             chat.chat_id,
             message_data.message_id,
             new_text,
-            buttons=new_buttons
+            buttons=new_buttons,
+            parse_mode="html"
         )
 
     def synchronise_async(self, future: Union[Future, Coroutine]) -> Any:
