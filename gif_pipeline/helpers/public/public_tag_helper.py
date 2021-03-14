@@ -24,8 +24,10 @@ class PublicTagHelper(PublicHelper):
                 text = f"This post is from {msg.chat_data.title}."
                 if tags:
                     text += " It has the following tags:\n"
-                    for tag_key, tag_values in tags.tags.items():
-                        text += f"{tag_key}: " + ", ".join(tag_values)
+                    text += "\n".join(
+                        f"{tag_key}: " + ", ".join(tag_values)
+                        for tag_key, tag_values in tags.tags.items()
+                    )
                 else:
                     text += " It has no tags, sorry"
                 await message.reply(text)
