@@ -20,6 +20,9 @@ class ImgurGalleryHelper(Helper):
         self.imgur_client_id = imgur_client_id
 
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
+        # Ignore messages the bot has sent.
+        if message.message_data.sender_id == self.client.pipeline_bot_id:
+            return
         # If message has imgur gallery/album link in it
         matching_links = re.findall(r"imgur.com/(?:gallery|a)/([0-9a-z]+)", message.text, re.IGNORECASE)
         if not matching_links:
