@@ -1,5 +1,6 @@
 import sqlite3
 from collections import defaultdict
+from pathlib import Path
 from typing import List, Optional, Type, TypeVar, Set, Iterable
 
 import dateutil.parser
@@ -43,7 +44,8 @@ class Database:
 
     def _create_db(self) -> None:
         cur = self.conn.cursor()
-        with open("database_schema.sql", "r") as f:
+        directory = Path(__file__).parent
+        with open(directory / "database_schema.sql", "r") as f:
             cur.executescript(f.read())
         self.conn.commit()
 
