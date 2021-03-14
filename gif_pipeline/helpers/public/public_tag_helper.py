@@ -16,7 +16,7 @@ class PublicTagHelper(PublicHelper):
 
     async def on_new_message(self, message: Message):
         if message.forward and message.forward.channel_post:
-            chat_id = message.forward.channel_id
+            chat_id = message.forward.from_id
             msg_id = message.forward.channel_post
             msg = self.tag_manager.get_message_for_ids(chat_id, msg_id)
             if msg:
