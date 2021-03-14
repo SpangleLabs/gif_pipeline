@@ -135,6 +135,12 @@ class TelegramClient:
 
         self.client.add_event_handler(function_wrapper, events.NewMessage())
 
+    def add_public_message_handler(self, function: Callable) -> None:
+        async def function_wrapper(event: events.NewMessage.Event):
+            await function(event)
+
+        self.public_bot_client.add_event_handler(function_wrapper, events.NewMessage())
+
     def add_edit_handler(self, function: Callable, chat_ids: List[int]) -> None:
         async def function_wrapper(event: events.NewMessage.Event):
             chat_id = chat_id_from_telegram(event.message)

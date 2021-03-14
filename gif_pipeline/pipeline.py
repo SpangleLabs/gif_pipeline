@@ -18,6 +18,7 @@ from gif_pipeline.helpers.imgur_gallery_helper import ImgurGalleryHelper
 from gif_pipeline.helpers.menu_helper import MenuHelper
 from gif_pipeline.helpers.merge_helper import MergeHelper
 from gif_pipeline.helpers.msg_helper import MSGHelper
+from gif_pipeline.helpers.public.public_tag_helper import PublicTagHelper
 from gif_pipeline.helpers.reverse_helper import ReverseHelper
 from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
 from gif_pipeline.helpers.send_helper import GifSendHelper
@@ -30,7 +31,7 @@ from gif_pipeline.helpers.video_helper import VideoHelper
 from gif_pipeline.helpers.video_rotate_helper import VideoRotateHelper
 from gif_pipeline.helpers.zip_helper import ZipHelper
 from gif_pipeline.menu_cache import MenuCache
-from gif_pipeline.message import Message
+from gif_pipeline.message import Message, MessageData
 from gif_pipeline.tag_manager import TagManager
 from gif_pipeline.tasks.task_worker import TaskWorker, Bottleneck
 from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram, chat_id_from_telegram
@@ -130,6 +131,7 @@ class Pipeline:
         self.api_keys = api_keys
         self.worker = TaskWorker(3)
         self.helpers = {}
+        self.public_helpers = {}
         self.menu_cache = MenuCache()
 
     @property
@@ -181,6 +183,12 @@ class Pipeline:
         for helper in helpers:
             self.helpers[helper.name] = helper
         logger.info(f"Initialised {len(self.helpers)} helpers")
+        public_helpers = [
+            PublicTagHelper(self.database, self.client, self.worker, tag_manager)
+        ]
+        for helper in public_helpers:
+            self.public_helpers[helper.name] = helper
+        logger.info(f"Initialised {len(self.public_helpers)} public helpers")
 
     async def initialise_duplicate_detector(self) -> DuplicateHelper:
         helper = DuplicateHelper(self.database, self.client, self.worker)
@@ -192,6 +200,7 @@ class Pipeline:
     def watch_workshop(self) -> None:
         logger.info("Watching workshop")
         self.client.add_message_handler(self.on_new_message, self.all_chat_ids)
+        self.client.add_public_message_handler(self.pass_message_to_public_handlers)
         self.client.add_edit_handler(self.on_edit_message, self.all_chat_ids)
         self.client.add_delete_handler(self.on_deleted_message)
         self.client.add_callback_query_handler(self.on_callback_query)
@@ -245,6 +254,19 @@ class Pipeline:
             elif result:
                 for reply_message in result:
                     await self.pass_message_to_handlers(reply_message)
+
+    async def pass_message_to_public_handlers(self, event: events.NewMessage.Event):
+        logger.info(f"New public message: {event}")
+        helper_results: Iterable[Union[BaseException, Optional[List[MessageData]]]] = await asyncio.gather(
+            *(helper.on_new_message(event.message) for helper in self.public_helpers.values()),
+            return_exceptions=True
+        )
+        for helper, result in zip(self.public_helpers.keys(), helper_results):
+            if isinstance(result, BaseException):
+                logger.error(
+                    f"Public helper {helper} threw an exception trying to handle message {event}.",
+                    exc_info=result
+                )
 
     async def on_deleted_message(self, event: events.MessageDeleted.Event):
         # Get messages
