@@ -131,6 +131,7 @@ class Pipeline:
         self.worker = TaskWorker(3)
         self.helpers = {}
         self.menu_cache = MenuCache()
+        self.download_bottleneck = Bottleneck(3)
 
     @property
     def all_chats(self) -> List[Chat]:
@@ -206,7 +207,9 @@ class Pipeline:
         # Convert to our custom Message object. This will update message data, but not the video, for edited messages
         logger.info(f"Edited message in chat: {chat}")
         message_data = message_data_from_telegram(event.message)
-        new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
+        new_message = await self.download_bottleneck.await_run(
+            Message.from_message_data(message_data, chat.chat_data, self.client)
+        )
         chat.remove_message(message_data)
         chat.add_message(new_message)
         self.database.save_message(new_message.message_data)
@@ -222,7 +225,9 @@ class Pipeline:
         # Convert to our custom Message object. This will update message data, but not the video, for edited messages
         logger.info(f"New message in chat: {chat}")
         message_data = message_data_from_telegram(event.message)
-        new_message = await Message.from_message_data(message_data, chat.chat_data, self.client)
+        new_message = await self.download_bottleneck.await_run(
+            Message.from_message_data(message_data, chat.chat_data, self.client)
+        )
         chat.add_message(new_message)
         self.database.save_message(new_message.message_data)
         logger.info(f"New message initialised: {new_message}")
