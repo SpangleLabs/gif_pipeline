@@ -1,7 +1,7 @@
 @echo off
 SETLOCAL EnableDelayedExpansion
 SETLOCAL ENABLEEXTENSIONS
-set ffmpegoptions=-an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p -vf "scale='min(1280,iw)':'min(720,ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2" -profile:v baseline -level 3.0 -vsync vfr
+set ffmpegoptions=-an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p -vf "scale='min(1280,iw)':'min(1280,ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2" -profile:v baseline -level 3.0 -vsync vfr
 set crf=18
 set limit=8000000
 set targetsize=8
