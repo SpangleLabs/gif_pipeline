@@ -20,6 +20,11 @@ class VideoTags:
             self.tags[tag_name] = set()
         self.tags[tag_name].add(tag_value)
 
+    def toggle_tag_value(self, tag_name: str, tag_value: str) -> None:
+        if tag_name not in self.tags:
+            self.tags[tag_name] = set()
+        self.tags[tag_name] ^= {tag_value}
+
     def merge_with(self, other: 'VideoTags') -> None:
         for entry in other.to_entries():
             self.add_tag_value(entry.tag_name, entry.tag_value)
