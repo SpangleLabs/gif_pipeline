@@ -145,7 +145,7 @@ class Database:
             ))
         return entries
 
-    def list_tag_values(self, tag_name: str, chat: ChatData) -> List[str]:
+    def list_tag_values(self, tag_name: str, chat_ids: List[int]) -> List[str]:
         cur = self.conn.cursor()
         return [
             row["tag_value"]
@@ -153,8 +153,8 @@ class Database:
                 "SELECT vt.tag_value "
                 "FROM video_tags vt "
                 "LEFT JOIN messages m ON m.entry_id = vt.entry_id "
-                "WHERE vt.tag_name = ? AND m.chat_id = ?",
-                (tag_name, chat.chat_id)
+                "WHERE vt.tag_name = ? AND m.chat_id IN ?",
+                (tag_name, chat_ids)
             )
         ]
 

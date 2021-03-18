@@ -502,7 +502,7 @@ class EditTagValuesMenu(Menu):
         self.destination = destination
         self.tag_manager = tag_manager
         self.tag_name = tag_name
-        self.known_tag_values = sorted(self.tag_manager.get_values_for_tag(tag_name, destination))
+        self.known_tag_values = sorted(self.tag_manager.get_values_for_tag(tag_name, [destination, chat]))
         self.page_num = 0
         self.current_tags = self.video.tags(self.menu_helper.database)
 
