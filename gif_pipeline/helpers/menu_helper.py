@@ -12,6 +12,7 @@ from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
 from gif_pipeline.helpers.send_helper import GifSendHelper
 from gif_pipeline.menu_cache import MenuCache, SentMenu
 from gif_pipeline.message import Message
+from gif_pipeline.tag_manager import TagManager
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
 
@@ -36,10 +37,12 @@ class MenuHelper(Helper):
             client: TelegramClient,
             worker: TaskWorker,
             menu_cache: MenuCache,
+            tag_manager: TagManager,
     ):
         super().__init__(database, client, worker)
         # Cache of message ID the menu is replying to, to the menu
         self.menu_cache = menu_cache
+        self.tag_manager = tag_manager
 
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         pass
@@ -96,6 +99,32 @@ class MenuHelper(Helper):
             missing_tags: Set[str]
     ):
         menu = CheckTagsMenu(self, chat, cmd_msg, video, send_helper, destination, missing_tags)
+        menu_msg = await menu.send()
+        return [menu_msg]
+
+    async def edit_tag_select(
+            self,
+            chat: Chat,
+            cmd_msg: Message,
+            video: Message,
+            send_helper: GifSendHelper,
+            destination: Channel,
+            missing_tags: Set[str]
+    ):
+        menu = EditTagSelectMenu(self, chat, cmd_msg, video, send_helper, destination, missing_tags)
+        menu_msg = await menu.send()
+        return [menu_msg]
+
+    async def edit_tag_values(
+            self,
+            chat: Chat,
+            cmd_msg: Message,
+            video: Message,
+            send_helper: GifSendHelper,
+            destination: Channel,
+            tag_name: str
+    ):
+        menu = EditTagValuesMenu(self, chat, cmd_msg, video, send_helper, destination, self.tag_manager, tag_name)
         menu_msg = await menu.send()
         return [menu_msg]
 
@@ -342,6 +371,7 @@ class DestinationMenu(Menu):
 
 class CheckTagsMenu(Menu):
     send_callback = b"send"
+    edit_callback = b"edit"
     cancel_callback = b"cancel"
 
     def __init__(
@@ -377,6 +407,7 @@ class CheckTagsMenu(Menu):
         if not self.cancelled:
             return [
                 [Button.inline("Send anyway", self.send_callback)],
+                [Button.inline("Edit tags", self.edit_callback)],
                 [Button.inline("Cancel", self.cancel_callback)]
             ]
 
@@ -388,10 +419,157 @@ class CheckTagsMenu(Menu):
             self.cancelled = True
             sent_msg = await self.send()
             return [sent_msg]
+        if callback_query == self.edit_callback:
+            if len(self.missing_tags) != 1:
+                return await self.menu_helper.edit_tag_select(
+                    self.chat, self.cmd, self.video, self.send_helper, self.destination, self.missing_tags
+                )
+            missing_tag_name = next(iter(self.missing_tags))
+            return await self.menu_helper.edit_tag_values(
+                self.chat, self.cmd, self.video, self.send_helper, self.destination, missing_tag_name
+            )
         if callback_query == self.send_callback:
             return await self.menu_helper.confirmation_menu(
                 self.chat, self.cmd, self.video, self.send_helper, self.destination
             )
+
+
+class EditTagSelectMenu(Menu):
+    select_callback = b"select"
+    cancel_callback = b"cancel"
+
+    def __init__(
+            self,
+            menu_helper: MenuHelper,
+            chat: Chat,
+            cmd: Message,
+            video: Message,
+            send_helper: GifSendHelper,
+            destination: Channel,
+            missing_tags: Set[str]
+    ):
+        super().__init__(menu_helper, chat, cmd, video)
+        self.send_helper = send_helper
+        self.destination = destination
+        self.missing_tags = sorted(list(missing_tags))
+
+    @property
+    def text(self) -> str:
+        return "Which tag would you like to edit?"
+
+    @property
+    def buttons(self) -> Optional[List[List[Button]]]:
+        return [
+            [Button.inline(tag_name, f"{self.select_callback}:{i}")]
+            for i, tag_name in enumerate(self.missing_tags)
+        ]
+
+    def handle_callback_query(
+            self,
+            callback_query: bytes
+    ) -> Optional[List[Message]]:
+        if callback_query == self.cancel_callback:
+            await self.delete()
+            return []
+        if callback_query.startswith(self.select_callback):
+            tag_name = self.missing_tags[int(callback_query.split(b":")[1])]
+            return await self.menu_helper.edit_tag_values(
+                self.chat, self.cmd, self.video, self.send_helper, self.destination, tag_name
+            )
+
+
+class EditTagValuesMenu(Menu):
+    complete_callback = b"done"
+    next_callback = b"next"
+    prev_callback = b"prev"
+    tag_callback = b"tag"
+    page_height = 5
+    page_width = 3
+
+    def __init__(
+            self,
+            menu_helper: MenuHelper,
+            chat: Chat,
+            cmd: Message,
+            video: Message,
+            send_helper: GifSendHelper,
+            destination: Channel,
+            tag_manager: TagManager,
+            tag_name: str
+    ):
+        super().__init__(menu_helper, chat, cmd, video)
+        self.send_helper = send_helper
+        self.destination = destination
+        self.tag_manager = tag_manager
+        self.tag_name = tag_name
+        self.known_tag_values = sorted(self.tag_manager.get_values_for_tag(tag_name, destination))
+        self.page_num = 0
+        self.current_tags = self.video.tags(self.menu_helper.database)
+
+    @property
+    def paged_tag_values(self) -> List[List[str]]:
+        len_values = len(self.known_tag_values)
+        page_size = self.page_height * self.page_width
+        return [self.known_tag_values[i: i + page_size] for i in range(0, len_values, page_size)]
+
+    @property
+    def text(self) -> str:
+        return f"Select which tags this video should have for \"{self.tag_name}\":"
+
+    @property
+    def buttons(self) -> Optional[List[List[Button]]]:
+        tag_buttons = self.tag_buttons()
+        page_buttons = self.page_buttons()
+        return tag_buttons.append(page_buttons)
+
+    def tag_buttons(self) -> List[List[Button]]:
+        current_page = self.paged_tag_values[self.page_num]
+        columns = len(current_page) // self.page_height
+        return [
+            [self.button_for_tag(tag_value, i) for tag_value in current_page[i:i+columns]]
+            for i in range(0, len(current_page), columns)
+        ]
+
+    def page_buttons(self) -> List[Button]:
+        buttons = []
+        if self.page_num > 0:
+            buttons.append(Button.inline("⬅️Prev", self.prev_callback))
+        buttons.append(Button.inline("🖊️️️Done", self.complete_callback))
+        if self.page_num < len(self.paged_tag_values) - 1:
+            buttons.append(Button.inline("➡️Next", self.next_callback))
+        return buttons
+
+    def button_for_tag(self, tag_value: str, i: int) -> Button:
+        has_tag = tag_value in self.current_tags.tags[self.tag_name]
+        title = tag_value
+        if has_tag:
+            title = f"✔️{title}"
+        value_num = self.page_num * self.page_width * self.page_height + i
+        return Button.inline(title, f"{self.tag_callback}:{value_num}")
+
+    def handle_callback_query(
+            self,
+            callback_query: bytes
+    ) -> Optional[List[Message]]:
+        if callback_query == self.complete_callback:
+            missing_tags = self.send_helper.missing_tags_for_video(self.video, self.destination)
+            if missing_tags:
+                return await self.menu_helper.additional_tags_menu(
+                    self.chat, self.cmd, self.video, self.send_helper, self.destination, missing_tags
+                )
+            return await self.menu_helper.confirmation_menu(
+                self.chat, self.cmd, self.video, self.send_helper, self.destination
+            )
+        if callback_query == self.next_callback:
+            self.page_num += 1
+            return [await self.send()]
+        if callback_query == self.prev_callback:
+            self.page_num -= 1
+            return [await self.send()]
+        if callback_query.startswith(self.tag_callback):
+            tag_value = self.known_tag_values[int(callback_query.split(b":")[1])]
+            self.current_tags.toggle_tag_value(self.tag_name, tag_value)
+            return [await self.send()]
 
 
 class SendConfirmationMenu(Menu):
