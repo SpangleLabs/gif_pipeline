@@ -95,7 +95,7 @@ class MenuHelper(Helper):
             destination: Channel,
             missing_tags: Set[str]
     ):
-        menu = AddTagsMenu(self, chat, cmd_msg, video, send_helper, destination, missing_tags)
+        menu = CheckTagsMenu(self, chat, cmd_msg, video, send_helper, destination, missing_tags)
         menu_msg = await menu.send()
         return [menu_msg]
 
@@ -340,7 +340,7 @@ class DestinationMenu(Menu):
             )
 
 
-class AddTagsMenu(Menu):
+class CheckTagsMenu(Menu):
     send_callback = b"send"
     cancel_callback = b"cancel"
 
