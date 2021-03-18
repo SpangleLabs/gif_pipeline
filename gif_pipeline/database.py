@@ -145,6 +145,19 @@ class Database:
             ))
         return entries
 
+    def list_tag_values(self, tag_name: str, chat: ChatData) -> List[str]:
+        cur = self.conn.cursor()
+        return [
+            row["tag_value"]
+            for row in cur.execute(
+                "SELECT vt.tag_value "
+                "FROM video_tags vt "
+                "LEFT JOIN messages m ON m.entry_id = vt.entry_id "
+                "WHERE vt.tag_name = ? AND m.chat_id = ?",
+                (tag_name, chat.chat_id)
+            )
+        ]
+
     def save_tags(self, message: MessageData, tags: VideoTags) -> None:
         entry_id = self.get_entry_id_for_message(message)
         # Delete tags
