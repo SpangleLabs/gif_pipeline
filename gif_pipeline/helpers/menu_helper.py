@@ -464,7 +464,7 @@ class EditTagSelectMenu(Menu):
             for i, tag_name in enumerate(self.missing_tags)
         ]
 
-    def handle_callback_query(
+    async def handle_callback_query(
             self,
             callback_query: bytes
     ) -> Optional[List[Message]]:
@@ -547,7 +547,7 @@ class EditTagValuesMenu(Menu):
         value_num = self.page_num * self.page_width * self.page_height + i
         return Button.inline(title, f"{self.tag_callback}:{value_num}")
 
-    def handle_callback_query(
+    async def handle_callback_query(
             self,
             callback_query: bytes
     ) -> Optional[List[Message]]:
