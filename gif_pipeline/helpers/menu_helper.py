@@ -514,6 +514,10 @@ class EditTagValuesMenu(Menu):
 
     @property
     def text(self) -> str:
+        if not self.known_tag_values:
+            # TODO: Capture text and stuff
+            return f"There are no known previous values for the tag \"{self.tag_name}\" going to that destination.\n" \
+                   f"Please tag the video using `tag {self.tag_name} <value>`"
         return f"Select which tags this video should have for \"{self.tag_name}\":"
 
     @property
@@ -523,6 +527,8 @@ class EditTagValuesMenu(Menu):
         return tag_buttons.append(page_buttons)
 
     def tag_buttons(self) -> List[List[Button]]:
+        if not self.known_tag_values:
+            return []
         current_page = self.paged_tag_values[self.page_num]
         columns = len(current_page) // self.page_height
         return [
