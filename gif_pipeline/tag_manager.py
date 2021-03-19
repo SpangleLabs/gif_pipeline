@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Set
 
 from gif_pipeline.chat import Channel, WorkshopGroup, Chat
 from gif_pipeline.database import Database
@@ -26,11 +26,11 @@ class TagManager:
         handle = link_split[-2]
         return self.get_message_for_ids(handle, message_id)
 
-    def get_values_for_tag(self, tag_name: str, chats: [Chat]) -> List[str]:
+    def get_values_for_tag(self, tag_name: str, chats: [Chat]) -> Set[str]:
         chat_ids = []
         for chat in chats:
             chat_ids.append(chat.chat_data.chat_id)
             if isinstance(chat, Channel):
                 if chat.queue:
                     chat_ids.append(chat.queue.chat_data.chat_id)
-        return self.database.list_tag_values(tag_name, chat_ids)
+        return set(self.database.list_tag_values(tag_name, chat_ids))
