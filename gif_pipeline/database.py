@@ -153,8 +153,8 @@ class Database:
                 "SELECT vt.tag_value "
                 "FROM video_tags vt "
                 "LEFT JOIN messages m ON m.entry_id = vt.entry_id "
-                "WHERE vt.tag_name = ? AND m.chat_id IN ?",
-                (tag_name, chat_ids)
+                f"WHERE vt.tag_name = ? AND m.chat_id IN ({','.join('?' * len(chat_ids))})",
+                (tag_name, *chat_ids)
             )
         ]
 
