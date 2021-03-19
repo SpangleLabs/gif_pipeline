@@ -524,7 +524,7 @@ class EditTagValuesMenu(Menu):
     def buttons(self) -> Optional[List[List[Button]]]:
         tag_buttons = self.tag_buttons()
         page_buttons = self.page_buttons()
-        return tag_buttons.append(page_buttons)
+        return tag_buttons + [page_buttons]
 
     def tag_buttons(self) -> List[List[Button]]:
         if not self.known_tag_values:
