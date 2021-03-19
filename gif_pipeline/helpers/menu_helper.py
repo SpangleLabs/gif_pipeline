@@ -528,7 +528,7 @@ class EditTagValuesMenu(Menu):
 
     def tag_buttons(self) -> List[List[Button]]:
         if not self.known_tag_values:
-            return []
+            return [[self.button_done()]]
         current_page = self.paged_tag_values[self.page_num]
         columns = len(current_page) // self.page_height
         return [
@@ -540,10 +540,13 @@ class EditTagValuesMenu(Menu):
         buttons = []
         if self.page_num > 0:
             buttons.append(Button.inline("⬅️Prev", self.prev_callback))
-        buttons.append(Button.inline("🖊️️️Done", self.complete_callback))
+        buttons.append(self.button_done())
         if self.page_num < len(self.paged_tag_values) - 1:
             buttons.append(Button.inline("➡️Next", self.next_callback))
         return buttons
+
+    def button_done(self) -> Button:
+        return Button.inline("🖊️️️Done", self.complete_callback)
 
     def button_for_tag(self, tag_value: str, i: int) -> Button:
         has_tag = tag_value in self.current_tags.tags[self.tag_name]
