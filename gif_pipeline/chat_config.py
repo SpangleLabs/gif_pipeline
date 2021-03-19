@@ -6,7 +6,7 @@ from typing import Union, Dict, Any, Optional, List
 class TagType(Enum):
     NORMAL = "normal"  # Store a list of values for this tag
     SINGLE = "single"  # Store a single value for this tag
-    FREE_TEXT = "free_text"  # Store a text string for this tag
+    FREE_TEXT = "text"  # Store a text string for this tag
     GNOSTIC = "gnostic"  # Store a list of positive and negative values for this tag
 
 
