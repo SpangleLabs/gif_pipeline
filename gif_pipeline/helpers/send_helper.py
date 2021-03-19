@@ -189,7 +189,7 @@ class GifSendHelper(Helper):
     def missing_tags_for_video(self, video: Message, destination: Channel) -> Set[str]:
         tags = video.tags(self.database)
         dest_tags = destination.config.tags
-        missing_tags = set(dest_tags) - set(tags.tags.keys())
+        missing_tags = set(dest_tags.keys()) - set(tags.tags.keys())
         return missing_tags
 
     async def forward_message(

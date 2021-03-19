@@ -394,7 +394,7 @@ class CheckTagsMenu(Menu):
     def text(self) -> str:
         dest_tags = self.destination.config.tags
         msg = f"The destination suggests videos should be tagged with:\n"
-        for tag in dest_tags:
+        for tag in dest_tags.keys():
             if tag in self.missing_tags:
                 msg += f" - <b>{tag}</b>\n"
             else:
