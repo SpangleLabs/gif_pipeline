@@ -105,11 +105,10 @@ class EditTagValuesMenu(Menu):
             return await self.handle_callback_tag_edit(callback_query)
 
     async def handle_callback_tag_edit(self, callback_query: bytes) -> List[Message]:
-        await self.process_callback_tag_edit(callback_query)
+        self.set_tag_value(self.known_tag_values[int(callback_query.split(b":")[1])])
         return [await self.send()]
 
-    async def process_callback_tag_edit(self, callback_query: bytes) -> None:
-        tag_value = self.known_tag_values[int(callback_query.split(b":")[1])]
+    def set_tag_value(self, tag_value: str) -> None:
         self.current_tags.toggle_tag_value(self.tag_name, tag_value)
         self.menu_helper.database.save_tags(self.video.message_data, self.current_tags)
 
@@ -127,9 +126,7 @@ class EditTagValuesMenu(Menu):
         return True
 
     async def handle_text(self, text: str) -> Optional[List[Message]]:
-        tag_value = text
-        self.current_tags.toggle_tag_value(self.tag_name, tag_value)
-        self.menu_helper.database.save_tags(self.video.message_data, self.current_tags)
+        self.set_tag_value(text)
         # Update known tag values
         chats = [self.destination, self.chat]
         self.known_tag_values = sorted(self.tag_manager.get_values_for_tag(self.tag_name, chats))

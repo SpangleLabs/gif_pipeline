@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from gif_pipeline.helpers.menus.edit_tag_values_menu import EditTagValuesMenu
 from gif_pipeline.message import Message
@@ -14,5 +14,9 @@ class EditSingleTagValuesMenu(EditTagValuesMenu):
         return f"Select which single tag this video should have for \"{self.tag_name}\":"
 
     async def handle_callback_tag_edit(self, callback_query: bytes) -> List[Message]:
-        await self.process_callback_tag_edit(callback_query)
+        self.set_tag_value(self.known_tag_values[int(callback_query.split(b":")[1])])
+        return await self.handle_callback_done()
+
+    async def handle_text(self, text: str) -> Optional[List[Message]]:
+        self.set_tag_value(text)
         return await self.handle_callback_done()
