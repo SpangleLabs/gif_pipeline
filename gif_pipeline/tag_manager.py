@@ -34,3 +34,12 @@ class TagManager:
                 if chat.queue:
                     chat_ids.append(chat.queue.chat_data.chat_id)
         return set(self.database.list_tag_values(tag_name, chat_ids))
+
+    def missing_tags_for_video(self, video: Message, destination: Channel, chat: Chat) -> Set[str]:
+        tags = video.tags(self.database)
+        dest_tags = destination.config.tags
+        all_values_dict = {
+            tag_name: self.get_values_for_tag(tag_name, [destination, chat])
+            for tag_name in dest_tags.keys()
+        }
+        return tags.incomplete_tags(dest_tags, all_values_dict)

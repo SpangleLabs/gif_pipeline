@@ -95,10 +95,9 @@ class MenuHelper(Helper):
             cmd: Message,
             video: Message,
             send_helper: GifSendHelper,
-            channels: List[Channel],
-            current_folder: Optional[str] = None
+            channels: List[Channel]
     ) -> List[Message]:
-        menu = DestinationMenu(self, chat, cmd, video, send_helper, channels, current_folder)
+        menu = DestinationMenu(self, chat, cmd, video, send_helper, channels, self.tag_manager)
         menu_msg = await menu.send()
         return [menu_msg]
 

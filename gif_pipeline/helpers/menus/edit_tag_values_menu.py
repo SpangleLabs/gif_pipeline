@@ -113,7 +113,7 @@ class EditTagValuesMenu(Menu):
         self.menu_helper.database.save_tags(self.video.message_data, self.current_tags)
 
     async def handle_callback_done(self) -> List[Message]:
-        missing_tags = self.send_helper.missing_tags_for_video(self.video, self.destination)
+        missing_tags = self.tag_manager.missing_tags_for_video(self.video, self.destination, self.chat)
         if missing_tags:
             return await self.menu_helper.additional_tags_menu(
                 self.chat, self.cmd, self.video, self.send_helper, self.destination, missing_tags

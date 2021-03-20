@@ -186,11 +186,6 @@ class GifSendHelper(Helper):
                 break
         return destination
 
-    def missing_tags_for_video(self, video: Message, destination: Channel) -> Set[str]:
-        tags = video.tags(self.database)
-        dest_tags = destination.config.tags
-        return tags.incomplete_tags(dest_tags)
-
     async def forward_message(
             self,
             destination: Chat,

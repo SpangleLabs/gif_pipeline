@@ -66,17 +66,19 @@ class VideoTags:
             for value in values
         ]
 
-    def incomplete_tags(self, dest_tags: Dict[str, TagConfig]) -> Set[str]:
+    def incomplete_tags(self, dest_tags: Dict[str, TagConfig], all_values_dict: Dict[str, Set[str]]) -> Set[str]:
         return {
             tag_name
             for tag_name, tag_config in dest_tags.items()
-            if self.is_tag_complete(tag_name, tag_config)
+            if self.is_tag_complete(tag_name, tag_config, all_values_dict[tag_name])
         }
 
-    def is_tag_complete(self, tag_name: str, tag_config: TagConfig) -> bool:
+    def is_tag_complete(self, tag_name: str, tag_config: TagConfig, all_values: Set[str]) -> bool:
         if not self._tags.get(tag_name, set()):
             return False
         if tag_config.type == TagType.GNOSTIC:
-            # TODO: Check that true values and false values add up to entire set of values
-            pass
+            pos_values = self.list_values_for_tag(f"{tag_name}__confirmed")
+            neg_values = self.list_values_for_tag(f"{tag_name}__rejected")
+            total_values = pos_values.union(neg_values)
+            return not bool(all_values - total_values)
         return True

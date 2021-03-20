@@ -6,6 +6,7 @@ from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.helpers.menus.menu import Menu
 from gif_pipeline.helpers.send_helper import GifSendHelper
 from gif_pipeline.message import Message
+from gif_pipeline.tag_manager import TagManager
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.menu_helper import MenuHelper
@@ -23,12 +24,13 @@ class DestinationMenu(Menu):
             video: Message,
             send_helper: GifSendHelper,
             channels: List[Channel],
-            current_folder: Optional[str]
+            tag_manager: TagManager
     ):
         super().__init__(menu_helper, chat, cmd_msg, video)
         self.send_helper = send_helper
         self.channels = channels
-        self.current_folder = current_folder
+        self.tag_manager = tag_manager
+        self.current_folder = None
 
     @property
     def text(self) -> str:
@@ -79,7 +81,7 @@ class DestinationMenu(Menu):
         if split_data[0] == self.confirm_send:
             destination_id = split_data[1]
             destination = self.send_helper.get_destination_from_name(destination_id)
-            missing_tags = self.send_helper.missing_tags_for_video(self.video, destination)
+            missing_tags = self.tag_manager.missing_tags_for_video(self.video, destination, self.chat)
             if missing_tags:
                 return await self.menu_helper.additional_tags_menu(
                     self.chat, self.cmd, self.video, self.send_helper, destination, missing_tags
@@ -98,6 +100,5 @@ class DestinationMenu(Menu):
                 folder = next_folder
                 if self.current_folder is not None:
                     folder = self.current_folder + "/" + next_folder
-            return await self.menu_helper.destination_menu(
-                self.chat, self.cmd, self.video, self.send_helper, self.channels, folder
-            )
+            self.current_folder = folder
+            return [await self.send()]
