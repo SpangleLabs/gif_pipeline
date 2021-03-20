@@ -2,6 +2,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional, Dict, List, Set
 
+from gif_pipeline.chat_config import TagConfig, TagType
+
 
 @dataclass
 class TagEntry:
@@ -63,3 +65,18 @@ class VideoTags:
             for key, values in self._tags.items()
             for value in values
         ]
+
+    def incomplete_tags(self, dest_tags: Dict[str, TagConfig]) -> Set[str]:
+        return {
+            tag_name
+            for tag_name, tag_config in dest_tags.items()
+            if self.is_tag_complete(tag_name, tag_config)
+        }
+
+    def is_tag_complete(self, tag_name: str, tag_config: TagConfig) -> bool:
+        if not self._tags.get(tag_name, set()):
+            return False
+        if tag_config.type == TagType.GNOSTIC:
+            # TODO: Check that true values and false values add up to entire set of values
+            pass
+        return True
