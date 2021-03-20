@@ -94,14 +94,7 @@ class EditTagValuesMenu(Menu):
             callback_query: bytes
     ) -> Optional[List[Message]]:
         if callback_query == self.complete_callback:
-            missing_tags = self.send_helper.missing_tags_for_video(self.video, self.destination)
-            if missing_tags:
-                return await self.menu_helper.additional_tags_menu(
-                    self.chat, self.cmd, self.video, self.send_helper, self.destination, missing_tags
-                )
-            return await self.menu_helper.confirmation_menu(
-                self.chat, self.cmd, self.video, self.send_helper, self.destination
-            )
+            return await self.handle_callback_done()
         if callback_query == self.next_callback:
             self.page_num += 1
             return [await self.send()]
@@ -109,10 +102,26 @@ class EditTagValuesMenu(Menu):
             self.page_num -= 1
             return [await self.send()]
         if callback_query.startswith(self.tag_callback):
-            tag_value = self.known_tag_values[int(callback_query.split(b":")[1])]
-            self.current_tags.toggle_tag_value(self.tag_name, tag_value)
-            self.menu_helper.database.save_tags(self.video.message_data, self.current_tags)
-            return [await self.send()]
+            return await self.handle_callback_tag_edit(callback_query)
+
+    async def handle_callback_tag_edit(self, callback_query: bytes) -> List[Message]:
+        await self.process_callback_tag_edit(callback_query)
+        return [await self.send()]
+
+    async def process_callback_tag_edit(self, callback_query: bytes) -> None:
+        tag_value = self.known_tag_values[int(callback_query.split(b":")[1])]
+        self.current_tags.toggle_tag_value(self.tag_name, tag_value)
+        self.menu_helper.database.save_tags(self.video.message_data, self.current_tags)
+
+    async def handle_callback_done(self) -> List[Message]:
+        missing_tags = self.send_helper.missing_tags_for_video(self.video, self.destination)
+        if missing_tags:
+            return await self.menu_helper.additional_tags_menu(
+                self.chat, self.cmd, self.video, self.send_helper, self.destination, missing_tags
+            )
+        return await self.menu_helper.confirmation_menu(
+            self.chat, self.cmd, self.video, self.send_helper, self.destination
+        )
 
     def capture_text(self) -> bool:
         return True

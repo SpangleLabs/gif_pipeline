@@ -6,6 +6,7 @@ from gif_pipeline.chat_config import TagType
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.helpers.helpers import Helper
+from gif_pipeline.helpers.menus.edit_single_tag_values_menu import EditSingleTagValuesMenu
 from gif_pipeline.helpers.menus.split_scenes_confirmation_menu import SplitScenesConfirmationMenu
 from gif_pipeline.helpers.menus.delete_menu import DeleteMenu
 from gif_pipeline.helpers.menus.send_confirmation_menu import SendConfirmationMenu
@@ -137,7 +138,7 @@ class MenuHelper(Helper):
     ):
         menu_class = {
             TagType.NORMAL: EditTagValuesMenu,
-            TagType.SINGLE: EditTagValuesMenu,
+            TagType.SINGLE: EditSingleTagValuesMenu,
             TagType.TEXT: EditTagValuesMenu,
             TagType.GNOSTIC: EditTagValuesMenu
         }[destination.config.tags[tag_name].type]
