@@ -552,7 +552,7 @@ class EditTagValuesMenu(Menu):
         if not self.known_tag_values:
             return [[self.button_done()]]
         current_page = self.paged_tag_values[self.page_num]
-        columns = len(current_page) // self.page_height
+        columns = (len(current_page) // self.page_height) + (len(current_page) % self.page_height > 0)
         return [
             [self.button_for_tag(tag_value, i) for tag_value in current_page[i:i+columns]]
             for i in range(0, len(current_page), columns)
