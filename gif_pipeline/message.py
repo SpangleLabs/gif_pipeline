@@ -83,6 +83,7 @@ class Message:
     def __init__(self, message_data: MessageData, chat_data: ChatData):
         self.chat_data = chat_data
         self.message_data = message_data
+        self._tags = None
 
     @property
     def has_video(self) -> bool:
@@ -143,9 +144,10 @@ class Message:
         database.remove_message(self.message_data)
 
     def tags(self, database: 'Database') -> VideoTags:
-        tag_entries = database.get_tags_for_message(self.message_data)
-        tags = VideoTags.from_database(tag_entries)
-        return tags
+        if not self._tags:
+            tag_entries = database.get_tags_for_message(self.message_data)
+            self._tags = VideoTags.from_database(tag_entries)
+        return self._tags
 
     def __repr__(self) -> str:
         return f"Message({self.message_data})"
