@@ -554,7 +554,7 @@ class EditTagValuesMenu(Menu):
         current_page = self.paged_tag_values[self.page_num]
         columns = (len(current_page) // self.page_height) + (len(current_page) % self.page_height > 0)
         return [
-            [self.button_for_tag(tag_value, i) for tag_value in current_page[i:i+columns]]
+            [self.button_for_tag(tag_value, i+j) for j, tag_value in enumerate(current_page[i:i+columns])]
             for i in range(0, len(current_page), columns)
         ]
 
