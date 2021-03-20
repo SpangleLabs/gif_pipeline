@@ -571,7 +571,7 @@ class EditTagValuesMenu(Menu):
         return Button.inline("🖊️️️Done", self.complete_callback)
 
     def button_for_tag(self, tag_value: str, i: int) -> Button:
-        has_tag = tag_value in self.current_tags.tags[self.tag_name]
+        has_tag = tag_value in self.current_tags.list_values_for_tag(self.tag_name)
         title = tag_value
         if has_tag:
             title = f"✔️{title}"

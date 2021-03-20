@@ -25,8 +25,8 @@ class PublicTagHelper(PublicHelper):
                 if tags:
                     text += " It has the following tags:\n"
                     text += "\n".join(
-                        f"{tag_key}: " + ", ".join(tag_values)
-                        for tag_key, tag_values in tags.tags.items()
+                        f"{tag_key}: " + ", ".join(tags.list_values_for_tag(tag_key))
+                        for tag_key in tags.list_tag_names()
                     )
                 else:
                     text += " It has no tags, sorry"

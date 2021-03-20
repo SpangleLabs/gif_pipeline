@@ -13,17 +13,17 @@ class VideoTags:
     source = "source"
 
     def __init__(self, tags: Optional[Dict[str, Set[str]]] = None):
-        self.tags = tags or {}
+        self._tags = tags or {}
 
     def add_tag_value(self, tag_name: str, tag_value: str) -> None:
-        if tag_name not in self.tags:
-            self.tags[tag_name] = set()
-        self.tags[tag_name].add(tag_value)
+        if tag_name not in self._tags:
+            self._tags[tag_name] = set()
+        self._tags[tag_name].add(tag_value)
 
     def toggle_tag_value(self, tag_name: str, tag_value: str) -> None:
-        if tag_name not in self.tags:
-            self.tags[tag_name] = set()
-        self.tags[tag_name] ^= {tag_value}
+        if tag_name not in self._tags:
+            self._tags[tag_name] = set()
+        self._tags[tag_name] ^= {tag_value}
 
     def merge_with(self, other: 'VideoTags') -> None:
         for entry in other.to_entries():
@@ -32,6 +32,21 @@ class VideoTags:
     def merge_all(self, others: List['VideoTags']) -> None:
         for other in others:
             self.merge_with(other)
+
+    def remove_all_values_for_tag(self, tag_name: str) -> None:
+        if tag_name in self._tags:
+            del self._tags
+
+    def remove_value_for_tag(self, tag_name: str, tag_value: str) -> None:
+        if tag_name not in self._tags:
+            return
+        self._tags[tag_name].discard(tag_value)
+
+    def list_tag_names(self) -> Set[str]:
+        return set(self._tags.keys())
+
+    def list_values_for_tag(self, tag_name: str) -> Set[str]:
+        return self._tags[tag_name]
 
     @classmethod
     def from_database(cls, tag_data: List[TagEntry]) -> 'VideoTags':
@@ -45,6 +60,6 @@ class VideoTags:
     def to_entries(self) -> List[TagEntry]:
         return [
             TagEntry(key, value)
-            for key, values in self.tags.items()
+            for key, values in self._tags.items()
             for value in values
         ]

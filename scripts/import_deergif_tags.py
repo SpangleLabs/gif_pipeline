@@ -42,8 +42,7 @@ for msg_key, json_tags in tag_data.items():
         print(f"Skipping {msg_key}, not a valid channel post: {msg.telegram_link}")
         continue
     tags = msg.tags(database)
-    if "source_roughly" in tags.tags:
-        del tags.tags["source_roughly"]
+    tags.remove_all_values_for_tag("source_roughly")
     for tag_key, tag_values in json_tags.items():
         if tag_key.startswith("_"):
             continue
