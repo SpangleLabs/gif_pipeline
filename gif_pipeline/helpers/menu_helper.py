@@ -600,6 +600,7 @@ class EditTagValuesMenu(Menu):
         if callback_query.startswith(self.tag_callback):
             tag_value = self.known_tag_values[int(callback_query.split(b":")[1])]
             self.current_tags.toggle_tag_value(self.tag_name, tag_value)
+            self.menu_helper.database.save_tags(self.video.message_data, self.current_tags)
             return [await self.send()]
 
     def capture_text(self) -> bool:
@@ -608,6 +609,7 @@ class EditTagValuesMenu(Menu):
     async def handle_text(self, text: str) -> Optional[List[Message]]:
         tag_value = text
         self.current_tags.toggle_tag_value(self.tag_name, tag_value)
+        self.menu_helper.database.save_tags(self.video.message_data, self.current_tags)
         # Update known tag values
         chats = [self.destination, self.chat]
         self.known_tag_values = sorted(self.tag_manager.get_values_for_tag(self.tag_name, chats))
