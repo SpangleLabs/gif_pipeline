@@ -161,6 +161,9 @@ class Helper(ABC):
     ) -> Optional[List[Message]]:
         pass
 
+    def is_priority(self, chat: Chat, message: Message) -> bool:
+        return False
+
     @property
     def name(self) -> str:
         return self.__class__.__name__

@@ -246,11 +246,16 @@ class Pipeline:
     async def pass_message_to_handlers(self, new_message: Message, chat: Chat = None):
         if chat is None:
             chat = self.chat_by_id(new_message.chat_data.chat_id)
+        # If any helpers say that a message is priority, send only to those helpers
+        priority = any(helper.is_priority(chat, new_message) for helper in self.helpers.values())
+        helpers = {key: val for key, val in self.helpers.items() if not priority or val.is_priority(chat, new_message)}
+        # Call the helpers
         helper_results: Iterable[Union[BaseException, Optional[List[Message]]]] = await asyncio.gather(
-            *(helper.on_new_message(chat, new_message) for helper in self.helpers.values()),
+            *(helper.on_new_message(chat, new_message) for helper in helpers.values()),
             return_exceptions=True
         )
-        for helper, result in zip(self.helpers.keys(), helper_results):
+        # Handle helper results
+        for helper, result in zip(helpers.keys(), helper_results):
             if isinstance(result, BaseException):
                 logger.error(
                     f"Helper {helper} threw an exception trying to handle message {new_message}.",
