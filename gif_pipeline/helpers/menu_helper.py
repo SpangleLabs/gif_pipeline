@@ -61,7 +61,7 @@ class MenuHelper(Helper):
         if not menu:
             return None
         if menu.menu.capture_text():
-            return menu.menu.handle_text(message.text)
+            return await menu.menu.handle_text(message.text)
         return None
 
     async def on_callback_query(
@@ -251,7 +251,7 @@ class Menu:
     def capture_text(self) -> bool:
         return False
 
-    def handle_text(self, text: str) -> Optional[List[Message]]:
+    async def handle_text(self, text: str) -> Optional[List[Message]]:
         return None
 
 
@@ -605,7 +605,7 @@ class EditTagValuesMenu(Menu):
     def capture_text(self) -> bool:
         return True
 
-    def handle_text(self, text: str) -> Optional[List[Message]]:
+    async def handle_text(self, text: str) -> Optional[List[Message]]:
         tag_value = text
         self.current_tags.toggle_tag_value(self.tag_name, tag_value)
         # Update known tag values
