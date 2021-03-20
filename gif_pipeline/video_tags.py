@@ -48,7 +48,7 @@ class VideoTags:
         return set(self._tags.keys())
 
     def list_values_for_tag(self, tag_name: str) -> Set[str]:
-        return self._tags[tag_name]
+        return self._tags.get(tag_name, set())
 
     @classmethod
     def from_database(cls, tag_data: List[TagEntry]) -> 'VideoTags':
