@@ -44,8 +44,25 @@ class MenuHelper(Helper):
         self.menu_cache = menu_cache
         self.tag_manager = tag_manager
 
+    def is_priority(self, chat: Chat, message: Message) -> bool:
+        if not message.message_data.reply_to:
+            return False
+        # Get the menu this message is replying to
+        menu = self.menu_cache.get_menu_by_message_id(chat.chat_data.chat_id, message.message_data.reply_to)
+        if not menu:
+            return False
+        return menu.menu.capture_text()
+
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
-        pass
+        if not message.message_data.reply_to:
+            return None
+        # Get the menu this message is replying to
+        menu = self.menu_cache.get_menu_by_message_id(chat.chat_data.chat_id, message.message_data.reply_to)
+        if not menu:
+            return None
+        if menu.menu.capture_text():
+            return menu.menu.handle_text(message.text)
+        return None
 
     async def on_callback_query(
             self,
@@ -230,6 +247,12 @@ class Menu:
 
     async def delete(self) -> None:
         await self.menu_helper.delete_menu_for_video(self.video)
+
+    def capture_text(self) -> bool:
+        return False
+
+    def handle_text(self, text: str) -> Optional[List[Message]]:
+        return None
 
 
 class NotGifConfirmationMenu(Menu):
@@ -515,9 +538,8 @@ class EditTagValuesMenu(Menu):
     @property
     def text(self) -> str:
         if not self.known_tag_values:
-            # TODO: Capture text and stuff
             return f"There are no known previous values for the tag \"{self.tag_name}\" going to that destination.\n" \
-                   f"Please tag the video using `tag {self.tag_name} <value>`"
+                   f"Please reply to this menu with a tag value to add."
         return f"Select which tags this video should have for \"{self.tag_name}\":"
 
     @property
@@ -579,6 +601,17 @@ class EditTagValuesMenu(Menu):
             tag_value = self.known_tag_values[int(callback_query.split(b":")[1])]
             self.current_tags.toggle_tag_value(self.tag_name, tag_value)
             return [await self.send()]
+
+    def capture_text(self) -> bool:
+        return True
+
+    def handle_text(self, text: str) -> Optional[List[Message]]:
+        tag_value = text
+        self.current_tags.toggle_tag_value(self.tag_name, tag_value)
+        # Update known tag values
+        chats = [self.destination, self.chat]
+        self.known_tag_values = sorted(self.tag_manager.get_values_for_tag(self.tag_name, chats))
+        return [await self.send()]
 
 
 class SendConfirmationMenu(Menu):
