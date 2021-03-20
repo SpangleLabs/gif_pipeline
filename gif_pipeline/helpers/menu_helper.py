@@ -5,6 +5,7 @@ from typing import Optional, List, Tuple, Set
 from scenedetect import FrameTimecode
 from telethon import Button
 
+from gif_pipeline.chat_config import TagType
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.helpers.helpers import Helper
@@ -141,7 +142,13 @@ class MenuHelper(Helper):
             destination: Channel,
             tag_name: str
     ):
-        menu = EditTagValuesMenu(self, chat, cmd_msg, video, send_helper, destination, self.tag_manager, tag_name)
+        menu_class = {
+            TagType.NORMAL: EditTagValuesMenu,
+            TagType.SINGLE: EditTagValuesMenu,
+            TagType.TEXT: EditTagValuesMenu,
+            TagType.GNOSTIC: EditTagValuesMenu
+        }[destination.config.tags[tag_name].type]
+        menu = menu_class(self, chat, cmd_msg, video, send_helper, destination, self.tag_manager, tag_name)
         menu_msg = await menu.send()
         return [menu_msg]
 
