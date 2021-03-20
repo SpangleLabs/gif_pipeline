@@ -6,8 +6,14 @@ from gif_pipeline.chat_config import TagType
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.helpers.helpers import Helper
-from gif_pipeline.helpers.menus.menu import NotGifConfirmationMenu, DestinationMenu, CheckTagsMenu, EditTagSelectMenu, \
-    EditTagValuesMenu, SendConfirmationMenu, DeleteMenu, SplitScenesConfirmationMenu
+from gif_pipeline.helpers.menus.split_scenes_confirmation_menu import SplitScenesConfirmationMenu
+from gif_pipeline.helpers.menus.delete_menu import DeleteMenu
+from gif_pipeline.helpers.menus.send_confirmation_menu import SendConfirmationMenu
+from gif_pipeline.helpers.menus.edit_tag_values_menu import EditTagValuesMenu
+from gif_pipeline.helpers.menus.edit_tag_select_menu import EditTagSelectMenu
+from gif_pipeline.helpers.menus.check_tags_menu import CheckTagsMenu
+from gif_pipeline.helpers.menus.destination_menu import DestinationMenu
+from gif_pipeline.helpers.menus.not_gif_confirmation_menu import NotGifConfirmationMenu
 from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
 from gif_pipeline.helpers.send_helper import GifSendHelper
 from gif_pipeline.menu_cache import MenuCache, SentMenu
@@ -178,5 +184,3 @@ class MenuHelper(Helper):
         menu = SplitScenesConfirmationMenu(self, chat, cmd, video, threshold, scene_list, split_helper)
         message = await menu.send()
         return message
-
-
