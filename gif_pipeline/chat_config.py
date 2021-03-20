@@ -6,7 +6,7 @@ from typing import Union, Dict, Any, Optional, List
 class TagType(Enum):
     NORMAL = "normal"  # Store a list of values for this tag
     SINGLE = "single"  # Store a single value for this tag
-    FREE_TEXT = "text"  # Store a text string for this tag
+    TEXT = "text"  # Store a text string for this tag, do not list the other values
     GNOSTIC = "gnostic"  # Store a list of positive and negative values for this tag
 
 
@@ -19,7 +19,7 @@ class TagConfig:
     def from_json(json_dict: Dict[str, Any]) -> 'TagConfig':
         tag_type_str = json_dict.get("type", "normal")
         try:
-            tag_type = TagType[tag_type_str]
+            tag_type = TagType[tag_type_str.upper()]
         except KeyError as e:
             raise KeyError(f"Invalid tag type, \"{tag_type_str}\": {e}")
         return TagConfig(tag_type)
