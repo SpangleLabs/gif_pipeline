@@ -483,7 +483,7 @@ class EditTagSelectMenu(Menu):
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
         return [
-            [Button.inline(tag_name, f"{self.select_callback}:{i}")]
+            [Button.inline(tag_name, f"{self.select_callback.decode()}:{i}")]
             for i, tag_name in enumerate(self.missing_tags)
         ]
 
@@ -576,7 +576,7 @@ class EditTagValuesMenu(Menu):
         if has_tag:
             title = f"✔️{title}"
         value_num = self.page_num * self.page_width * self.page_height + i
-        return Button.inline(title, f"{self.tag_callback}:{value_num}")
+        return Button.inline(title, f"{self.tag_callback.decode()}:{value_num}")
 
     async def handle_callback_query(
             self,
