@@ -99,8 +99,8 @@ class VideoTags:
         if tag_config.type == TagType.GNOSTIC:
             pos_values = self.list_values_for_tag(gnostic_tag_name_positive(tag_name))
             neg_values = self.list_values_for_tag(gnostic_tag_name_negative(tag_name))
-            total_values = pos_values.union(neg_values)
-            return len(all_values - total_values) > 0
+            set_values = pos_values.union(neg_values)
+            return len(all_values - set_values) == 0
         return True
 
     def copy(self) -> 'VideoTags':
