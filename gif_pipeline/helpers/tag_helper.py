@@ -84,7 +84,7 @@ class TagHelper(Helper):
             elif tag_value not in tags.list_values_for_tag(tag_name):
                 text = f"This video does not have a \"{tag_name}\" tag for \"{tag_value}\"."
             else:
-                tags.remove_value_for_tag(tag_name, tag_value)
+                tags.remove_tag_value(tag_name, tag_value)
                 text = f"Removed the \"{tag_name}\" tag for \"{tag_value}\" from this video."
                 self.database.save_tags(video.message_data, tags)
             return [await self.send_text_reply(chat, message, text)]
