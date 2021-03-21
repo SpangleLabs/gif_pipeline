@@ -1,8 +1,10 @@
 from typing import List, Optional, Union, Set
 
 from gif_pipeline.chat import Channel, WorkshopGroup, Chat
+from gif_pipeline.chat_config import TagType
 from gif_pipeline.database import Database
 from gif_pipeline.message import Message
+from gif_pipeline.video_tags import gnostic_tag_name_positive, gnostic_tag_name_negative
 
 
 class TagManager:
@@ -38,8 +40,15 @@ class TagManager:
     def missing_tags_for_video(self, video: Message, destination: Channel, chat: Chat) -> Set[str]:
         tags = video.tags(self.database)
         dest_tags = destination.config.tags
-        all_values_dict = {
-            tag_name: self.get_values_for_tag(tag_name, [destination, chat])
-            for tag_name in dest_tags.keys()
-        }
+        # Handle gnostic tags in all values dict.
+        chats = [destination, chat]
+        all_values_dict = {}
+        for tag_name, tag_conf in dest_tags.items():
+            if tag_conf.type == TagType.GNOSTIC:
+                tag_name_pos = gnostic_tag_name_positive(tag_name)
+                tag_name_neg = gnostic_tag_name_negative(tag_name)
+                all_values_dict[tag_name_pos] = self.get_values_for_tag(tag_name_pos, chats)
+                all_values_dict[tag_name_neg] = self.get_values_for_tag(tag_name_neg, chats)
+            else:
+                all_values_dict[tag_name] = self.get_values_for_tag(tag_name, chats)
         return tags.incomplete_tags(dest_tags, all_values_dict)
