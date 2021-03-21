@@ -28,6 +28,7 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
     ):
         super().__init__(menu_helper, chat, cmd, video, send_helper, destination, tag_manager, tag_name)
         # We need to make a copy of the tags, so that edits elsewhere won't cause these to get saved to database early
+        self.original_tags = self.current_tags
         self.current_tags = self.current_tags.copy()
         self.tag_name_pos = gnostic_tag_name_positive(self.tag_name)
         self.tag_name_neg = gnostic_tag_name_negative(self.tag_name)
@@ -75,5 +76,7 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
         # Save database when done, just for this tag
         self.send_helper.database.save_tags_for_key(self.video.message_data, self.current_tags, self.tag_name_pos)
         self.send_helper.database.save_tags_for_key(self.video.message_data, self.current_tags, self.tag_name_neg)
+        # Update the original video's VideoTag object from database
+        self.original_tags.update_from_database(self.send_helper.database)
         # Return to menu
         return await self.return_to_menu()

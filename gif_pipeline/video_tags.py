@@ -67,6 +67,12 @@ class VideoTags:
             tags_dict
         )
 
+    def update_from_database(self, tag_data: List[TagEntry]) -> None:
+        tags_dict = defaultdict(lambda: set())
+        for tag in tag_data:
+            tags_dict[tag.tag_name].add(tag.tag_value)
+        self._tags = tags_dict
+
     def to_entries(self) -> List[TagEntry]:
         return [
             TagEntry(key, value)
