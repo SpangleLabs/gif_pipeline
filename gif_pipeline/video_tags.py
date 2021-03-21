@@ -94,13 +94,13 @@ class VideoTags:
         }
 
     def is_tag_complete(self, tag_name: str, tag_config: TagConfig, all_values: Set[str]) -> bool:
-        if not self._tags.get(tag_name, set()):
-            return False
         if tag_config.type == TagType.GNOSTIC:
             pos_values = self.list_values_for_tag(gnostic_tag_name_positive(tag_name))
             neg_values = self.list_values_for_tag(gnostic_tag_name_negative(tag_name))
             set_values = pos_values.union(neg_values)
             return len(all_values - set_values) == 0
+        if not self._tags.get(tag_name, set()):
+            return False
         return True
 
     def copy(self) -> 'VideoTags':
