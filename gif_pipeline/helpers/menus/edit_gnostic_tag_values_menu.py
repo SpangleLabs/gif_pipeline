@@ -31,6 +31,10 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
         self.current_tags = self.current_tags.copy()
         self.tag_name_pos = gnostic_tag_name_positive(self.tag_name)
         self.tag_name_neg = gnostic_tag_name_negative(self.tag_name)
+        # Total list of tags also needs changing, because we have positive and negative values to list
+        all_values_pos = self.tag_manager.get_values_for_tag(self.tag_name_pos, [destination, chat])
+        all_values_neg = self.tag_manager.get_values_for_tag(self.tag_name_neg, [destination, chat])
+        self.known_tag_values = sorted(all_values_pos.union(all_values_neg))
 
     @property
     def text(self) -> str:
