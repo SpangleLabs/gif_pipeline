@@ -16,7 +16,7 @@ class EditTextTagValuesMenu(EditTagValuesMenu):
     def buttons(self) -> Optional[List[List[Button]]]:
         return [[self.button_cancel()]]
 
-    def handle_callback_query(
+    async def handle_callback_query(
             self,
             callback_query: bytes
     ) -> Optional[List[Message]]:
