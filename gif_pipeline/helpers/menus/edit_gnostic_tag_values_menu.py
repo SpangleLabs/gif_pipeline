@@ -69,14 +69,15 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
             self.current_tags.remove_tag_value(self.tag_name_pos, tag_value)
             self.current_tags.add_tag_value(self.tag_name_neg, tag_value)
         else:
-            self.current_tags.add_tag_value(gnostic_tag_name_positive(self.tag_name), tag_value)
-            self.current_tags.remove_tag_value(gnostic_tag_name_negative(self.tag_name), tag_value)
+            self.current_tags.add_tag_value(self.tag_name_pos, tag_value)
+            self.current_tags.remove_tag_value(self.tag_name_neg, tag_value)
 
     async def handle_callback_done(self) -> List[Message]:
         # Save database when done, just for this tag
         self.send_helper.database.save_tags_for_key(self.video.message_data, self.current_tags, self.tag_name_pos)
         self.send_helper.database.save_tags_for_key(self.video.message_data, self.current_tags, self.tag_name_neg)
         # Update the original video's VideoTag object from database
-        self.original_tags.update_from_database(self.send_helper.database)
+        tag_entries = self.send_helper.database.get_tags_for_message(self.video.message_data)
+        self.original_tags.update_from_database(tag_entries)
         # Return to menu
         return await self.return_to_menu()
