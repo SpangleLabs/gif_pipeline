@@ -84,6 +84,7 @@ class Database:
                 row["username"],
                 row["title"]
             ))
+        cur.close()
         return chats
 
     def list_channels(self) -> List[ChannelData]:
@@ -96,6 +97,7 @@ class Database:
         cur = self.conn.cursor()
         cur.execute("SELECT chat_id, username, title, chat_type FROM chats WHERE chat_id = ?", (chat_id,))
         chat_row = cur.fetchone()
+        cur.close()
         if chat_row is None:
             return None
         chat_data_class = chat_types[chat_row["chat_type"]]
@@ -115,6 +117,7 @@ class Database:
                 (chat_data.chat_id,)
         ):
             messages.append(message_data_from_row(row))
+        cur.close()
         return messages
 
     def save_message(self, message: MessageData) -> None:
@@ -133,6 +136,7 @@ class Database:
             )
         )
         self.conn.commit()
+        cur.close()
 
     def get_tags_for_message(self, message: MessageData) -> List[TagEntry]:
         entry_id = self.get_entry_id_for_message(message)
@@ -143,11 +147,12 @@ class Database:
                 row["tag_name"],
                 row["tag_value"]
             ))
+        cur.close()
         return entries
 
     def list_tag_values(self, tag_name: str, chat_ids: List[int]) -> List[str]:
         cur = self.conn.cursor()
-        return [
+        tag_values = [
             row["tag_value"]
             for row in cur.execute(
                 "SELECT vt.tag_value "
@@ -157,6 +162,8 @@ class Database:
                 (tag_name, *chat_ids)
             )
         ]
+        cur.close()
+        return tag_values
 
     def save_tags(self, message: MessageData, tags: VideoTags) -> None:
         entry_id = self.get_entry_id_for_message(message)
@@ -171,6 +178,25 @@ class Database:
                 (entry_id, tag.tag_name, tag.tag_value)
             )
         self.conn.commit()
+        cur.close()
+
+    def save_tags_for_key(self, message: MessageData, tags: VideoTags, tag_name: str) -> None:
+        entry_id = self.get_entry_id_for_message(message)
+        # Delete values for tag
+        cur = self.conn.cursor()
+        cur.execute("DELETE FROM video_tags WHERE entry_id = ? AND tag_name = ?", (entry_id, tag_name))
+        self.conn.commit()
+        cur.close()
+        # Add tags
+        cur = self.conn.cursor()
+        for tag in tags.to_entries_for_tag(tag_name):
+            cur.execute(
+                "INSERT INTO video_tags (entry_id, tag_name, tag_value) "
+                "VALUES (?, ?, ?)",
+                (entry_id, tag.tag_name, tag.tag_value)
+            )
+        self.conn.commit()
+        cur.close()
 
     def remove_tags(self, message: MessageData) -> None:
         entry_id = self.get_entry_id_for_message(message)
@@ -180,6 +206,7 @@ class Database:
         cur = self.conn.cursor()
         cur.execute("DELETE FROM video_tags WHERE entry_id = ?", (entry_id,))
         self.conn.commit()
+        cur.close()
 
     def remove_message(self, message: MessageData) -> None:
         entry_id = self.get_entry_id_for_message(message)
@@ -191,6 +218,7 @@ class Database:
             (message.chat_id, message.message_id, message.is_scheduled)
         )
         self.conn.commit()
+        cur.close()
 
     def get_hashes_for_message(self, message: MessageData) -> List[str]:
         cur = self.conn.cursor()
@@ -203,6 +231,7 @@ class Database:
         ):
             if row["hash"] is not None:
                 hashes.append(row["hash"])
+        cur.close()
         return hashes
 
     def get_messages_needing_hashing(self) -> List[MessageData]:
@@ -216,6 +245,7 @@ class Database:
                 "WHERE vh.hash IS NULL AND m.file_path IS NOT NULL"
         ):
             messages.append(message_data_from_row(row))
+        cur.close()
         return messages
 
     def get_messages_for_hashes(self, image_hashes: Set[str]) -> List[MessageData]:
@@ -233,6 +263,7 @@ class Database:
                     list(image_hash_list)
             ):
                 messages[row["chat_id"]][row["message_id"]] = message_data_from_row(row)
+        cur.close()
         return [msg for chat_id, chat_msgs in messages.items() for msg_id, msg in chat_msgs.items()]
 
     def get_entry_id_for_message(self, message: MessageData) -> Optional[int]:
@@ -242,6 +273,7 @@ class Database:
             (message.chat_id, message.message_id, message.is_scheduled)
         )
         result = cur.fetchone()
+        cur.close()
         if result is None:
             return
         return result["entry_id"]
@@ -255,6 +287,7 @@ class Database:
                 (hash_str, entry_id)
             )
         self.conn.commit()
+        cur.close()
 
     def remove_message_hashes(self, message: MessageData) -> None:
         entry_id = self.get_entry_id_for_message(message)
@@ -264,6 +297,7 @@ class Database:
         cur = self.conn.cursor()
         cur.execute("DELETE FROM video_hashes WHERE entry_id = ?", (entry_id,))
         self.conn.commit()
+        cur.close()
 
     def get_message_history(self, message: MessageData) -> List[MessageData]:
         """
@@ -295,6 +329,7 @@ class Database:
                 }
         ):
             messages.append(message_data_from_row(row))
+        cur.close()
         return messages
 
     def get_message_family(self, message: MessageData) -> List[MessageData]:
@@ -327,6 +362,7 @@ class Database:
                 }
         ):
             messages.append(message_data_from_row(row))
+        cur.close()
         return messages
 
 

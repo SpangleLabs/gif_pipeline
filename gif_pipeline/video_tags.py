@@ -66,6 +66,12 @@ class VideoTags:
             for value in values
         ]
 
+    def to_entries_for_tag(self, tag_name: str) -> List[TagEntry]:
+        return [
+            TagEntry(tag_name, value)
+            for value in self.list_values_for_tag(tag_name)
+        ]
+
     def incomplete_tags(self, dest_tags: Dict[str, TagConfig], all_values_dict: Dict[str, Set[str]]) -> Set[str]:
         return {
             tag_name
