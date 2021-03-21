@@ -11,6 +11,14 @@ class TagEntry:
     tag_value: str
 
 
+def gnostic_tag_name_positive(tag_name: str) -> str:
+    return f"{tag_name}__confirmed"
+
+
+def gnostic_tag_name_negative(tag_name: str) -> str:
+    return f"{tag_name}__rejected"
+
+
 class VideoTags:
     source = "source"
 
@@ -83,8 +91,8 @@ class VideoTags:
         if not self._tags.get(tag_name, set()):
             return False
         if tag_config.type == TagType.GNOSTIC:
-            pos_values = self.list_values_for_tag(f"{tag_name}__confirmed")
-            neg_values = self.list_values_for_tag(f"{tag_name}__rejected")
+            pos_values = self.list_values_for_tag(gnostic_tag_name_positive(tag_name))
+            neg_values = self.list_values_for_tag(gnostic_tag_name_negative(tag_name))
             total_values = pos_values.union(neg_values)
             return not bool(all_values - total_values)
         return True
