@@ -89,12 +89,14 @@ class EditTagValuesMenu(Menu):
         return Button.inline("🔙Cancel", self.cancel_callback)
 
     def button_for_tag(self, tag_value: str, i: int) -> Button:
-        has_tag = tag_value in self.current_tags.list_values_for_tag(self.tag_name)
-        title = tag_value
-        if has_tag:
-            title = f"✔️{title}"
+        title = self.text_for_tag_button(tag_value)
         value_num = self.page_num * self.page_width * self.page_height + i
         return Button.inline(title, f"{self.tag_callback.decode()}:{value_num}")
+
+    def text_for_tag_button(self, tag_value: str) -> str:
+        if tag_value in self.current_tags.list_values_for_tag(self.tag_name):
+            return f"✔️{tag_value}"
+        return tag_value
 
     async def handle_callback_query(
             self,
