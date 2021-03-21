@@ -90,14 +90,17 @@ class VideoTags:
         return {
             tag_name
             for tag_name, tag_config in dest_tags.items()
-            if not self.is_tag_complete(tag_name, tag_config, all_values_dict[tag_name])
+            if not self.is_tag_complete(tag_name, tag_config, all_values_dict)
         }
 
-    def is_tag_complete(self, tag_name: str, tag_config: TagConfig, all_values: Set[str]) -> bool:
+    def is_tag_complete(self, tag_name: str, tag_config: TagConfig, all_values_dict: Dict[str, Set[str]]) -> bool:
         if tag_config.type == TagType.GNOSTIC:
-            pos_values = self.list_values_for_tag(gnostic_tag_name_positive(tag_name))
-            neg_values = self.list_values_for_tag(gnostic_tag_name_negative(tag_name))
+            tag_name_pos = gnostic_tag_name_positive(tag_name)
+            tag_name_neg = gnostic_tag_name_negative(tag_name)
+            pos_values = self.list_values_for_tag(tag_name_pos)
+            neg_values = self.list_values_for_tag(tag_name_neg)
             set_values = pos_values.union(neg_values)
+            all_values = all_values_dict[tag_name_pos].union(all_values_dict[tag_name_neg])
             return len(all_values - set_values) == 0
         if not self._tags.get(tag_name, set()):
             return False
