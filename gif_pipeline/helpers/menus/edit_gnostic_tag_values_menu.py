@@ -73,6 +73,10 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
             self.current_tags.remove_tag_value(self.tag_name_neg, tag_value)
 
     async def handle_callback_done(self) -> List[Message]:
+        # For all unset values, set to negative
+        for tag_value in self.known_tag_values:
+            if self.get_tag_value_status(tag_value) is None:
+                self.current_tags.add_tag_value(self.tag_name_neg, tag_value)
         # Save database when done, just for this tag
         self.send_helper.database.save_tags_for_key(self.video.message_data, self.current_tags, self.tag_name_pos)
         self.send_helper.database.save_tags_for_key(self.video.message_data, self.current_tags, self.tag_name_neg)
