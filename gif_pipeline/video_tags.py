@@ -96,3 +96,10 @@ class VideoTags:
             total_values = pos_values.union(neg_values)
             return not bool(all_values - total_values)
         return True
+
+    def copy(self) -> 'VideoTags':
+        dict_copy = {
+            key: set(val for val in values)
+            for key, values in self._tags.items()
+        }
+        return VideoTags(dict_copy)
