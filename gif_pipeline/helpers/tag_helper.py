@@ -53,11 +53,12 @@ class TagHelper(Helper):
         if len(args) == 1:
             tag_name = args[0]
             tags = video.tags(self.database)
-            if tag_name not in tags.list_tag_names():
+            values = tags.list_values_for_tag(tag_name)
+            if not values:
                 text = f"This video has no tags for \"{tag_name}\"."
             else:
                 text = f"List of \"{tag_name}\" tags:\n"
-                text += "\n".join("- "+t for t in tags.list_values_for_tag(tag_name))
+                text += "\n".join("- "+t for t in values)
             return [await self.send_text_reply(chat, message, text)]
         # Remove
         if args[0].lower() in ["remove", "delete", "unset"]:
@@ -66,11 +67,12 @@ class TagHelper(Helper):
             if len(args) == 1:
                 tag_name = args[0]
                 tags = video.tags(self.database)
-                if tag_name not in tags.list_tag_names():
+                values = tags.list_values_for_tag(tag_name)
+                if not values:
                     text = f"This video has no tags for \"{tag_name}\"."
                 else:
                     text = f"Removed all \"{tag_name}\" tags:\n"
-                    text += "\n".join("- "+t for t in tags.list_values_for_tag(tag_name))
+                    text += "\n".join("- "+t for t in values)
                     text += "\nFrom this video."
                     tags.remove_all_values_for_tag(tag_name)
                     self.database.save_tags(video.message_data, tags)
@@ -79,9 +81,7 @@ class TagHelper(Helper):
             tag_name = args[0]
             tag_value = " ".join(args[1:])
             tags = video.tags(self.database)
-            if tag_name not in tags.list_tag_names():
-                text = f"This video has no tags for \"{tag_name}\"."
-            elif tag_value not in tags.list_values_for_tag(tag_name):
+            if tag_value not in tags.list_values_for_tag(tag_name):
                 text = f"This video does not have a \"{tag_name}\" tag for \"{tag_value}\"."
             else:
                 tags.remove_tag_value(tag_name, tag_value)
