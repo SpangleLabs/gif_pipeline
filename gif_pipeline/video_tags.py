@@ -84,7 +84,7 @@ class VideoTags:
         return {
             tag_name
             for tag_name, tag_config in dest_tags.items()
-            if self.is_tag_complete(tag_name, tag_config, all_values_dict[tag_name])
+            if not self.is_tag_complete(tag_name, tag_config, all_values_dict[tag_name])
         }
 
     def is_tag_complete(self, tag_name: str, tag_config: TagConfig, all_values: Set[str]) -> bool:
