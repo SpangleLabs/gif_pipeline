@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 class EditTagValuesMenu(Menu):
     complete_callback = b"done"
+    cancel_callback = b"cancel"
     next_callback = b"next"
     prev_callback = b"prev"
     tag_callback = b"tag"
@@ -73,13 +74,19 @@ class EditTagValuesMenu(Menu):
         buttons = []
         if self.page_num > 0:
             buttons.append(Button.inline("⬅️Prev", self.prev_callback))
-        buttons.append(self.button_done())
+        buttons += self.page_center_buttons()
         if self.page_num < len(self.paged_tag_values) - 1:
             buttons.append(Button.inline("➡️Next", self.next_callback))
         return buttons
 
+    def page_center_buttons(self) -> List[Button]:
+        return [self.button_done()]
+
     def button_done(self) -> Button:
         return Button.inline("🖊️️️Done", self.complete_callback)
+
+    def button_cancel(self) -> Button:
+        return Button.inline("🔙Cancel", self.cancel_callback)
 
     def button_for_tag(self, tag_value: str, i: int) -> Button:
         has_tag = tag_value in self.current_tags.list_values_for_tag(self.tag_name)
@@ -95,6 +102,8 @@ class EditTagValuesMenu(Menu):
     ) -> Optional[List[Message]]:
         if callback_query == self.complete_callback:
             return await self.handle_callback_done()
+        if callback_query == self.cancel_callback:
+            return await self.handle_callback_cancel()
         if callback_query == self.next_callback:
             self.page_num += 1
             return [await self.send()]
@@ -113,6 +122,12 @@ class EditTagValuesMenu(Menu):
         self.menu_helper.database.save_tags(self.video.message_data, self.current_tags)
 
     async def handle_callback_done(self) -> List[Message]:
+        return await self.return_to_menu()
+
+    async def handle_callback_cancel(self) -> List[Message]:
+        return await self.return_to_menu()
+
+    async def return_to_menu(self) -> List[Message]:
         missing_tags = self.tag_manager.missing_tags_for_video(self.video, self.destination, self.chat)
         if missing_tags:
             return await self.menu_helper.additional_tags_menu(
