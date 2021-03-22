@@ -1,4 +1,4 @@
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING, Dict, Type
 
 from telethon import Button
 
@@ -148,3 +148,40 @@ class EditTagValuesMenu(Menu):
         chats = [self.destination, self.chat]
         self.known_tag_values = sorted(self.tag_manager.get_values_for_tag(self.tag_name, chats))
         return [await self.send()]
+
+    @property
+    def json_name(self) -> str:
+        return "edit_tag_values_menu"
+
+    def to_json(self) -> Dict:
+        return {
+            "cmd_msg_id": self.cmd.message_data.message_id,
+            "destination_id": self.destination.chat_data.chat_id,
+            "tag_name": self.tag_name,
+            "page_num": self.page_num
+        }
+
+    @classmethod
+    def from_json(
+            cls,
+            json_data: Dict,
+            menu_helper: MenuHelper,
+            chat: Chat,
+            video: Message,
+            send_helper: GifSendHelper,
+            all_channels: List[Channel],
+            tag_manager: TagManager
+    ) -> 'EditTagValuesMenu':
+        destination = next(filter(lambda x: x.chat_data.chat_id == json_data["destination_id"], all_channels), None)
+        menu = cls(
+            menu_helper,
+            chat,
+            chat.message_by_id(json_data["cmd_msg_id"]),
+            video,
+            send_helper,
+            destination,
+            tag_manager,
+            json_data["tag_name"]
+        )
+        menu.page_num = json_data["page_num"]
+        return menu

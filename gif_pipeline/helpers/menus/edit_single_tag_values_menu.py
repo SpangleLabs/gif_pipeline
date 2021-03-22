@@ -20,3 +20,7 @@ class EditSingleTagValuesMenu(EditTagValuesMenu):
     async def handle_text(self, text: str) -> Optional[List[Message]]:
         self.set_tag_value(text)
         return await self.handle_callback_done()
+
+    @property
+    def json_name(self) -> str:
+        return "edit_single_tag_values_menu"

@@ -85,3 +85,7 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
         self.original_tags.update_from_database(tag_entries)
         # Return to menu
         return await self.return_to_menu()
+
+    @property
+    def json_name(self) -> str:
+        return "edit_gnostic_tag_values_menu"
