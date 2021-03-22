@@ -156,7 +156,7 @@ class Pipeline:
         logger.info("Initialising helpers")
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
         tag_manager = TagManager(self.channels, self.workshops, self.database)
-        menu_helper = MenuHelper(self.database, self.client, self.worker, self.menu_cache, tag_manager)
+        menu_helper = MenuHelper(self.database, self.client, self.worker, self, tag_manager)
         helpers = [
             duplicate_helper,
             menu_helper,

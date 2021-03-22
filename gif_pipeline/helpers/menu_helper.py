@@ -1,4 +1,5 @@
-from typing import Optional, List, Tuple, Set
+import json
+from typing import Optional, List, Tuple, Set, TYPE_CHECKING
 
 from scenedetect import FrameTimecode
 
@@ -19,11 +20,14 @@ from gif_pipeline.helpers.menus.destination_menu import DestinationMenu
 from gif_pipeline.helpers.menus.not_gif_confirmation_menu import NotGifConfirmationMenu
 from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
 from gif_pipeline.helpers.send_helper import GifSendHelper
-from gif_pipeline.menu_cache import MenuCache, SentMenu
+from gif_pipeline.menu_cache import SentMenu
 from gif_pipeline.message import Message
 from gif_pipeline.tag_manager import TagManager
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
+
+if TYPE_CHECKING:
+    from gif_pipeline.pipeline import Pipeline
 
 
 class MenuHelper(Helper):
@@ -33,12 +37,13 @@ class MenuHelper(Helper):
             database: Database,
             client: TelegramClient,
             worker: TaskWorker,
-            menu_cache: MenuCache,
+            pipeline: 'Pipeline',
             tag_manager: TagManager,
     ):
         super().__init__(database, client, worker)
         # Cache of message ID the menu is replying to, to the menu
-        self.menu_cache = menu_cache
+        self.pipeline = pipeline
+        self.menu_cache = pipeline.menu_cache
         self.tag_manager = tag_manager
 
     def is_priority(self, chat: Chat, message: Message) -> bool:
