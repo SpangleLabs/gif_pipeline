@@ -4,7 +4,7 @@ from typing import Optional, List, Tuple, Set, TYPE_CHECKING
 from scenedetect import FrameTimecode
 
 from gif_pipeline.chat_config import TagType
-from gif_pipeline.database import Database
+from gif_pipeline.database import Database, MenuData
 from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.helpers.menus.edit_gnostic_tag_values_menu import EditGnosticTagValuesMenu
@@ -75,6 +75,42 @@ class MenuHelper(Helper):
         menu.clicked = True
         resp = await menu.menu.handle_callback_query(callback_query)
         return resp
+
+    def save_to_database(self) -> None:
+        menu_entries = self.menu_cache.list_entries()
+        for menu_entry in menu_entries:
+            menu_data = MenuData(
+                menu_entry.chat_id,
+                menu_entry.video_msg_id,
+                menu_entry.sent_menu.msg.message_data.message_id,
+                menu_entry.sent_menu.menu.json_name,
+                json.dumps(menu_entry.sent_menu.menu.to_json()),
+                menu_entry.sent_menu.clicked
+            )
+            self.database.save_menu(menu_data)
+
+    def refresh_from_database(self) -> None:
+        list_menus = self.database.list_menus()
+        for menu_data in list_menus:
+            sent_menu = self.create_menu(menu_data)
+            self.menu_cache.add_menu(sent_menu)
+
+    def create_menu(
+            self,
+            menu_data: MenuData
+    ) -> SentMenu:
+        menu_json = json.loads(menu_data.menu_json_str)
+        chat = self.pipeline.chat_by_id(menu_data.chat_id)
+        menu_msg = chat.message_by_id(menu_data.menu_msg_id)
+        video_msg = chat.message_by_id(menu_data.video_msg_id)
+        if menu_data.menu_type == CheckTagsMenu.json_name:
+            send_helper = self.pipeline.helpers[GifSendHelper.__name__]
+            menu = CheckTagsMenu.from_json(menu_json, self, chat, video_msg, send_helper)
+            return SentMenu(menu, menu_msg, menu_data.clicked)
+        if menu_data.menu_type == DeleteMenu.json_name:
+            menu = DeleteMenu.from_json(menu_json, self, chat, video_msg)
+            return SentMenu(menu, menu_msg, menu_data.clicked)
+        # TODO: implement other menus
 
     async def delete_menu_for_video(self, video: Message) -> None:
         menu = self.menu_cache.get_menu_by_video(video)
