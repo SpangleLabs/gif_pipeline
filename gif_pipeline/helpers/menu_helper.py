@@ -115,10 +115,15 @@ class MenuHelper(Helper):
             channels = self.pipeline.channels
             menu = DestinationMenu.from_json(menu_json, self, chat, video_msg, send_helper, channels, self.tag_manager)
             return SentMenu(menu, menu_msg, menu_data.clicked)
+        if menu_data.menu_type == SplitScenesConfirmationMenu.json_name:
+            split_helper = self.pipeline.helpers[SceneSplitHelper.__name__]
+            menu = SplitScenesConfirmationMenu.from_json(menu_json, self, chat, video_msg, split_helper)
+            return SentMenu(menu, menu_msg, menu_data.clicked)
         if menu_data.menu_type == TagSelectMenu.json_name:
             send_helper = self.pipeline.helpers[GifSendHelper.__name__]
             channels = self.pipeline.channels
-            meu = TagSelectMenu.from_json(menu_json, self, chat, video_msg, send_helper, channels)
+            menu = TagSelectMenu.from_json(menu_json, self, chat, video_msg, send_helper, channels)
+            return SentMenu(menu, menu_msg, menu_data.clicked)
         # TODO: implement other menus
 
     async def delete_menu_for_video(self, video: Message) -> None:
