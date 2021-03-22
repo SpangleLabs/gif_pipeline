@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Optional, Dict, TYPE_CHECKING
+from typing import Optional, Dict, TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.menus.menu import Menu
@@ -34,9 +34,25 @@ class MenuCache:
         ]
         return next(iter(menus), None)
 
+    def list_entries(self) -> List['MenuEntry']:
+        return [
+            MenuEntry(
+                chat_id, video_msg_id, sent_menu
+            )
+            for chat_id, chat_cache in self._menu_cache.items()
+            for video_msg_id, sent_menu in chat_cache.items()
+        ]
+
 
 @dataclass
 class SentMenu:
     menu: 'Menu'
     msg: 'Message'
     clicked: bool = False
+
+
+@dataclass
+class MenuEntry:
+    chat_id: int
+    video_msg_id: int
+    sent_menu: SentMenu
