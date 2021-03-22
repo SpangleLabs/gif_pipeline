@@ -104,7 +104,8 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
             "destination_id": self.destination.chat_data.chat_id,
             "tag_name": self.tag_name,
             "page_num": self.page_num,
-            "current_tags": self.current_tags.to_json()
+            "current_tags": self.current_tags.to_json(),
+            "new_tags": list(self.new_tags)
         }
 
     @classmethod
@@ -131,4 +132,5 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
         )
         menu.current_tags = VideoTags.from_json(json_data["current_tags"])
         menu.page_num = json_data["page_num"]
+        menu.new_tags = set(json_data["new_tags"])
         return menu
