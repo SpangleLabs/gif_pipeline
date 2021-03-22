@@ -409,7 +409,7 @@ class Database:
                     result["video_msg_id"],
                     result["menu_type"],
                     result["menu_json_str"],
-                    result["clicked"]
+                    bool(result["clicked"])
                 )
             )
         cur.close()
