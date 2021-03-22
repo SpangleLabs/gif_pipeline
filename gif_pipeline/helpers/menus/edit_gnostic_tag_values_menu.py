@@ -1,4 +1,4 @@
-from typing import List, TYPE_CHECKING, Optional
+from typing import List, TYPE_CHECKING, Optional, Dict
 
 from telethon import Button
 
@@ -7,7 +7,7 @@ from gif_pipeline.helpers.menus.edit_tag_values_menu import EditTagValuesMenu
 from gif_pipeline.helpers.send_helper import GifSendHelper
 from gif_pipeline.message import Message
 from gif_pipeline.tag_manager import TagManager
-from gif_pipeline.video_tags import gnostic_tag_name_positive, gnostic_tag_name_negative
+from gif_pipeline.video_tags import gnostic_tag_name_positive, gnostic_tag_name_negative, VideoTags
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.menu_helper import MenuHelper
@@ -89,3 +89,38 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
     @property
     def json_name(self) -> str:
         return "edit_gnostic_tag_values_menu"
+
+    def to_json(self) -> Dict:
+        return {
+            "cmd_msg_id": self.cmd.message_data.message_id,
+            "destination_id": self.destination.chat_data.chat_id,
+            "tag_name": self.tag_name,
+            "page_num": self.page_num,
+            "current_tags": self.current_tags.to_json()
+        }
+
+    @classmethod
+    def from_json(
+            cls,
+            json_data: Dict,
+            menu_helper: MenuHelper,
+            chat: Chat,
+            video: Message,
+            send_helper: GifSendHelper,
+            all_channels: List[Channel],
+            tag_manager: TagManager
+    ) -> 'EditTagValuesMenu':
+        destination = next(filter(lambda x: x.chat_data.chat_id == json_data["destination_id"], all_channels), None)
+        menu = EditGnosticTagValuesMenu(
+            menu_helper,
+            chat,
+            chat.message_by_id(json_data["cmd_msg_id"]),
+            video,
+            send_helper,
+            destination,
+            tag_manager,
+            json_data["tag_name"]
+        )
+        menu.current_tags = VideoTags.from_json(json_data["current_tags"])
+        menu.page_num = json_data["page_num"]
+        return menu

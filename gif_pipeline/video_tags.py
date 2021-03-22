@@ -112,3 +112,18 @@ class VideoTags:
             for key, values in self._tags.items()
         }
         return VideoTags(dict_copy)
+
+    def to_json(self) -> Dict:
+        return {
+            tag_name: [value for value in tag_values]
+            for tag_name, tag_values in self._tags.items()
+        }
+
+    @classmethod
+    def from_json(cls, json_data: Dict) -> 'VideoTags':
+        return VideoTags(
+            {
+                tag_name: set(tag_values)
+                for tag_name, tag_values in json_data.items()
+            }
+        )
