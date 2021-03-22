@@ -223,6 +223,7 @@ class Database:
         entry_id = self.get_entry_id_for_message(message)
         self._remove_message_hashes_by_entry_id(entry_id)
         self._remove_tags_by_entry_id(entry_id)
+        self._remove_menu_by_entry_id(entry_id)
         cur = self.conn.cursor()
         cur.execute(
             "DELETE FROM messages WHERE chat_id = ? AND message_id = ? AND is_scheduled = ?",
@@ -416,11 +417,13 @@ class Database:
 
     def remove_menu(self, menu_data: MenuData) -> None:
         menu_entry_id = self.get_entry_id_by_chat_and_message_id(menu_data.chat_id, menu_data.menu_msg_id, False)
+        self._remove_menu_by_entry_id(menu_entry_id)
+
+    def _remove_menu_by_entry_id(self, menu_entry_id: int) -> None:
         cur = self.conn.cursor()
         cur.execute("DELETE FROM menu_cache WHERE menu_entry_id = ?", (menu_entry_id,))
         self.conn.commit()
         cur.close()
-
 
 
 S = TypeVar('S')
