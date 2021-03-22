@@ -132,7 +132,7 @@ class Pipeline:
         self.worker = TaskWorker(3)
         self.helpers = {}
         self.public_helpers = {}
-        self.menu_cache = MenuCache()
+        self.menu_cache = MenuCache(database)
         self.download_bottleneck = Bottleneck(3)
 
     @property

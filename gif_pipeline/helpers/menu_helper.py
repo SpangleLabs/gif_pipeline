@@ -76,19 +76,6 @@ class MenuHelper(Helper):
         resp = await menu.menu.handle_callback_query(callback_query)
         return resp
 
-    def save_to_database(self) -> None:
-        menu_entries = self.menu_cache.list_entries()
-        for menu_entry in menu_entries:
-            menu_data = MenuData(
-                menu_entry.chat_id,
-                menu_entry.video_msg_id,
-                menu_entry.sent_menu.msg.message_data.message_id,
-                menu_entry.sent_menu.menu.json_name(),
-                json.dumps(menu_entry.sent_menu.menu.to_json()),
-                menu_entry.sent_menu.clicked
-            )
-            self.database.save_menu(menu_data)
-
     def refresh_from_database(self) -> None:
         list_menus = self.database.list_menus()
         for menu_data in list_menus:

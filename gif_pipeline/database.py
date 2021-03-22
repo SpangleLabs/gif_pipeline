@@ -414,6 +414,14 @@ class Database:
         cur.close()
         return menu_data_entries
 
+    def remove_menu(self, menu_data: MenuData) -> None:
+        menu_entry_id = self.get_entry_id_by_chat_and_message_id(menu_data.chat_id, menu_data.menu_msg_id, False)
+        cur = self.conn.cursor()
+        cur.execute("DELETE FROM menu_cache WHERE menu_entry_id = ?", (menu_entry_id,))
+        self.conn.commit()
+        cur.close()
+
+
 
 S = TypeVar('S')
 
