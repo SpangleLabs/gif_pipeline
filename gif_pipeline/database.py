@@ -405,8 +405,8 @@ class Database:
             menu_data_entries.append(
                 MenuData(
                     result["chat_id"],
-                    result["menu_msg_id"],
                     result["video_msg_id"],
+                    result["menu_msg_id"],
                     result["menu_type"],
                     result["menu_json_str"],
                     bool(result["clicked"])
