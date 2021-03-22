@@ -4,10 +4,10 @@ from telethon import Button
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.menus.menu import Menu
-from gif_pipeline.helpers.send_helper import GifSendHelper
 from gif_pipeline.message import Message
 
 if TYPE_CHECKING:
+    from gif_pipeline.helpers.send_helper import GifSendHelper
     from gif_pipeline.helpers.menu_helper import MenuHelper
 
 
@@ -21,7 +21,7 @@ class NotGifConfirmationMenu(Menu):
             chat: Chat,
             cmd_msg: Message,
             video: Message,
-            send_helper: GifSendHelper,
+            send_helper: 'GifSendHelper',
             dest_str: str
     ):
         super().__init__(menu_helper, chat, cmd_msg, video)
@@ -69,10 +69,10 @@ class NotGifConfirmationMenu(Menu):
     def from_json(
             cls,
             json_data: Dict,
-            menu_helper: MenuHelper,
+            menu_helper: 'MenuHelper',
             chat: Chat,
             video: Message,
-            send_helper: GifSendHelper
+            send_helper: 'GifSendHelper'
     ) -> 'Menu':
         return NotGifConfirmationMenu(
             menu_helper,

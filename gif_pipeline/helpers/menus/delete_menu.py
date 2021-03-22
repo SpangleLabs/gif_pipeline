@@ -57,7 +57,7 @@ class DeleteMenu(Menu):
     def from_json(
             cls,
             json_data: Dict,
-            menu_helper: MenuHelper,
+            menu_helper: 'MenuHelper',
             chat: Chat,
             video: Message
     ) -> 'Menu':

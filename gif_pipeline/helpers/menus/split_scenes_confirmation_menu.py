@@ -5,10 +5,10 @@ from telethon import Button
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.menus.menu import Menu
-from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
 from gif_pipeline.message import Message
 
 if TYPE_CHECKING:
+    from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
     from gif_pipeline.helpers.menu_helper import MenuHelper
 
 
@@ -37,7 +37,7 @@ class SplitScenesConfirmationMenu(Menu):
             video: Message,
             threshold: int,
             scene_list: List[Tuple[FrameTimecode, FrameTimecode]],
-            split_helper: SceneSplitHelper
+            split_helper: 'SceneSplitHelper'
     ):
         super().__init__(menu_helper, chat, cmd, video)
         self.threshold = threshold
@@ -97,10 +97,10 @@ class SplitScenesConfirmationMenu(Menu):
     def from_json(
             cls,
             json_data: Dict,
-            menu_helper: MenuHelper,
+            menu_helper: 'MenuHelper',
             chat: Chat,
             video: Message,
-            split_helper: SceneSplitHelper
+            split_helper: 'SceneSplitHelper'
     ) -> 'SplitScenesConfirmationMenu':
         scene_list = [
             (

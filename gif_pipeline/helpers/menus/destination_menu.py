@@ -22,7 +22,7 @@ class DestinationMenu(Menu):
             chat: Chat,
             cmd_msg: Message,
             video: Message,
-            send_helper: GifSendHelper,
+            send_helper: 'GifSendHelper',
             channels: List[Channel],
             tag_manager: TagManager
     ):
@@ -118,10 +118,10 @@ class DestinationMenu(Menu):
     def from_json(
             cls,
             json_data: Dict,
-            menu_helper: MenuHelper,
+            menu_helper: 'MenuHelper',
             chat: Chat,
             video: Message,
-            send_helper: GifSendHelper,
+            send_helper: 'GifSendHelper',
             all_channels: List[Channel],
             tag_manager
     ) -> 'DestinationMenu':
