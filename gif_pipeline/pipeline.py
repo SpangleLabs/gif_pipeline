@@ -183,6 +183,8 @@ class Pipeline:
                 ImgurGalleryHelper(self.database, self.client, self.worker, self.api_keys["imgur"]["client_id"]))
         for helper in helpers:
             self.helpers[helper.name] = helper
+        # Load menus from database
+        menu_helper.refresh_from_database()
         logger.info(f"Initialised {len(self.helpers)} helpers")
         public_helpers = [
             PublicTagHelper(self.database, self.client, self.worker, tag_manager)
