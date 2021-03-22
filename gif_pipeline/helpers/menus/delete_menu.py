@@ -1,4 +1,4 @@
-from typing import Optional, List, TYPE_CHECKING
+from typing import Optional, List, TYPE_CHECKING, Dict
 
 from telethon import Button
 
@@ -41,3 +41,32 @@ class DeleteMenu(Menu):
             sent_msg = await self.send()
             return [sent_msg]
         # The "delete:" callback is handled by DeleteHelper
+
+    @property
+    def json_name(self) -> str:
+        return "delete_menu"
+
+    def to_json(self) -> Dict:
+        return {
+            "cmd_msg_id": self.cmd.message_data.message_id,
+            "prefix_str": self.prefix_str,
+            "cleared": self.cleared
+        }
+
+    @classmethod
+    def from_json(
+            cls,
+            json_data: Dict,
+            menu_helper: MenuHelper,
+            chat: Chat,
+            video: Message
+    ) -> 'Menu':
+        menu = DeleteMenu(
+            menu_helper,
+            chat,
+            chat.message_by_id(json_data["cmd_msg_id"]),
+            video,
+            json_data["prefix_str"]
+        )
+        menu.cleared = json_data["cleared"]
+        return menu

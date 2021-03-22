@@ -1,4 +1,4 @@
-from typing import Set, Optional, List, TYPE_CHECKING
+from typing import Set, Optional, List, TYPE_CHECKING, Dict
 
 from telethon import Button
 
@@ -74,3 +74,36 @@ class CheckTagsMenu(Menu):
             return await self.menu_helper.confirmation_menu(
                 self.chat, self.cmd, self.video, self.send_helper, self.destination
             )
+
+    @property
+    def json_name(self) -> str:
+        return "check_tags_menu"
+
+    def to_json(self) -> Dict:
+        return {
+            "cmd_msg_id": self.cmd.message_data.message_id,
+            "destination_id": self.destination.chat_data.chat_id,
+            "missing_tags": list(self.missing_tags),
+            "cancelled": self.cancelled
+        }
+
+    @classmethod
+    def from_json(
+            cls,
+            json_data: Dict,
+            menu_helper: MenuHelper,
+            chat: Chat,
+            video: Message,
+            send_helper: GifSendHelper
+    ) -> 'Menu':
+        menu = CheckTagsMenu(
+            menu_helper,
+            chat,
+            chat.message_by_id(json_data["cmd_msg_id"]),
+            video,
+            send_helper,
+            send_helper.get_destination_from_name(json_data["destination_id"]),
+            set(json_data["missing_tags"])
+        )
+        menu.cancelled = json_data["cancelled"]
+        return menu
