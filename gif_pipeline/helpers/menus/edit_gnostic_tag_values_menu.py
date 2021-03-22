@@ -36,6 +36,7 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
         all_values_pos = self.tag_manager.get_values_for_tag(self.tag_name_pos, [destination, chat])
         all_values_neg = self.tag_manager.get_values_for_tag(self.tag_name_neg, [destination, chat])
         self.known_tag_values = sorted(all_values_pos.union(all_values_neg))
+        self.new_tags = set()
 
     @property
     def text(self) -> str:
@@ -85,3 +86,10 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
         self.original_tags.update_from_database(tag_entries)
         # Return to menu
         return await self.return_to_menu()
+
+    def update_known_tag_values(self, new_tag: str) -> None:
+        self.new_tags.add(new_tag)
+        chats = [self.destination, self.chat]
+        all_values_pos = self.tag_manager.get_values_for_tag(self.tag_name_pos, chats)
+        all_values_neg = self.tag_manager.get_values_for_tag(self.tag_name_neg, chats)
+        self.known_tag_values = sorted(all_values_pos.union(all_values_neg).union(self.new_tags))
