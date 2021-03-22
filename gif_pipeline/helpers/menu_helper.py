@@ -110,6 +110,11 @@ class MenuHelper(Helper):
         if menu_data.menu_type == DeleteMenu.json_name:
             menu = DeleteMenu.from_json(menu_json, self, chat, video_msg)
             return SentMenu(menu, menu_msg, menu_data.clicked)
+        if menu_data.menu_type == DestinationMenu.json_name:
+            send_helper = self.pipeline.helpers[GifSendHelper.__name__]
+            channels = self.pipeline.channels
+            menu = DestinationMenu.from_json(menu_json, self, chat, video_msg, send_helper, channels, self.tag_manager)
+            return SentMenu(menu, menu_msg, menu_data.clicked)
         # TODO: implement other menus
 
     async def delete_menu_for_video(self, video: Message) -> None:

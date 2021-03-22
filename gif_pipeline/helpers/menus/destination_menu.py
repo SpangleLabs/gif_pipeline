@@ -1,15 +1,16 @@
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING, Dict
 
 from telethon import Button
 
 from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.helpers.menus.menu import Menu
-from gif_pipeline.helpers.send_helper import GifSendHelper
 from gif_pipeline.message import Message
 from gif_pipeline.tag_manager import TagManager
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.menu_helper import MenuHelper
+    from gif_pipeline.helpers.send_helper import GifSendHelper
+    from gif_pipeline.pipeline import Pipeline
 
 
 class DestinationMenu(Menu):
@@ -102,3 +103,42 @@ class DestinationMenu(Menu):
                     folder = self.current_folder + "/" + next_folder
             self.current_folder = folder
             return [await self.send()]
+
+    @property
+    def json_name(self) -> str:
+        return "destination_menu"
+
+    def to_json(self) -> Dict:
+        return {
+            "cmd_msg_id": self.cmd.message_data.message_id,
+            "channel_ids": [channel.chat_data.chat_id for channel in self.channels],
+            "current_folder": self.current_folder
+        }
+
+    @classmethod
+    def from_json(
+            cls,
+            json_data: Dict,
+            menu_helper: MenuHelper,
+            chat: Chat,
+            video: Message,
+            send_helper: GifSendHelper,
+            all_channels: List[Channel],
+            tag_manager
+    ) -> 'Menu':
+        channels = []
+        for channel_id in json_data["channel_ids"]:
+            channels.append(
+                next(filter(lambda x: x.chat_data.chat_id == channel_id, all_channels), None)
+            )
+        menu = DestinationMenu(
+            menu_helper,
+            chat,
+            chat.message_by_id(json_data["cmd_msg_id"]),
+            video,
+            send_helper,
+            channels,
+            tag_manager
+        )
+        menu.current_folder = json_data["current_folder"]
+        return menu
