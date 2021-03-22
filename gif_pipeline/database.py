@@ -386,7 +386,10 @@ class Database:
         cur = self.conn.cursor()
         cur.execute(
             "INSERT INTO menu_cache (menu_entry_id, video_entry_id, menu_type, menu_json_str, clicked) "
-            "VALUES (?, ?, ?, ?, ?)",
+            "VALUES (?, ?, ?, ?, ?)"
+            "ON CONFLICT(menu_entry_id) "
+            "DO UPDATE SET video_entry_id=excluded.video_entry_id, menu_type=excluded.menu_type, "
+            "menu_json_str=excluded.menu_json_str, clicked=excluded.clicked",
             (menu_entry_id, video_entry_id, menu_data.menu_type, menu_data.menu_json_str, menu_data.clicked)
         )
         self.conn.commit()
