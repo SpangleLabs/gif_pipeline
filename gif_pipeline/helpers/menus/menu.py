@@ -1,6 +1,6 @@
 from abc import abstractmethod
 import datetime
-from typing import Optional, List, TYPE_CHECKING
+from typing import Optional, List, TYPE_CHECKING, Dict
 
 from telethon import Button
 
@@ -62,6 +62,7 @@ class Menu:
             buttons=self.buttons
         )
         self.add_self_to_cache(menu_msg)
+        self.menu_helper.save_to_database()
         return menu_msg
 
     async def edit_message(self, old_msg: Message) -> Message:
@@ -75,6 +76,7 @@ class Menu:
             self.add_self_to_cache(menu_msg)
         else:
             self.menu_helper.menu_cache.remove_menu_by_video(self.video)
+        self.menu_helper.save_to_database()
         return menu_msg
 
     async def send(self) -> Message:
@@ -91,3 +93,17 @@ class Menu:
 
     async def handle_text(self, text: str) -> Optional[List[Message]]:
         return None
+
+    @abstractmethod
+    @property
+    def json_name(self) -> str:
+        pass
+
+    @abstractmethod
+    def to_json(self) -> Dict:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def from_json(cls, json_data: Dict) -> 'Menu':
+        pass
