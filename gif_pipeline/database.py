@@ -1,5 +1,6 @@
 import sqlite3
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Type, TypeVar, Set, Iterable
 
@@ -32,6 +33,16 @@ def message_data_from_row(row: sqlite3.Row) -> MessageData:
         row["sender_id"],
         bool(row["is_scheduled"])
     )
+
+
+@dataclass
+class MenuData:
+    chat_id: int
+    video_msg_id: int
+    menu_msg_id: int
+    menu_type: str
+    menu_json_str: str
+    clicked: bool
 
 
 class Database:
@@ -267,10 +278,13 @@ class Database:
         return [msg for chat_id, chat_msgs in messages.items() for msg_id, msg in chat_msgs.items()]
 
     def get_entry_id_for_message(self, message: MessageData) -> Optional[int]:
+        return self.get_entry_id_by_chat_and_message_id(message.chat_id, message.message_id, message.is_scheduled)
+
+    def get_entry_id_by_chat_and_message_id(self, chat_id: int, message_id: int, is_scheduled: bool) -> Optional[int]:
         cur = self.conn.cursor()
         cur.execute(
             "SELECT entry_id FROM messages WHERE chat_id = ? AND message_id = ? AND is_scheduled = ?",
-            (message.chat_id, message.message_id, message.is_scheduled)
+            (chat_id, message_id, is_scheduled)
         )
         result = cur.fetchone()
         cur.close()
@@ -364,6 +378,41 @@ class Database:
             messages.append(message_data_from_row(row))
         cur.close()
         return messages
+
+    def save_menu(self, menu_data: MenuData) -> None:
+        menu_entry_id = self.get_entry_id_by_chat_and_message_id(menu_data.chat_id, menu_data.menu_msg_id, False)
+        video_entry_id = self.get_entry_id_by_chat_and_message_id(menu_data.chat_id, menu_data.video_msg_id, False)
+        cur = self.conn.cursor()
+        cur.execute(
+            "INSERT INTO menu_cache (menu_entry_id, video_entry_id, menu_type, menu_json_str, clicked) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (menu_entry_id, video_entry_id, menu_data.menu_type, menu_data.menu_json_str, menu_data.clicked)
+        )
+        self.conn.commit()
+        cur.close()
+
+    def list_menus(self) -> List[MenuData]:
+        cur = self.conn.cursor()
+        menu_data_entries = []
+        for result in cur.execute(
+            "SELECT mm.chat_id, mm.message_id as menu_msg_id, vm.message_id as video_msg_id, "
+            "mc.menu_type, mc.menu_json_str, mc.clicked "
+            "FROM menu_cache mc "
+            "LEFT JOIN messages mm ON mm.entry_id = mc.menu_entry_id "
+            "LEFT JOIN messages vm ON vm.entry_id = mc.video_entry_id"
+        ):
+            menu_data_entries.append(
+                MenuData(
+                    result["chat_id"],
+                    result["menu_msg_id"],
+                    result["video_msg_id"],
+                    result["menu_type"],
+                    result["menu_json_str"],
+                    result["clicked"]
+                )
+            )
+        cur.close()
+        return menu_data_entries
 
 
 S = TypeVar('S')

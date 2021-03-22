@@ -64,3 +64,17 @@ create table if not exists video_tags
 
 create unique index if not exists video_tags_tag_id_uindex
     on video_tags (tag_id);
+
+create table if not exists menu_cache
+(
+    menu_entry_id integer not null
+        constraint menu_cache_pk
+        references messages
+            on update restrict on delete restrict,
+    video_entry_id integer
+        references messages
+            on update restrict on delete set null,
+    menu_type text not null,
+    menu_json_str text not null,
+    clicked boolean not null
+);
