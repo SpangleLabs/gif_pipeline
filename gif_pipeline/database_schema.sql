@@ -78,3 +78,6 @@ create table if not exists menu_cache
     menu_json_str text not null,
     clicked boolean not null
 );
+
+create unique index if not exists menu_cache_entry_id_uindex
+    on menu_cache (menu_entry_id);
