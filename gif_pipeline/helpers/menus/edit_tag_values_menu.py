@@ -144,10 +144,12 @@ class EditTagValuesMenu(Menu):
 
     async def handle_text(self, text: str) -> Optional[List[Message]]:
         self.set_tag_value(text)
-        # Update known tag values
+        self.update_known_tag_values(text)
+        return [await self.send()]
+
+    def update_known_tag_values(self, new_tag: str) -> None:
         chats = [self.destination, self.chat]
         self.known_tag_values = sorted(self.tag_manager.get_values_for_tag(self.tag_name, chats))
-        return [await self.send()]
 
     @classmethod
     def json_name(cls) -> str:

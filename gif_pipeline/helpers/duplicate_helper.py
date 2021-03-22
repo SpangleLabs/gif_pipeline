@@ -142,13 +142,14 @@ class DuplicateHelper(Helper):
         await self.worker.await_task(task)
 
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
-        # If message has a video, decompose it if necessary, then check images against master hash
+        # For channels, just hash it, don't post warnings
         if not isinstance(chat, WorkshopGroup):
             await self.get_or_create_message_hashes(message.message_data)
             return
         # Ignore messages in workshops with duplicate detection off
         if not chat.config.duplicate_detection:
             return
+        # If no file, check if someone has requested manual check
         if message.message_data.file_path is None:
             if message.message_data.text.strip().lower() == "check":
                 reply_to = chat.message_by_id(message.message_data.reply_to)
@@ -163,6 +164,7 @@ class DuplicateHelper(Helper):
                         ]
                     return [warning_msg]
             return
+        # If message has a video, decompose it if necessary, then check images against master hash
         progress_text = "Checking whether this video has been seen before"
         async with self.progress_message(chat, message, progress_text):
             hashes = await self.get_or_create_message_hashes(message.message_data)
