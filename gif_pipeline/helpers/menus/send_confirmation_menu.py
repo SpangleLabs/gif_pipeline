@@ -1,4 +1,4 @@
-from typing import Optional, List, TYPE_CHECKING
+from typing import Optional, List, TYPE_CHECKING, Dict
 
 from telethon import Button
 
@@ -72,3 +72,33 @@ class SendConfirmationMenu(Menu):
             return await self.send_helper.send_video(
                 self.chat, self.video, self.cmd, self.destination.queue, self.owner_id
             )
+
+    @property
+    def json_name(self) -> str:
+        return "send_confirmation_menu"
+
+    def to_json(self) -> Dict:
+        return {
+            "cmd_msg_id": self.cmd.message_data.message_id,
+            "destination_id": self.destination.chat_data.chat_id
+        }
+
+    @classmethod
+    def from_json(
+            cls,
+            json_data: Dict,
+            menu_helper: MenuHelper,
+            chat: Chat,
+            video: Message,
+            send_helper: GifSendHelper,
+            all_channels: List[Channel]
+    ) -> 'Menu':
+        destination = next(filter(lambda x: x.chat_data.chat_id == json_data["destination_id"], all_channels), None)
+        return SendConfirmationMenu(
+            menu_helper,
+            chat,
+            chat.message_by_id(json_data["cmd_msg_id"]),
+            video,
+            send_helper,
+            destination
+        )
