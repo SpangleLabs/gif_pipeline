@@ -10,7 +10,6 @@ from gif_pipeline.tag_manager import TagManager
 if TYPE_CHECKING:
     from gif_pipeline.helpers.menu_helper import MenuHelper
     from gif_pipeline.helpers.send_helper import GifSendHelper
-    from gif_pipeline.pipeline import Pipeline
 
 
 class DestinationMenu(Menu):
@@ -125,7 +124,7 @@ class DestinationMenu(Menu):
             send_helper: GifSendHelper,
             all_channels: List[Channel],
             tag_manager
-    ) -> 'Menu':
+    ) -> 'DestinationMenu':
         channels = []
         for channel_id in json_data["channel_ids"]:
             channels.append(

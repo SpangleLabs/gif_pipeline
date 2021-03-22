@@ -14,7 +14,7 @@ from gif_pipeline.helpers.menus.split_scenes_confirmation_menu import SplitScene
 from gif_pipeline.helpers.menus.delete_menu import DeleteMenu
 from gif_pipeline.helpers.menus.send_confirmation_menu import SendConfirmationMenu
 from gif_pipeline.helpers.menus.edit_tag_values_menu import EditTagValuesMenu
-from gif_pipeline.helpers.menus.edit_tag_select_menu import EditTagSelectMenu
+from gif_pipeline.helpers.menus.tag_select_menu import TagSelectMenu
 from gif_pipeline.helpers.menus.check_tags_menu import CheckTagsMenu
 from gif_pipeline.helpers.menus.destination_menu import DestinationMenu
 from gif_pipeline.helpers.menus.not_gif_confirmation_menu import NotGifConfirmationMenu
@@ -115,6 +115,10 @@ class MenuHelper(Helper):
             channels = self.pipeline.channels
             menu = DestinationMenu.from_json(menu_json, self, chat, video_msg, send_helper, channels, self.tag_manager)
             return SentMenu(menu, menu_msg, menu_data.clicked)
+        if menu_data.menu_type == TagSelectMenu.json_name:
+            send_helper = self.pipeline.helpers[GifSendHelper.__name__]
+            channels = self.pipeline.channels
+            meu = TagSelectMenu.from_json(menu_json, self, chat, video_msg, send_helper, channels)
         # TODO: implement other menus
 
     async def delete_menu_for_video(self, video: Message) -> None:
@@ -170,7 +174,7 @@ class MenuHelper(Helper):
             destination: Channel,
             missing_tags: Set[str]
     ):
-        menu = EditTagSelectMenu(self, chat, cmd_msg, video, send_helper, destination, missing_tags)
+        menu = TagSelectMenu(self, chat, cmd_msg, video, send_helper, destination, missing_tags)
         menu_msg = await menu.send()
         return [menu_msg]
 

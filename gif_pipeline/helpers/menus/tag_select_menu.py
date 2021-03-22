@@ -1,4 +1,4 @@
-from typing import Set, Optional, List, TYPE_CHECKING
+from typing import Set, Optional, List, TYPE_CHECKING, Dict
 
 from telethon import Button
 
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from gif_pipeline.helpers.menu_helper import MenuHelper
 
 
-class EditTagSelectMenu(Menu):
+class TagSelectMenu(Menu):
     select_callback = b"select"
     cancel_callback = b"cancel"
 
@@ -53,3 +53,35 @@ class EditTagSelectMenu(Menu):
             return await self.menu_helper.edit_tag_values(
                 self.chat, self.cmd, self.video, self.send_helper, self.destination, tag_name
             )
+
+    @property
+    def json_name(self) -> str:
+        return "tag_select_menu"
+
+    def to_json(self) -> Dict:
+        return {
+            "cmd_msg_id": self.cmd.message_data.message_id,
+            "destination_id": self.destination.chat_data.chat_id,
+            "missing_tags": self.missing_tags
+        }
+
+    @classmethod
+    def from_json(
+            cls,
+            json_data: Dict,
+            menu_helper: MenuHelper,
+            chat: Chat,
+            video: Message,
+            send_helper,
+            all_channels: List[Channel]
+    ) -> 'TagSelectMenu':
+        destination = next(filter(lambda x: x.chat_data.chat_id == json_data["destination_id"], all_channels), None)
+        return TagSelectMenu(
+            menu_helper,
+            chat,
+            chat.message_by_id(json_data["cmd_msg_id"]),
+            video,
+            send_helper,
+            destination,
+            set(json_data["missing_tags"])
+        )
