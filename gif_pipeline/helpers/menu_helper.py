@@ -80,15 +80,20 @@ class MenuHelper(Helper):
         list_menus = self.database.list_menus()
         for menu_data in list_menus:
             sent_menu = self.create_menu(menu_data)
-            self.menu_cache.add_menu(sent_menu)
+            if sent_menu:
+                self.menu_cache.add_menu(sent_menu)
+            else:
+                self.database.remove_menu(menu_data)
 
     def create_menu(
             self,
             menu_data: MenuData
-    ) -> SentMenu:
+    ) -> Optional[SentMenu]:
         menu_json = json.loads(menu_data.menu_json_str)
         chat = self.pipeline.chat_by_id(menu_data.chat_id)
         menu_msg = chat.message_by_id(menu_data.menu_msg_id)
+        if menu_msg is None:
+            return None
         video_msg = chat.message_by_id(menu_data.video_msg_id)
         clicked = menu_data.clicked
         if menu_data.menu_type == CheckTagsMenu.json_name():
