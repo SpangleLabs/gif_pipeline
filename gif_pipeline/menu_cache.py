@@ -9,7 +9,6 @@ if TYPE_CHECKING:
 
 class MenuCache:
     def __init__(self):
-        # TODO: save and load menu cache, so that menus can resume when bot reboots
         self._menu_cache: Dict[int, Dict[int, SentMenu]] = defaultdict(lambda: {})
 
     def add_menu(self, sent_menu: 'SentMenu') -> None:
