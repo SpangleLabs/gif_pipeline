@@ -83,7 +83,7 @@ class MenuHelper(Helper):
                 menu_entry.chat_id,
                 menu_entry.video_msg_id,
                 menu_entry.sent_menu.msg.message_data.message_id,
-                menu_entry.sent_menu.menu.json_name,
+                menu_entry.sent_menu.menu.json_name(),
                 json.dumps(menu_entry.sent_menu.menu.to_json()),
                 menu_entry.sent_menu.clicked
             )
@@ -103,54 +103,53 @@ class MenuHelper(Helper):
         chat = self.pipeline.chat_by_id(menu_data.chat_id)
         menu_msg = chat.message_by_id(menu_data.menu_msg_id)
         video_msg = chat.message_by_id(menu_data.video_msg_id)
-        if menu_data.menu_type == CheckTagsMenu.json_name:
+        if menu_data.menu_type == CheckTagsMenu.json_name():
             send_helper = self.pipeline.helpers[GifSendHelper.__name__]
             menu = CheckTagsMenu.from_json(menu_json, self, chat, video_msg, send_helper)
             return SentMenu(menu, menu_msg, menu_data.clicked)
-        if menu_data.menu_type == DeleteMenu.json_name:
+        if menu_data.menu_type == DeleteMenu.json_name():
             menu = DeleteMenu.from_json(menu_json, self, chat, video_msg)
             return SentMenu(menu, menu_msg, menu_data.clicked)
-        if menu_data.menu_type == DestinationMenu.json_name:
+        if menu_data.menu_type == DestinationMenu.json_name():
             send_helper = self.pipeline.helpers[GifSendHelper.__name__]
             channels = self.pipeline.channels
             menu = DestinationMenu.from_json(menu_json, self, chat, video_msg, send_helper, channels, self.tag_manager)
             return SentMenu(menu, menu_msg, menu_data.clicked)
         if menu_data.menu_type in [
-            EditSingleTagValuesMenu.json_name,
-            EditTextTagValuesMenu.json_name,
-            EditTagValuesMenu.json_name,
-            EditGnosticTagValuesMenu.json_name
+            EditSingleTagValuesMenu.json_name(),
+            EditTextTagValuesMenu.json_name(),
+            EditTagValuesMenu.json_name(),
+            EditGnosticTagValuesMenu.json_name()
         ]:
             cls = {
-                EditSingleTagValuesMenu.json_name: EditSingleTagValuesMenu,
-                EditTextTagValuesMenu.json_name: EditTextTagValuesMenu,
-                EditTagValuesMenu.json_name: EditTagValuesMenu,
-                EditGnosticTagValuesMenu.json_name: EditGnosticTagValuesMenu
+                EditSingleTagValuesMenu.json_name(): EditSingleTagValuesMenu,
+                EditTextTagValuesMenu.json_name(): EditTextTagValuesMenu,
+                EditTagValuesMenu.json_name(): EditTagValuesMenu,
+                EditGnosticTagValuesMenu.json_name(): EditGnosticTagValuesMenu
             }.get(menu_data.menu_type)
             send_helper = self.pipeline.helpers[GifSendHelper.__name__]
             channels = self.pipeline.channels
             tag_manager = self.tag_manager
             menu = cls.from_json(menu_json, self, chat, video_msg, send_helper, channels, tag_manager)
             return SentMenu(menu, menu_msg, menu_data.clicked)
-        if menu_data.menu_type == NotGifConfirmationMenu.json_name:
+        if menu_data.menu_type == NotGifConfirmationMenu.json_name():
             send_helper = self.pipeline.helpers[GifSendHelper.__name__]
             menu = NotGifConfirmationMenu.from_json(menu_json, self, chat, video_msg, send_helper)
             return SentMenu(menu, menu_msg, menu_data.clicked)
-        if menu_data.menu_type == SendConfirmationMenu.json_name:
+        if menu_data.menu_type == SendConfirmationMenu.json_name():
             send_helper = self.pipeline.helpers[GifSendHelper.__name__]
             channels = self.pipeline.channels
             menu = SendConfirmationMenu.from_json(menu_json, self, chat, video_msg, send_helper, channels)
             return SentMenu(menu, menu_msg, menu_data.clicked)
-        if menu_data.menu_type == SplitScenesConfirmationMenu.json_name:
+        if menu_data.menu_type == SplitScenesConfirmationMenu.json_name():
             split_helper = self.pipeline.helpers[SceneSplitHelper.__name__]
             menu = SplitScenesConfirmationMenu.from_json(menu_json, self, chat, video_msg, split_helper)
             return SentMenu(menu, menu_msg, menu_data.clicked)
-        if menu_data.menu_type == TagSelectMenu.json_name:
+        if menu_data.menu_type == TagSelectMenu.json_name():
             send_helper = self.pipeline.helpers[GifSendHelper.__name__]
             channels = self.pipeline.channels
             menu = TagSelectMenu.from_json(menu_json, self, chat, video_msg, send_helper, channels)
             return SentMenu(menu, menu_msg, menu_data.clicked)
-        # TODO: implement other menus
 
     async def delete_menu_for_video(self, video: Message) -> None:
         menu = self.menu_cache.get_menu_by_video(video)

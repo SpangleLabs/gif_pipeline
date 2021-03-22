@@ -42,8 +42,8 @@ class DeleteMenu(Menu):
             return [sent_msg]
         # The "delete:" callback is handled by DeleteHelper
 
-    @property
-    def json_name(self) -> str:
+    @classmethod
+    def json_name(cls) -> str:
         return "delete_menu"
 
     def to_json(self) -> Dict:

@@ -4,11 +4,11 @@ from telethon import Button
 
 from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.helpers.menus.menu import Menu
-from gif_pipeline.helpers.send_helper import GifSendHelper
 from gif_pipeline.message import Message
 from gif_pipeline.tag_manager import TagManager
 
 if TYPE_CHECKING:
+    from gif_pipeline.helpers.send_helper import GifSendHelper
     from gif_pipeline.helpers.menu_helper import MenuHelper
 
 
@@ -27,7 +27,7 @@ class EditTagValuesMenu(Menu):
             chat: Chat,
             cmd: Message,
             video: Message,
-            send_helper: GifSendHelper,
+            send_helper: 'GifSendHelper',
             destination: Channel,
             tag_manager: TagManager,
             tag_name: str
@@ -149,8 +149,8 @@ class EditTagValuesMenu(Menu):
         self.known_tag_values = sorted(self.tag_manager.get_values_for_tag(self.tag_name, chats))
         return [await self.send()]
 
-    @property
-    def json_name(self) -> str:
+    @classmethod
+    def json_name(cls) -> str:
         return "edit_tag_values_menu"
 
     def to_json(self) -> Dict:
@@ -165,10 +165,10 @@ class EditTagValuesMenu(Menu):
     def from_json(
             cls,
             json_data: Dict,
-            menu_helper: MenuHelper,
+            menu_helper: 'MenuHelper',
             chat: Chat,
             video: Message,
-            send_helper: GifSendHelper,
+            send_helper: 'GifSendHelper',
             all_channels: List[Channel],
             tag_manager: TagManager
     ) -> 'EditTagValuesMenu':

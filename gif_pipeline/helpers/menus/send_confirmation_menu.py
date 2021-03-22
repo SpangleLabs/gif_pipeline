@@ -73,8 +73,8 @@ class SendConfirmationMenu(Menu):
                 self.chat, self.video, self.cmd, self.destination.queue, self.owner_id
             )
 
-    @property
-    def json_name(self) -> str:
+    @classmethod
+    def json_name(cls) -> str:
         return "send_confirmation_menu"
 
     def to_json(self) -> Dict:

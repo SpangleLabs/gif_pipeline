@@ -75,8 +75,8 @@ class SplitScenesConfirmationMenu(Menu):
             async with self.menu_helper.progress_message(self.chat, self.cmd, progress_text):
                 return await self.split_helper.split_scenes(self.chat, self.cmd, self.video, self.scene_list)
 
-    @property
-    def json_name(self) -> str:
+    @classmethod
+    def json_name(cls) -> str:
         return "split_scenes_confirmation_menu"
 
     def to_json(self) -> Dict:

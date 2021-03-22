@@ -75,8 +75,8 @@ class CheckTagsMenu(Menu):
                 self.chat, self.cmd, self.video, self.send_helper, self.destination
             )
 
-    @property
-    def json_name(self) -> str:
+    @classmethod
+    def json_name(cls) -> str:
         return "check_tags_menu"
 
     def to_json(self) -> Dict:

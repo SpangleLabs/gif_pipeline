@@ -103,8 +103,8 @@ class DestinationMenu(Menu):
             self.current_folder = folder
             return [await self.send()]
 
-    @property
-    def json_name(self) -> str:
+    @classmethod
+    def json_name(cls) -> str:
         return "destination_menu"
 
     def to_json(self) -> Dict:

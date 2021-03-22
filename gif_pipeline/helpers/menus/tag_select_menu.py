@@ -54,8 +54,8 @@ class TagSelectMenu(Menu):
                 self.chat, self.cmd, self.video, self.send_helper, self.destination, tag_name
             )
 
-    @property
-    def json_name(self) -> str:
+    @classmethod
+    def json_name(cls) -> str:
         return "tag_select_menu"
 
     def to_json(self) -> Dict:

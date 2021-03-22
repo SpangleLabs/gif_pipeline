@@ -55,8 +55,8 @@ class NotGifConfirmationMenu(Menu):
                 self.chat, self.cmd, self.video, dest_str, self.owner_id
             )
 
-    @property
-    def json_name(self) -> str:
+    @classmethod
+    def json_name(cls) -> str:
         return "not_gif_confirmation_menu"
 
     def to_json(self) -> Dict:

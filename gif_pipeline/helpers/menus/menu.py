@@ -94,9 +94,9 @@ class Menu:
     async def handle_text(self, text: str) -> Optional[List[Message]]:
         return None
 
+    @classmethod
     @abstractmethod
-    @property
-    def json_name(self) -> str:
+    def json_name(cls) -> str:
         pass
 
     @abstractmethod
