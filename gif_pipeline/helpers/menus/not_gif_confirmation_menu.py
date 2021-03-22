@@ -1,4 +1,4 @@
-from typing import Optional, List, TYPE_CHECKING
+from typing import Optional, List, TYPE_CHECKING, Dict
 
 from telethon import Button
 
@@ -54,3 +54,31 @@ class NotGifConfirmationMenu(Menu):
             return await self.send_helper.handle_dest_str(
                 self.chat, self.cmd, self.video, dest_str, self.owner_id
             )
+
+    @property
+    def json_name(self) -> str:
+        return "not_gif_confirmation_menu"
+
+    def to_json(self) -> Dict:
+        return {
+            "cmd_msg_id": self.cmd.message_data.message_id,
+            "dest_str": self.dest_str
+        }
+
+    @classmethod
+    def from_json(
+            cls,
+            json_data: Dict,
+            menu_helper: MenuHelper,
+            chat: Chat,
+            video: Message,
+            send_helper: GifSendHelper
+    ) -> 'Menu':
+        return NotGifConfirmationMenu(
+            menu_helper,
+            chat,
+            chat.message_by_id(json_data["cmd_msg_id"]),
+            video,
+            send_helper,
+            json_data["dest_str"]
+        )

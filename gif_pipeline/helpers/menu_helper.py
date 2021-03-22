@@ -115,6 +115,10 @@ class MenuHelper(Helper):
             channels = self.pipeline.channels
             menu = DestinationMenu.from_json(menu_json, self, chat, video_msg, send_helper, channels, self.tag_manager)
             return SentMenu(menu, menu_msg, menu_data.clicked)
+        if menu_data.menu_type == NotGifConfirmationMenu.json_name:
+            send_helper = self.pipeline.helpers[GifSendHelper.__name__]
+            menu = NotGifConfirmationMenu.from_json(menu_json, self, chat, video_msg, send_helper)
+            return SentMenu(menu, menu_msg, menu_data.clicked)
         if menu_data.menu_type == SendConfirmationMenu.json_name:
             send_helper = self.pipeline.helpers[GifSendHelper.__name__]
             channels = self.pipeline.channels
