@@ -40,6 +40,10 @@ class Menu:
         return self.cmd.message_data.sender_id
 
     @property
+    def owner_ids(self) -> List[int]:
+        return [self.cmd.message_data.sender_id]
+
+    @property
     @abstractmethod
     def text(self) -> str:
         pass

@@ -329,7 +329,7 @@ class Pipeline:
             await event.answer("That menu is unrecognised.")
             return
         # Check button was pressed by the person who requested the menu
-        if event.sender_id != menu.menu.owner_id:
+        if event.sender_id not in menu.menu.owner_ids:
             logger.info("User tried to press a button on a menu that wasn't theirs")
             await event.answer("This is not your menu, you are not authorised to use it.")
             return
