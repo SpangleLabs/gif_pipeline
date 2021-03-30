@@ -328,8 +328,8 @@ class Pipeline:
             logger.warning("Received a callback for a menu missing from cache")
             await event.answer("That menu is unrecognised.")
             return
-        # Check button was pressed by the person who requested the menu
-        if event.sender_id not in menu.menu.owner_ids:
+        # Check button was pressed by someone who was allowed to press it
+        if not menu.menu.allows_sender(event.sender_id):
             logger.info("User tried to press a button on a menu that wasn't theirs")
             await event.answer("This is not your menu, you are not authorised to use it.")
             return
