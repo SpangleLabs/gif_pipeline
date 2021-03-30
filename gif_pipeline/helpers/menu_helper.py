@@ -69,11 +69,12 @@ class MenuHelper(Helper):
     async def on_callback_query(
             self,
             callback_query: bytes,
-            menu: SentMenu
+            menu: SentMenu,
+            sender_id: int,
     ) -> Optional[List[Message]]:
         # Prevent double clicking menus
         menu.clicked = True
-        resp = await menu.menu.handle_callback_query(callback_query)
+        resp = await menu.menu.handle_callback_query(callback_query, sender_id)
         return resp
 
     def refresh_from_database(self) -> None:

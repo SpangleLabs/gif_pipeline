@@ -52,13 +52,14 @@ class DeleteHelper(Helper):
     async def on_callback_query(
             self,
             callback_query: bytes,
-            menu: SentMenu
+            menu: SentMenu,
+            sender_id: int,
     ) -> Optional[List[Message]]:
         query_split = callback_query.decode().split(":")
         if query_split[0] != "delete":
             return None
         admin_ids = await self.client.list_authorized_to_delete(menu.msg.chat_data)
-        if menu.menu.owner_id not in admin_ids:
+        if sender_id not in admin_ids:
             return None
         message_id = int(query_split[1])
         message = menu.menu.chat.message_by_id(message_id)

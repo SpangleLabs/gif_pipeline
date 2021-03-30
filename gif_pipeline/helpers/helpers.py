@@ -157,7 +157,8 @@ class Helper(ABC):
     async def on_callback_query(
             self,
             callback_query: bytes,
-            menu: SentMenu
+            menu: SentMenu,
+            sender_id: int,
     ) -> Optional[List[Message]]:
         pass
 

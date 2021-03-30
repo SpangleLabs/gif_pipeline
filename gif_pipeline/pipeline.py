@@ -341,7 +341,7 @@ class Pipeline:
             return
         # Hand callback queries to helpers
         helper_results: Iterable[Union[BaseException, Optional[List[Message]]]] = await asyncio.gather(
-            *(helper.on_callback_query(event.data, menu) for helper in self.helpers.values()),
+            *(helper.on_callback_query(event.data, menu, event.sender_id) for helper in self.helpers.values()),
             return_exceptions=True
         )
         answered = False

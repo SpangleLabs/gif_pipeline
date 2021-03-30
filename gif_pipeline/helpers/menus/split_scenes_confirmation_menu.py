@@ -63,7 +63,8 @@ class SplitScenesConfirmationMenu(Menu):
 
     async def handle_callback_query(
             self,
-            callback_query: bytes
+            callback_query: bytes,
+            sender_id: int,
     ) -> Optional[List[Message]]:
         if callback_query == self.cmd_cancel:
             self.cleared = True

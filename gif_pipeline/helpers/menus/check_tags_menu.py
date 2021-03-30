@@ -55,7 +55,8 @@ class CheckTagsMenu(Menu):
 
     async def handle_callback_query(
             self,
-            callback_query: bytes
+            callback_query: bytes,
+            sender_id: int,
     ) -> Optional[List[Message]]:
         if callback_query == self.cancel_callback:
             self.cancelled = True

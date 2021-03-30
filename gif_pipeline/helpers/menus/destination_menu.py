@@ -75,7 +75,8 @@ class DestinationMenu(Menu):
 
     async def handle_callback_query(
             self,
-            callback_query: bytes
+            callback_query: bytes,
+            sender_id: int,
     ) -> Optional[List[Message]]:
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.confirm_send:
