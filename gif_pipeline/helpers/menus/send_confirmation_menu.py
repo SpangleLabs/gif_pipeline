@@ -67,11 +67,11 @@ class SendConfirmationMenu(Menu):
             return []
         if callback_query == self.send_callback:
             return await self.send_helper.send_video(
-                self.chat, self.video, self.cmd, self.destination, self.owner_id
+                self.chat, self.video, self.cmd, self.destination, sender_id
             )
         if callback_query == self.send_queue:
             return await self.send_helper.send_video(
-                self.chat, self.video, self.cmd, self.destination.queue, self.owner_id
+                self.chat, self.video, self.cmd, self.destination.queue, sender_id
             )
 
     @classmethod

@@ -36,10 +36,6 @@ class Menu:
         self.menu_helper.menu_cache.add_menu(SentMenu(self, menu_msg))
 
     @property
-    def owner_id(self) -> int:
-        return self.cmd.message_data.sender_id
-
-    @property
     def owner_ids(self) -> List[int]:
         return [self.cmd.message_data.sender_id]
 

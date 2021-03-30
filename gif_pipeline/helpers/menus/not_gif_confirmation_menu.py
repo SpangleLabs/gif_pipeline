@@ -53,7 +53,7 @@ class NotGifConfirmationMenu(Menu):
         if split_data[0] == self.send_str:
             _, dest_str = split_data
             return await self.send_helper.handle_dest_str(
-                self.chat, self.cmd, self.video, dest_str, self.owner_id
+                self.chat, self.cmd, self.video, dest_str, sender_id
             )
 
     @classmethod
