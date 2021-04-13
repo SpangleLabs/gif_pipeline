@@ -6,7 +6,7 @@ from abc import ABC
 from typing import TYPE_CHECKING, Awaitable
 from typing import TypeVar, List, Optional
 
-from gif_pipeline.chat_config import ChatConfig, ChannelConfig, WorkshopConfig
+from gif_pipeline.chat_config import ChatConfig, ChannelConfig, WorkshopConfig, ScheduleConfig
 from gif_pipeline.chat_data import ChatData, ChannelData, WorkshopData
 from gif_pipeline.message import Message
 
@@ -111,6 +111,12 @@ class Channel(Chat):
     @property
     def has_queue(self) -> bool:
         return self.config.queue is not None
+
+    @property
+    def schedule_config(self) -> Optional[ScheduleConfig]:
+        if self.config.queue is None:
+            return None
+        return self.config.queue.schedule
 
 
 class WorkshopGroup(Chat):
