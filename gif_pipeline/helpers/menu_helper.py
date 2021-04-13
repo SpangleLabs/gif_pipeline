@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import Optional, List, Tuple, Set, TYPE_CHECKING
 
 from scenedetect import FrameTimecode
@@ -10,6 +11,7 @@ from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.helpers.menus.edit_gnostic_tag_values_menu import EditGnosticTagValuesMenu
 from gif_pipeline.helpers.menus.edit_single_tag_values_menu import EditSingleTagValuesMenu
 from gif_pipeline.helpers.menus.edit_text_tag_values_menu import EditTextTagValuesMenu
+from gif_pipeline.helpers.menus.schedule_reminder_menu import ScheduleReminderMenu
 from gif_pipeline.helpers.menus.split_scenes_confirmation_menu import SplitScenesConfirmationMenu
 from gif_pipeline.helpers.menus.delete_menu import DeleteMenu
 from gif_pipeline.helpers.menus.send_confirmation_menu import SendConfirmationMenu
@@ -259,5 +261,15 @@ class MenuHelper(Helper):
             split_helper: SceneSplitHelper
     ) -> Message:
         menu = SplitScenesConfirmationMenu(self, chat, cmd, video, threshold, scene_list, split_helper)
+        message = await menu.send()
+        return message
+
+    async def schedule_reminder_menu(
+            self,
+            chat: Chat,
+            video: 'Message',
+            post_time: datetime
+    ) -> Message:
+        menu = ScheduleReminderMenu(self, chat, None, video, post_time)
         message = await menu.send()
         return message
