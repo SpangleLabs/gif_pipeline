@@ -35,7 +35,7 @@ class Menu:
     def add_self_to_cache(self, menu_msg: Message):
         self.menu_helper.menu_cache.add_menu(SentMenu(self, menu_msg))
 
-    def allows_sender(self, sender_id: int):
+    def allows_sender(self, sender_id: int) -> bool:
         return sender_id == self.cmd.message_data.sender_id
 
     @property
