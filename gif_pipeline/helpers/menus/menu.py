@@ -26,7 +26,7 @@ def delta_to_string(delta: datetime.timedelta) -> str:
 
 class Menu:
 
-    def __init__(self, menu_helper: 'MenuHelper', chat: Chat, cmd: Message, video: Message):
+    def __init__(self, menu_helper: 'MenuHelper', chat: Chat, cmd: Optional[Message], video: Message):
         self.menu_helper = menu_helper
         self.chat = chat
         self.cmd = cmd
@@ -36,7 +36,9 @@ class Menu:
         self.menu_helper.menu_cache.add_menu(SentMenu(self, menu_msg))
 
     def allows_sender(self, sender_id: int) -> bool:
-        return sender_id == self.cmd.message_data.sender_id
+        if self.cmd:
+            return sender_id == self.cmd.message_data.sender_id
+        return True
 
     @property
     @abstractmethod
