@@ -7,7 +7,6 @@ from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.helpers.menus.schedule_reminder_menu import ScheduleReminderMenu
 
 if TYPE_CHECKING:
-    from gif_pipeline.menu_cache import MenuEntry
     from gif_pipeline.message import Message
     from gif_pipeline.chat import Chat, Channel
     from gif_pipeline.database import Database
@@ -62,7 +61,6 @@ class ScheduleHelper(Helper):
         self.channels = channels
         self.menu_helper = menu_helper
         self.menu_cache = menu_helper.menu_cache
-        self.initialise()
 
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         if message.text.strip().lower() != "check schedules":

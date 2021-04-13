@@ -21,6 +21,7 @@ from gif_pipeline.helpers.msg_helper import MSGHelper
 from gif_pipeline.helpers.public.public_tag_helper import PublicTagHelper
 from gif_pipeline.helpers.reverse_helper import ReverseHelper
 from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
+from gif_pipeline.helpers.schedule_helper import ScheduleHelper
 from gif_pipeline.helpers.send_helper import GifSendHelper
 from gif_pipeline.helpers.stabilise_helper import StabiliseHelper
 from gif_pipeline.helpers.tag_helper import TagHelper
@@ -157,6 +158,7 @@ class Pipeline:
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
         tag_manager = TagManager(self.channels, self.workshops, self.database)
         menu_helper = MenuHelper(self.database, self.client, self.worker, self, tag_manager)
+        schedule_helper = ScheduleHelper(self.database, self.client, self.worker, self.channels, menu_helper)
         helpers = [
             duplicate_helper,
             menu_helper,
@@ -185,6 +187,8 @@ class Pipeline:
             self.helpers[helper.name] = helper
         # Load menus from database
         menu_helper.refresh_from_database()
+        # Load schedule helper
+        self.client.synchronise_async(schedule_helper.initialise())
         logger.info(f"Initialised {len(self.helpers)} helpers")
         public_helpers = [
             PublicTagHelper(self.database, self.client, self.worker, tag_manager)
