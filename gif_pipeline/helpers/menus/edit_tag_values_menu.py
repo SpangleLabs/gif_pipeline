@@ -62,7 +62,7 @@ class EditTagValuesMenu(Menu):
 
     def tag_buttons(self) -> List[List[Button]]:
         if not self.known_tag_values:
-            return [[self.button_done()]]
+            return []
         current_page = self.paged_tag_values[self.page_num]
         columns = (len(current_page) // self.page_height) + (len(current_page) % self.page_height > 0)
         return [
