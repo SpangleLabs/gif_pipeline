@@ -72,7 +72,7 @@ class ScheduleHelper(Helper):
 
     def reminder_menus(self) -> Dict[int, ScheduleReminderMenu]:
         schedule_menus = {}
-        my_menu_classes = [ScheduleReminderMenu, QueueEmptyMenu]
+        my_menu_classes = [ScheduleReminderMenu]
         for menu_entry in self.menu_cache.list_entries():
             if any(isinstance(menu_entry.sent_menu.menu, klass) for klass in my_menu_classes):
                 schedule_menus[menu_entry.chat_id] = menu_entry.sent_menu.menu
@@ -82,22 +82,28 @@ class ScheduleHelper(Helper):
         reminder_menus = self.reminder_menus()
         new_menus = []
         for channel in self.channels:
-            if not channel.schedule_config:
-                continue
             # Check if they have a reminder menu
-            if channel.queue.chat_data.chat_id in reminder_menus:
+            if channel.queue and channel.queue.chat_data.chat_id in reminder_menus:
                 continue
-            # Figure out when message should be
-            next_post_time = next_post_time_for_channel(channel)
-            # Select video
-            video = next_video_for_channel(channel)
-            if video is None:
-                # TODO: Check if queue empty has already been posted about
-                await self.client.send_text_message(channel.chat_data, "This queue is empty")
-            # Create reminder
-            new_menus.append(await self.menu_helper.schedule_reminder_menu(
-                channel.queue,
-                video,
-                next_post_time
-            ))
+            # Initialise channel
+            menu_msg = await self.initialise_channel(channel)
+            if menu_msg is not None:
+                new_menus.append(menu_msg)
         return new_menus
+
+    async def initialise_channel(self, channel: Channel) -> Optional[Message]:
+        if not channel.schedule_config:
+            return None
+        # Figure out when message should be
+        next_post_time = next_post_time_for_channel(channel)
+        # Select video
+        video = next_video_for_channel(channel)
+        if video is None:
+            # TODO: Check if queue empty has already been posted about
+            return await self.client.send_text_message(channel.chat_data, "This queue is empty")
+        # Create reminder
+        return await self.menu_helper.schedule_reminder_menu(
+            channel.queue,
+            video,
+            next_post_time
+        )
