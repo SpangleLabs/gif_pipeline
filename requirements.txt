@@ -9,3 +9,4 @@ async_generator
 python-dateutil
 youtube_dl
 scenedetect[opencv,progress_bar]
+isodate
