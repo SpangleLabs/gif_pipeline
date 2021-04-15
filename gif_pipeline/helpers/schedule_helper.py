@@ -1,5 +1,8 @@
+import asyncio
 import random
+from dataclasses import dataclass
 from datetime import timedelta, datetime
+from threading import Thread
 from typing import Optional, List, TYPE_CHECKING, Dict
 
 from gif_pipeline.chat_config import ScheduleOrder
@@ -7,6 +10,8 @@ from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.helpers.menus.schedule_reminder_menu import ScheduleReminderMenu
 
 if TYPE_CHECKING:
+    from gif_pipeline.helpers.send_helper import GifSendHelper
+    from gif_pipeline.tag_manager import TagManager
     from gif_pipeline.message import Message
     from gif_pipeline.chat import Chat, Channel
     from gif_pipeline.database import Database
@@ -47,7 +52,14 @@ def next_video_for_channel(channel: Channel) -> Optional[Message]:
     return video
 
 
+@dataclass
+class ScheduleReminderSentMenu:
+    menu: 'ScheduleReminderMenu'
+    msg: 'Message'
+
+
 class ScheduleHelper(Helper):
+    CHECK_DELAY = 60
 
     def __init__(
             self,
@@ -55,12 +67,17 @@ class ScheduleHelper(Helper):
             client: TelegramClient,
             worker: TaskWorker,
             channels: List[Channel],
-            menu_helper: MenuHelper
+            menu_helper: MenuHelper,
+            send_helper: GifSendHelper,
+            tag_manager: TagManager
     ):
         super().__init__(database, client, worker)
         self.channels = channels
         self.menu_helper = menu_helper
         self.menu_cache = menu_helper.menu_cache
+        self.send_helper = send_helper
+        self.tag_manager = tag_manager
+        self.scheduler_thread = None  # type: Optional[Thread]
 
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         if message.text.strip().lower() != "check schedules":
@@ -70,12 +87,13 @@ class ScheduleHelper(Helper):
                 continue
         return [await self.send_text_reply(chat, message, "Mmm, schedules, yes.")]
 
-    def reminder_menus(self) -> Dict[int, ScheduleReminderMenu]:
+    def reminder_menus(self) -> Dict[int, ScheduleReminderSentMenu]:
         schedule_menus = {}
         my_menu_classes = [ScheduleReminderMenu]
         for menu_entry in self.menu_cache.list_entries():
-            if any(isinstance(menu_entry.sent_menu.menu, klass) for klass in my_menu_classes):
-                schedule_menus[menu_entry.chat_id] = menu_entry.sent_menu.menu
+            sent_menu = menu_entry.sent_menu
+            if any(isinstance(sent_menu.menu, klass) for klass in my_menu_classes):
+                schedule_menus[menu_entry.chat_id] = ScheduleReminderSentMenu(sent_menu.menu, sent_menu.msg)
         return schedule_menus
 
     async def initialise(self) -> Optional[List[Message]]:
@@ -89,6 +107,8 @@ class ScheduleHelper(Helper):
             menu_msg = await self.initialise_channel(channel)
             if menu_msg is not None:
                 new_menus.append(menu_msg)
+        self.scheduler_thread = Thread(target=asyncio.run, args=(self.scheduler(),))
+        self.scheduler_thread.start()
         return new_menus
 
     async def initialise_channel(self, channel: Channel) -> Optional[Message]:
@@ -107,3 +127,29 @@ class ScheduleHelper(Helper):
             video,
             next_post_time
         )
+
+    async def scheduler(self):
+        while True:
+            await self.check_channels()
+            await asyncio.sleep(self.CHECK_DELAY)
+
+    async def check_channels(self):
+        reminder_menus = self.reminder_menus()
+        for channel in self.channels:
+            if channel.queue:
+                continue
+            if channel.queue.chat_data.chat_id not in reminder_menus:
+                await self.initialise_channel(channel)
+                continue
+            sent_menu = reminder_menus[channel.queue.chat_data.chat_id]
+            menu = sent_menu.menu
+            if datetime.utcnow() > menu.post_time:
+                menu.posted = True
+                missing_tags = self.tag_manager.missing_tags_for_video(menu.video, channel, menu.chat)
+                if missing_tags:
+                    return await self.menu_helper.additional_tags_menu(
+                        menu.chat, sent_menu.msg, menu.video, self.send_helper, channel, missing_tags
+                    )
+                return await self.menu_helper.confirmation_menu(
+                    menu.chat, sent_menu.msg, menu.video, self.send_helper, channel
+                )
