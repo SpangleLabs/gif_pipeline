@@ -92,10 +92,8 @@ class ScheduleHelper(Helper):
             # Select video
             video = next_video_for_channel(channel)
             if video is None:
-                continue  # TODO
-                new_menus.append(await self.menu_helper.queue_empty_menu(
-                    channel.queue
-                ))
+                # TODO: Check if queue empty has already been posted about
+                await self.client.send_text_message(channel.chat_data, "This queue is empty")
             # Create reminder
             new_menus.append(await self.menu_helper.schedule_reminder_menu(
                 channel.queue,
