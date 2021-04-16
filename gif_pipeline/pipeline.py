@@ -158,7 +158,16 @@ class Pipeline:
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
         tag_manager = TagManager(self.channels, self.workshops, self.database)
         menu_helper = MenuHelper(self.database, self.client, self.worker, self, tag_manager)
-        schedule_helper = ScheduleHelper(self.database, self.client, self.worker, self.channels, menu_helper)
+        send_helper = GifSendHelper(self.database, self.client, self.worker, self.channels, menu_helper)
+        schedule_helper = ScheduleHelper(
+            self.database,
+            self.client,
+            self.worker,
+            self.channels,
+            menu_helper,
+            send_helper,
+            tag_manager
+        )
         helpers = [
             duplicate_helper,
             menu_helper,
@@ -172,13 +181,14 @@ class Pipeline:
             MSGHelper(self.database, self.client, self.worker),
             FAHelper(self.database, self.client, self.worker),
             SceneSplitHelper(self.database, self.client, self.worker, menu_helper),
-            GifSendHelper(self.database, self.client, self.worker, self.channels, menu_helper),
+            send_helper,
             DeleteHelper(self.database, self.client, self.worker),
             MergeHelper(self.database, self.client, self.worker),
             ReverseHelper(self.database, self.client, self.worker),
             FFProbeHelper(self.database, self.client, self.worker),
             ZipHelper(self.database, self.client, self.worker),
-            TagHelper(self.database, self.client, self.worker, tag_manager)
+            TagHelper(self.database, self.client, self.worker, tag_manager),
+            schedule_helper
         ]
         if "imgur" in self.api_keys:
             helpers.append(
