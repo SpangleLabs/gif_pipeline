@@ -136,7 +136,7 @@ class ScheduleHelper(Helper):
     async def check_channels(self):
         reminder_menus = self.reminder_menus()
         for channel in self.channels:
-            if not channel.queue:
+            if not channel.queue or not channel.schedule_config:
                 continue
             if channel.queue.chat_data.chat_id not in reminder_menus:
                 await self.initialise_channel(channel)
