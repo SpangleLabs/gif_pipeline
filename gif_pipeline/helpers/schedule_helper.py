@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from gif_pipeline.helpers.menu_helper import MenuHelper
 
 
-def next_post_time_for_channel(channel: Channel) -> datetime:
+def next_post_time_for_channel(channel: 'Channel') -> datetime:
     time_delay = channel.schedule_config.min_time
     if channel.schedule_config.max_time:
         min_seconds = channel.schedule_config.min_time.total_seconds()
@@ -35,7 +35,7 @@ def next_post_time_for_channel(channel: Channel) -> datetime:
     return next_post_time
 
 
-def next_video_for_channel(channel: Channel) -> Optional[Message]:
+def next_video_for_channel(channel: 'Channel') -> Optional['Message']:
     messages = []
     if channel.schedule_config.order == ScheduleOrder.OLDEST_FIRST:
         messages = sorted(channel.messages, key=lambda msg: msg.message_data.datetime, reverse=False)
@@ -63,13 +63,13 @@ class ScheduleHelper(Helper):
 
     def __init__(
             self,
-            database: Database,
-            client: TelegramClient,
-            worker: TaskWorker,
-            channels: List[Channel],
-            menu_helper: MenuHelper,
-            send_helper: GifSendHelper,
-            tag_manager: TagManager
+            database: 'Database',
+            client: 'TelegramClient',
+            worker: 'TaskWorker',
+            channels: List['Channel'],
+            menu_helper: 'MenuHelper',
+            send_helper: 'GifSendHelper',
+            tag_manager: 'TagManager'
     ):
         super().__init__(database, client, worker)
         self.channels = channels
@@ -79,7 +79,7 @@ class ScheduleHelper(Helper):
         self.tag_manager = tag_manager
         self.scheduler_thread = None  # type: Optional[Thread]
 
-    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
+    async def on_new_message(self, chat: 'Chat', message: 'Message') -> Optional[List['Message']]:
         if message.text.strip().lower() != "check schedules":
             return
         for channel in self.channels:
@@ -96,7 +96,7 @@ class ScheduleHelper(Helper):
                 schedule_menus[menu_entry.chat_id] = ScheduleReminderSentMenu(sent_menu.menu, sent_menu.msg)
         return schedule_menus
 
-    async def initialise(self) -> Optional[List[Message]]:
+    async def initialise(self) -> Optional[List['Message']]:
         reminder_menus = self.reminder_menus()
         new_menus = []
         for channel in self.channels:
@@ -111,7 +111,7 @@ class ScheduleHelper(Helper):
         self.scheduler_thread.start()
         return new_menus
 
-    async def initialise_channel(self, channel: Channel) -> Optional[Message]:
+    async def initialise_channel(self, channel: 'Channel') -> Optional['Message']:
         if not channel.schedule_config:
             return None
         # Figure out when message should be

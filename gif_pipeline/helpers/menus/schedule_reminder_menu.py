@@ -43,7 +43,7 @@ class ScheduleReminderMenu(Menu):
             self,
             callback_query: bytes,
             sender_id: int
-    ) -> Optional[List[Message]]:
+    ) -> Optional[List['Message']]:
         return None  # TODO
         # if callback_query == self.callback_reroll:
 
