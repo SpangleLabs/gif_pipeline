@@ -45,7 +45,7 @@ class VideoTags:
 
     def remove_all_values_for_tag(self, tag_name: str) -> None:
         if tag_name in self._tags:
-            del self._tags
+            del self._tags[tag_name]
 
     def remove_tag_value(self, tag_name: str, tag_value: str) -> None:
         if tag_name not in self._tags:
