@@ -146,6 +146,9 @@ class MenuHelper(Helper):
             channels = self.pipeline.channels
             menu = TagSelectMenu.from_json(menu_json, self, chat, video_msg, send_helper, channels)
             return SentMenu(menu, menu_msg, clicked)
+        if menu_data.menu_type == ScheduleReminderMenu.json_name():
+            menu = ScheduleReminderMenu.from_json(menu_json, self, chat, video_msg)
+            return SentMenu(menu, menu_msg, clicked)
         return None
 
     async def delete_menu_for_video(self, video: Message) -> None:
