@@ -1,7 +1,7 @@
 import asyncio
 import random
 from dataclasses import dataclass
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from threading import Thread
 from typing import Optional, List, TYPE_CHECKING, Dict
 
@@ -28,7 +28,7 @@ def next_post_time_for_channel(channel: 'Channel') -> datetime:
         time_delay = timedelta(seconds=random.uniform(min_seconds, max_seconds))
     last_post = channel.latest_message().message_data.datetime
     next_post_time = last_post + time_delay
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if next_post_time < now:
         # TODO: Maybe always use this?
         next_post_time = now + time_delay
