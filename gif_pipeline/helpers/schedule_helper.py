@@ -144,7 +144,7 @@ class ScheduleHelper(Helper):
                 continue
             sent_menu = reminder_menus[channel.queue.chat_data.chat_id]
             menu = sent_menu.menu
-            if datetime.utcnow() > menu.post_time:
+            if datetime.now(timezone.utc) > menu.post_time:
                 menu.posted = True
                 missing_tags = self.tag_manager.missing_tags_for_video(menu.video, channel, menu.chat)
                 if missing_tags:
