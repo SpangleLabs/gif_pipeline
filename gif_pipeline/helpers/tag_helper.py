@@ -1,4 +1,5 @@
 from typing import Optional, List
+import html
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.database import Database
@@ -45,7 +46,7 @@ class TagHelper(Helper):
             tags = video.tags(self.database)
             text = "List of tags:\n"
             text += "\n".join(
-                f"{key}: " + ", ".join(tags.list_values_for_tag(key))
+                f"{html.escape(key)}: " + ", ".join(html.escape(t) for t in tags.list_values_for_tag(key))
                 for key in tags.list_tag_names()
             )
             return [await self.send_text_reply(chat, message, text)]
@@ -55,10 +56,10 @@ class TagHelper(Helper):
             tags = video.tags(self.database)
             values = tags.list_values_for_tag(tag_name)
             if not values:
-                text = f"This video has no tags for \"{tag_name}\"."
+                text = f"This video has no tags for \"{html.escape(tag_name)}\"."
             else:
-                text = f"List of \"{tag_name}\" tags:\n"
-                text += "\n".join("- "+t for t in values)
+                text = f"List of \"{html.escape(tag_name)}\" tags:\n"
+                text += "\n".join("- "+html.escape(t) for t in values)
             return [await self.send_text_reply(chat, message, text)]
         # Remove
         if args[0].lower() in ["remove", "delete", "unset"]:
@@ -69,10 +70,10 @@ class TagHelper(Helper):
                 tags = video.tags(self.database)
                 values = tags.list_values_for_tag(tag_name)
                 if not values:
-                    text = f"This video has no tags for \"{tag_name}\"."
+                    text = f"This video has no tags for \"{html.escape(tag_name)}\"."
                 else:
-                    text = f"Removed all \"{tag_name}\" tags:\n"
-                    text += "\n".join("- "+t for t in values)
+                    text = f"Removed all \"{html.escape(tag_name)}\" tags:\n"
+                    text += "\n".join("- "+html.escape(t) for t in values)
                     text += "\nFrom this video."
                     tags.remove_all_values_for_tag(tag_name)
                     self.database.save_tags(video.message_data, tags)
@@ -82,10 +83,10 @@ class TagHelper(Helper):
             tag_value = " ".join(args[1:])
             tags = video.tags(self.database)
             if tag_value not in tags.list_values_for_tag(tag_name):
-                text = f"This video does not have a \"{tag_name}\" tag for \"{tag_value}\"."
+                text = f"This video does not have a \"{html.escape(tag_name)}\" tag for \"{html.escape(tag_value)}\"."
             else:
                 tags.remove_tag_value(tag_name, tag_value)
-                text = f"Removed the \"{tag_name}\" tag for \"{tag_value}\" from this video."
+                text = f"Removed the \"{html.escape(tag_name)}\" tag for \"{html.escape(tag_value)}\" from this video."
                 self.database.save_tags(video.message_data, tags)
             return [await self.send_text_reply(chat, message, text)]
         # Set/add a tag value
@@ -94,5 +95,5 @@ class TagHelper(Helper):
         tags = video.tags(self.database)
         tags.add_tag_value(tag_name, tag_value)
         self.database.save_tags(video.message_data, tags)
-        text = f"Added \"{tag_name}\" tag: \"{tag_value}\"."
+        text = f"Added \"{html.escape(tag_name)}\" tag: \"{html.escape(tag_value)}\"."
         return [await self.send_text_reply(chat, message, text)]

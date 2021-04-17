@@ -1,5 +1,5 @@
-from telethon import events
 from telethon.tl.types import Message
+import html
 
 from gif_pipeline.database import Database
 from gif_pipeline.helpers.public.public_helpers import PublicHelper
@@ -21,11 +21,11 @@ class PublicTagHelper(PublicHelper):
             msg = self.tag_manager.get_message_for_ids(chat_id, msg_id)
             if msg:
                 tags = msg.tags(self.database)
-                text = f"This post is from {msg.chat_data.title}."
+                text = f"This post is from {html.escape(msg.chat_data.title)}."
                 if tags:
                     text += " It has the following tags:\n"
                     text += "\n".join(
-                        f"{tag_key}: " + ", ".join(tags.list_values_for_tag(tag_key))
+                        f"{html.escape(tag_key)}: " + ", ".join(html.escape(t) for t in tags.list_values_for_tag(tag_key))
                         for tag_key in tags.list_tag_names()
                     )
                 else:
