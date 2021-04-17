@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, TYPE_CHECKING, Optional, List
 
 import dateutil.parser
@@ -29,7 +29,11 @@ class ScheduleReminderMenu(Menu):
 
     @property
     def text(self) -> str:
-        return f"I am planning to post this video at {self.post_time.isoformat()}."
+        time_str = self.post_time.strftime("%Y-%m-%d at %H:%M")
+        now = datetime.now(timezone.utc)
+        if self.post_time.date() == now.date():
+            time_str = f"today at {self.post_time.strftime('%H:%M')}"
+        return f"I am planning to post this video at {time_str}."
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
