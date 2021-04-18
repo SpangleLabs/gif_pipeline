@@ -82,7 +82,6 @@ class ScheduleHelper(Helper):
         self.menu_cache = menu_helper.menu_cache
         self.send_helper = send_helper
         self.tag_manager = tag_manager
-        self.scheduler_thread = None  # type: Optional[Thread]
 
     async def on_new_message(self, chat: 'Chat', message: 'Message') -> Optional[List['Message']]:
         if message.text.strip().lower() != "check schedules":
@@ -112,8 +111,7 @@ class ScheduleHelper(Helper):
             menu_msg = await self.initialise_channel(channel)
             if menu_msg is not None:
                 new_menus.append(menu_msg)
-        self.scheduler_thread = Thread(target=asyncio.run, args=(self.scheduler(),))
-        self.scheduler_thread.start()
+        asyncio.get_event_loop().create_task(self.scheduler())
         return new_menus
 
     async def initialise_channel(self, channel: 'Channel') -> Optional['Message']:
