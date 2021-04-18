@@ -25,7 +25,6 @@ class ScheduleReminderMenu(Menu):
     ):
         super().__init__(menu_helper, chat, cmd, video)
         self.post_time = post_time
-        self.posted = False
 
     @property
     def text(self) -> str:

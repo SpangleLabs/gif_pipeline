@@ -134,27 +134,32 @@ class ScheduleHelper(Helper):
 
     async def scheduler(self):
         while True:
-            await self.check_channels()
+            try:
+                await self.check_channels()
+            except Exception as e:
+                logger.error(f"Failed to check channels, due to exception: {e}")
             await asyncio.sleep(self.CHECK_DELAY)
 
     async def check_channels(self):
         logger.info("Checking channel queues")
         reminder_menus = self.reminder_menus()
         for channel in self.channels:
-            if not channel.queue or not channel.schedule_config:
-                continue
-            if channel.queue.chat_data.chat_id not in reminder_menus:
-                await self.initialise_channel(channel)
-                continue
-            sent_menu = reminder_menus[channel.queue.chat_data.chat_id]
-            menu = sent_menu.menu
-            if datetime.now(timezone.utc) > menu.post_time:
-                menu.posted = True
-                missing_tags = self.tag_manager.missing_tags_for_video(menu.video, channel, menu.chat)
-                if missing_tags:
-                    return await self.menu_helper.additional_tags_menu(
-                        menu.chat, None, menu.video, self.send_helper, channel, missing_tags
+            try:
+                if not channel.queue or not channel.schedule_config:
+                    continue
+                if channel.queue.chat_data.chat_id not in reminder_menus:
+                    await self.initialise_channel(channel)
+                    continue
+                sent_menu = reminder_menus[channel.queue.chat_data.chat_id]
+                menu = sent_menu.menu
+                if datetime.now(timezone.utc) > menu.post_time:
+                    missing_tags = self.tag_manager.missing_tags_for_video(menu.video, channel, menu.chat)
+                    if missing_tags:
+                        return await self.menu_helper.additional_tags_menu(
+                            menu.chat, None, menu.video, self.send_helper, channel, missing_tags
+                        )
+                    return await self.menu_helper.confirmation_menu(
+                        menu.chat, None, menu.video, self.send_helper, channel
                     )
-                return await self.menu_helper.confirmation_menu(
-                    menu.chat, None, menu.video, self.send_helper, channel
-                )
+            except Exception as e:
+                logger.error(f"Failed to check channel: {channel} due to exception: {e}")
