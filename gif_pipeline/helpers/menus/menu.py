@@ -41,6 +41,12 @@ class Menu:
         return True
 
     @property
+    def cmd_msg_id(self) -> Optional[int]:
+        if self.cmd:
+            return self.cmd.message_data.message_id
+        return None
+
+    @property
     @abstractmethod
     def text(self) -> str:
         pass

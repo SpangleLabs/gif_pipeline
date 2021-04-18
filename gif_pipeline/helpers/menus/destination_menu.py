@@ -110,7 +110,7 @@ class DestinationMenu(Menu):
 
     def to_json(self) -> Dict:
         return {
-            "cmd_msg_id": self.cmd.message_data.message_id,
+            "cmd_msg_id": self.cmd_msg_id,
             "channel_ids": [channel.chat_data.chat_id for channel in self.channels],
             "current_folder": self.current_folder
         }

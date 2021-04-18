@@ -81,7 +81,9 @@ class Chat(ABC):
     def remove_message(self, message_data: MessageData) -> None:
         self.messages = [msg for msg in self.messages if msg.message_data != message_data]
 
-    def message_by_id(self, message_id: int) -> Optional[Message]:
+    def message_by_id(self, message_id: Optional[int]) -> Optional[Message]:
+        if message_id is None:
+            return None
         return next(iter([msg for msg in self.messages if msg.message_data.message_id == message_id]), None)
 
     def message_by_link(self, link: str) -> Optional[Message]:

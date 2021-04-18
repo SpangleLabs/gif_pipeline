@@ -1,3 +1,4 @@
+from datetime import timezone, datetime
 from typing import Optional, List, TYPE_CHECKING, Dict
 
 from telethon import Button
@@ -37,7 +38,7 @@ class SendConfirmationMenu(Menu):
             if last_post is None:
                 msg += "There have been no posts there yet."
             else:
-                now = self.cmd.message_data.datetime
+                now = datetime.now(timezone.utc)
                 duration = now - last_post.message_data.datetime
                 duration_str = delta_to_string(duration)
                 msg += f"\nThe last post there was {duration_str} ago"
@@ -80,7 +81,7 @@ class SendConfirmationMenu(Menu):
 
     def to_json(self) -> Dict:
         return {
-            "cmd_msg_id": self.cmd.message_data.message_id,
+            "cmd_msg_id": self.cmd_msg_id,
             "destination_id": self.destination.chat_data.chat_id
         }
 

@@ -100,7 +100,7 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
 
     def to_json(self) -> Dict:
         return {
-            "cmd_msg_id": self.cmd.message_data.message_id,
+            "cmd_msg_id": self.cmd_msg_id,
             "destination_id": self.destination.chat_data.chat_id,
             "tag_name": self.tag_name,
             "page_num": self.page_num,

@@ -62,7 +62,7 @@ class NotGifConfirmationMenu(Menu):
 
     def to_json(self) -> Dict:
         return {
-            "cmd_msg_id": self.cmd.message_data.message_id,
+            "cmd_msg_id": self.cmd_msg_id,
             "dest_str": self.dest_str
         }
 
