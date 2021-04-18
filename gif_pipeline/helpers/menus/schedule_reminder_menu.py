@@ -43,7 +43,7 @@ class ScheduleReminderMenu(Menu):
     def allows_sender(self, sender_id: int) -> bool:
         return True
 
-    def handle_callback_query(
+    async def handle_callback_query(
             self,
             callback_query: bytes,
             sender_id: int
