@@ -1,5 +1,6 @@
 import asyncio
 import random
+import logging
 from dataclasses import dataclass
 from datetime import timedelta, datetime, timezone
 from threading import Thread
@@ -18,6 +19,9 @@ if TYPE_CHECKING:
     from gif_pipeline.telegram_client import TelegramClient
     from gif_pipeline.tasks.task_worker import TaskWorker
     from gif_pipeline.helpers.menu_helper import MenuHelper
+
+
+logger = logging.getLogger(__name__)
 
 
 def next_post_time_for_channel(channel: 'Channel') -> datetime:
@@ -115,6 +119,7 @@ class ScheduleHelper(Helper):
     async def initialise_channel(self, channel: 'Channel') -> Optional['Message']:
         if not channel.schedule_config:
             return None
+        logger.info(f"Initialising schedule reminder in channel: {channel}")
         # Figure out when message should be
         next_post_time = next_post_time_for_channel(channel)
         # Select video
@@ -135,6 +140,7 @@ class ScheduleHelper(Helper):
             await asyncio.sleep(self.CHECK_DELAY)
 
     async def check_channels(self):
+        logger.info("Checking channel queues")
         reminder_menus = self.reminder_menus()
         for channel in self.channels:
             if not channel.queue or not channel.schedule_config:
