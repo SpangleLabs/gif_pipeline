@@ -127,8 +127,7 @@ class Message:
                     logger.info(f"Download required: file missing for message: {message_data}")
                     return True
                 if message_data.file_mime_type == "image/jpeg":
-                    # Telegram reports the wrong size for images, for some reason
-                    logger.info(f"Don't check file size for jpeg: {message_data}")
+                    # Telegram reports the wrong size for images, for some reason, so skip those
                     return False
                 size_on_disc = os.path.getsize(message_data.file_path)
                 if size_on_disc != message_data.file_size:
