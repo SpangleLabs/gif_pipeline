@@ -69,7 +69,10 @@ class Database:
         with self._lock:
             cur = self.conn.cursor()
             try:
-                result = cur.execute(query, args)
+                if args:
+                    result = cur.execute(query, args)
+                else:
+                    result = cur.execute(query)
                 self.conn.commit()
                 yield result
             finally:
