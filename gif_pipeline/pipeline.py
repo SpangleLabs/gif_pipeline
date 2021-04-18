@@ -311,6 +311,8 @@ class Pipeline:
                         f"Helper {helper} threw an exception trying to handle deleting message {message}.",
                         exc_info=result
                     )
+            # If it's a menu, remove that
+            self.menu_cache.remove_menu_by_message(message)
             # Remove messages from store
             logger.info(f"Deleting message {message} from chat: {message.chat_data}")
             message.delete(self.database)
