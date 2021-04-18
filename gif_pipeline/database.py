@@ -124,7 +124,7 @@ class Database:
                 "SELECT chat_id, username, title, chat_type FROM chats WHERE chat_id = ?",
                 (chat_id,)
         ) as result:
-            chat_row = next(result)
+            chat_row = next(result, None)
             if chat_row is None:
                 return None
             chat_data_class = chat_types[chat_row["chat_type"]]
@@ -278,7 +278,7 @@ class Database:
             "SELECT entry_id FROM messages WHERE chat_id = ? AND message_id = ? AND is_scheduled = ?",
             (chat_id, message_id, is_scheduled)
         ) as result:
-            row = next(result)
+            row = next(result, None)
             if row is None:
                 return
             return row["entry_id"]
