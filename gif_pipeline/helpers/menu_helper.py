@@ -242,12 +242,12 @@ class MenuHelper(Helper):
     async def after_send_delete_menu(
             self,
             chat: Chat,
-            cmd: Message,
+            cmd: Optional[Message],
             video: Message,
             text: str,
     ) -> Optional[Message]:
         admin_ids = await self.client.list_authorized_to_delete(chat.chat_data)
-        if cmd.message_data.sender_id not in admin_ids:
+        if cmd is not None and cmd.message_data.sender_id not in admin_ids:
             await self.delete_menu_for_video(video)
             return None
         menu = DeleteMenu(self, chat, cmd, video, text)
