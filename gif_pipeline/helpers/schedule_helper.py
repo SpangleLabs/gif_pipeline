@@ -149,8 +149,8 @@ class ScheduleHelper(Helper):
                 missing_tags = self.tag_manager.missing_tags_for_video(menu.video, channel, menu.chat)
                 if missing_tags:
                     return await self.menu_helper.additional_tags_menu(
-                        menu.chat, sent_menu.msg, menu.video, self.send_helper, channel, missing_tags
+                        menu.chat, None, menu.video, self.send_helper, channel, missing_tags
                     )
                 return await self.menu_helper.confirmation_menu(
-                    menu.chat, sent_menu.msg, menu.video, self.send_helper, channel
+                    menu.chat, None, menu.video, self.send_helper, channel
                 )
