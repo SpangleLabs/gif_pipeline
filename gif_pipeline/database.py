@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from sqlite3 import Cursor
 from threading import RLock
-from typing import List, Optional, Type, TypeVar, Set, Iterable, Dict, Tuple, Any, Generator, Union
+from typing import List, Optional, Type, TypeVar, Set, Iterable, Dict, Tuple, Union, ContextManager
 
 import dateutil.parser
 
@@ -65,7 +65,7 @@ class Database:
         self.conn.commit()
 
     @contextmanager
-    def _execute(self, query: str, args: Optional[Union[Tuple, Dict]] = None) -> Generator[Cursor]:
+    def _execute(self, query: str, args: Optional[Union[Tuple, Dict]] = None) -> ContextManager[Cursor]:
         with self._lock:
             cur = self.conn.cursor()
             try:
