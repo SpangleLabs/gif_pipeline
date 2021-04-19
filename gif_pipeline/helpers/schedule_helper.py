@@ -80,7 +80,7 @@ class ScheduleHelper(Helper):
         # If channel, update schedule time
         if isinstance(chat, Channel):
             return await self.update_reminder_by_channel(chat, message)
-        if chat in [channel.queue for channel in self.channels]:
+        if chat in [channel.queue for channel in self.channels] and message.has_video:
             return await self.update_reminder_by_queue(chat, message)
         # Manual schedule set command
         if message.text.strip().lower() != "schedule":
