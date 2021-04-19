@@ -8,9 +8,10 @@ from telethon import Button
 from gif_pipeline.helpers.menus.menu import Menu
 
 if TYPE_CHECKING:
-    from gif_pipeline.chat import Chat
+    from gif_pipeline.chat import Chat, Channel
     from gif_pipeline.helpers.menu_helper import MenuHelper
     from gif_pipeline.message import Message
+    from gif_pipeline.tag_manager import TagManager
 
 
 def next_video_from_list(messages: List['Message']) -> Optional['Message']:
@@ -33,11 +34,13 @@ class ScheduleReminderMenu(Menu):
             cmd: None,
             video: 'Message',
             post_time: datetime,
-            missing_tags: Set[str]
+            channel: 'Channel',
+            tag_manager: 'TagManager'
     ):
         super().__init__(menu_helper, chat, cmd, video)
         self.post_time = post_time
-        self.missing_tags = missing_tags
+        self.channel = channel
+        self.tag_manager = tag_manager
 
     @property
     def text(self) -> str:
@@ -46,10 +49,11 @@ class ScheduleReminderMenu(Menu):
         if self.post_time.date() == now.date():
             time_str = f"today at {self.post_time.strftime('%H:%M')} (UTC)"
         tags_str = ""
-        if self.missing_tags:
+        missing_tags = self.tag_manager.missing_tags_for_video(self.video, self.channel, self.chat)
+        if missing_tags:
             tags_str = (
                 "\nHowever, it is currently missing these tags: \n" +
-                "\n".join("- "+tag for tag in self.missing_tags)
+                "\n".join("- "+tag for tag in missing_tags)
             )
         return f"I am planning to post this video at {time_str}.{tags_str}"
 
@@ -78,8 +82,7 @@ class ScheduleReminderMenu(Menu):
 
     def to_json(self) -> Dict:
         return {
-            "post_time": self.post_time.isoformat(),
-            "missing_tags": list(self.missing_tags)
+            "post_time": self.post_time.isoformat()
         }
 
     @classmethod
@@ -88,13 +91,17 @@ class ScheduleReminderMenu(Menu):
             json_data: Dict,
             menu_helper: 'MenuHelper',
             chat: 'Chat',
-            video: 'Message'
+            video: 'Message',
+            all_channels: List['Channel'],
+            tag_manager: TagManager
     ) -> 'Menu':
+        destination = next(filter(lambda channel: channel.queue == chat, all_channels), None)
         return ScheduleReminderMenu(
             menu_helper,
             chat,
             None,
             video,
             dateutil.parser.parse(json_data["post_time"]),
-            set(json_data.get("missing_tags", []))
+            destination,
+            tag_manager
         )

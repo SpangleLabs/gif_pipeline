@@ -147,7 +147,8 @@ class MenuHelper(Helper):
             menu = TagSelectMenu.from_json(menu_json, self, chat, video_msg, send_helper, channels)
             return SentMenu(menu, menu_msg, clicked)
         if menu_data.menu_type == ScheduleReminderMenu.json_name():
-            menu = ScheduleReminderMenu.from_json(menu_json, self, chat, video_msg)
+            channels = self.pipeline.channels
+            menu = ScheduleReminderMenu.from_json(menu_json, self, chat, video_msg, channels, self.tag_manager)
             return SentMenu(menu, menu_msg, clicked)
         return None
 
@@ -272,8 +273,8 @@ class MenuHelper(Helper):
             chat: Chat,
             video: 'Message',
             post_time: datetime,
-            missing_tags: Set[str]
+            channel: 'Channel'
     ) -> Message:
-        menu = ScheduleReminderMenu(self, chat, None, video, post_time, missing_tags)
+        menu = ScheduleReminderMenu(self, chat, None, video, post_time, channel, self.tag_manager)
         message = await menu.send()
         return message

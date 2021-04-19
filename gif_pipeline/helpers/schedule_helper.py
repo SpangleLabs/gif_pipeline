@@ -152,14 +152,12 @@ class ScheduleHelper(Helper):
             if channel.queue.latest_message().text == empty_queue_text:
                 return None
             return await self.client.send_text_message(channel.chat_data, empty_queue_text)
-        # Check missing tags
-        missing_tags = self.tag_manager.missing_tags_for_video(video, channel, channel.queue)
         # Create reminder
         return await self.menu_helper.schedule_reminder_menu(
             channel.queue,
             video,
             next_post_time,
-            missing_tags
+            channel
         )
 
     async def scheduler(self):
