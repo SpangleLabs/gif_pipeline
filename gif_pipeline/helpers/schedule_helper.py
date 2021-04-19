@@ -142,7 +142,6 @@ class ScheduleHelper(Helper):
     async def initialise_channel(self, channel: 'Channel') -> Optional['Message']:
         if not channel.schedule_config:
             return None
-        logger.info(f"Initialising schedule reminder in channel: {channel}")
         # Figure out when message should be
         next_post_time = next_post_time_for_channel(channel)
         # Select video
@@ -151,8 +150,10 @@ class ScheduleHelper(Helper):
             empty_queue_text = "This queue is empty"
             if channel.queue.latest_message().text == empty_queue_text:
                 return None
-            return await self.client.send_text_message(channel.queue.chat_data, empty_queue_text)
+            logger.info(f"Queue is empty for channel: {channel}")
+            return await self.send_message(channel.queue, text=empty_queue_text)
         # Create reminder
+        logger.info(f"Initialising schedule reminder in channel: {channel}")
         return await self.menu_helper.schedule_reminder_menu(
             channel.queue,
             video,
