@@ -79,7 +79,7 @@ class ScheduleHelper(Helper):
     async def on_new_message(self, chat: 'Chat', message: 'Message') -> Optional[List['Message']]:
         # If channel, update schedule time
         if isinstance(chat, Channel):
-            return await self.update_reminder_by_channel(chat, message)
+            return await self.update_reminder_by_channel(chat)
         if chat in [channel.queue for channel in self.channels] and message.has_video:
             return await self.update_reminder_by_queue(chat, message)
         # Manual schedule set command
@@ -96,13 +96,14 @@ class ScheduleHelper(Helper):
         reminder_menu.menu.video = video
         return [await reminder_menu.menu.send()]
 
-    async def update_reminder_by_channel(self, chat: 'Channel', message: 'Message') -> Optional[List['Message']]:
+    async def update_reminder_by_channel(self, chat: 'Channel') -> Optional[List['Message']]:
         if not chat.schedule_config:
             return None
         reminder_menus = self.reminder_menus()
-        if message.chat_data.chat_id not in reminder_menus:
+        queue_chat_id = chat.queue.chat_data.chat_id
+        if queue_chat_id not in reminder_menus:
             return None
-        menu = reminder_menus[message.chat_data.chat_id]
+        menu = reminder_menus[queue_chat_id]
         menu.menu.post_time = next_post_time_for_channel(chat)
         return [await menu.menu.send()]
 
