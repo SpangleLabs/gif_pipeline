@@ -93,7 +93,7 @@ class ScheduleReminderMenu(Menu):
             chat: 'Chat',
             video: 'Message',
             all_channels: List['Channel'],
-            tag_manager: TagManager
+            tag_manager: 'TagManager'
     ) -> 'Menu':
         destination = next(filter(lambda channel: channel.queue == chat, all_channels), None)
         return ScheduleReminderMenu(
