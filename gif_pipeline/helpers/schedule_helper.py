@@ -100,9 +100,9 @@ class ScheduleHelper(Helper):
         if not chat.schedule_config:
             return None
         reminder_menus = self.reminder_menus()
-        if chat.chat_data.chat_id not in reminder_menus:
+        if message.chat_data.chat_id not in reminder_menus:
             return None
-        menu = reminder_menus[chat.chat_data.chat_id]
+        menu = reminder_menus[message.chat_data.chat_id]
         menu.menu.post_time = next_post_time_for_channel(chat)
         return [await menu.menu.send()]
 
