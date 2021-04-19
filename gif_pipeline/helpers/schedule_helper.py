@@ -151,7 +151,7 @@ class ScheduleHelper(Helper):
             empty_queue_text = "This queue is empty"
             if channel.queue.latest_message().text == empty_queue_text:
                 return None
-            return await self.client.send_text_message(channel.chat_data, empty_queue_text)
+            return await self.client.send_text_message(channel.queue.chat_data, empty_queue_text)
         # Create reminder
         return await self.menu_helper.schedule_reminder_menu(
             channel.queue,
