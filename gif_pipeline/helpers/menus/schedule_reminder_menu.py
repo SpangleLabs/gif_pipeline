@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import random
 from typing import Dict, TYPE_CHECKING, Optional, List
 
 import dateutil.parser
@@ -11,6 +12,15 @@ if TYPE_CHECKING:
     from gif_pipeline.helpers.menu_helper import MenuHelper
     from gif_pipeline.message import Message
 
+
+def next_video_from_list(messages: List['Message']) -> Optional['Message']:
+    video = None
+    for message in messages:
+        if not message.has_video:
+            continue
+        video = message
+        break
+    return video
 
 class ScheduleReminderMenu(Menu):
     callback_re_roll = b"re-roll"
@@ -36,8 +46,7 @@ class ScheduleReminderMenu(Menu):
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
-        return None  # TODO
-        # return [[Button.inline("🎲 Re-roll", self.callback_reroll)]]
+        return [[Button.inline("🎲 Re-roll", self.callback_re_roll)]]
 
     def allows_sender(self, sender_id: int) -> bool:
         return True
@@ -47,8 +56,11 @@ class ScheduleReminderMenu(Menu):
             callback_query: bytes,
             sender_id: int
     ) -> Optional[List['Message']]:
-        return None  # TODO
-        # if callback_query == self.callback_reroll:
+        if callback_query == self.callback_re_roll:
+            messages = random.sample(self.chat.messages, k=len(self.chat.messages))
+            new_video = next_video_from_list(messages)
+            self.video = new_video
+            return [await self.send()]
 
     @classmethod
     def json_name(cls) -> str:

@@ -3,12 +3,11 @@ import random
 import logging
 from dataclasses import dataclass
 from datetime import timedelta, datetime, timezone
-from threading import Thread
 from typing import Optional, List, TYPE_CHECKING, Dict
 
 from gif_pipeline.chat_config import ScheduleOrder
 from gif_pipeline.helpers.helpers import Helper
-from gif_pipeline.helpers.menus.schedule_reminder_menu import ScheduleReminderMenu
+from gif_pipeline.helpers.menus.schedule_reminder_menu import ScheduleReminderMenu, next_video_from_list
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.send_helper import GifSendHelper
@@ -48,13 +47,7 @@ def next_video_for_channel(channel: 'Channel') -> Optional['Message']:
         messages = sorted(queue_messages, key=lambda msg: msg.message_data.datetime, reverse=False)
     if channel.schedule_config.order == ScheduleOrder.RANDOM:
         messages = random.sample(queue_messages, k=len(queue_messages))
-    video = None
-    for message in messages:
-        if not message.has_video:
-            continue
-        video = message
-        break
-    return video
+    return next_video_from_list(messages)
 
 
 @dataclass
