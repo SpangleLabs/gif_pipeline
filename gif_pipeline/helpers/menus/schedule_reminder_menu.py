@@ -59,6 +59,7 @@ class ScheduleReminderMenu(Menu):
         if callback_query == self.callback_re_roll:
             messages = random.sample(self.chat.messages, k=len(self.chat.messages))
             new_video = next_video_from_list(messages)
+            await self.delete()
             self.video = new_video
             return [await self.send()]
 
