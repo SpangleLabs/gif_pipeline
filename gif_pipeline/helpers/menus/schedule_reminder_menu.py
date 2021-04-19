@@ -48,8 +48,8 @@ class ScheduleReminderMenu(Menu):
         tags_str = ""
         if self.missing_tags:
             tags_str = (
-                    "\nHowever, it is currently missing these tags: \n" +
-                    "\n".join("- "+tag for tag in self.missing_tags)
+                "\nHowever, it is currently missing these tags: \n" +
+                "\n".join("- "+tag for tag in self.missing_tags)
             )
         return f"I am planning to post this video at {time_str}.{tags_str}"
 
@@ -78,7 +78,8 @@ class ScheduleReminderMenu(Menu):
 
     def to_json(self) -> Dict:
         return {
-            "post_time": self.post_time.isoformat()
+            "post_time": self.post_time.isoformat(),
+            "missing_tags": list(self.missing_tags)
         }
 
     @classmethod
@@ -94,5 +95,6 @@ class ScheduleReminderMenu(Menu):
             chat,
             None,
             video,
-            dateutil.parser.parse(json_data["post_time"])
+            dateutil.parser.parse(json_data["post_time"]),
+            set(json_data.get("missing_tags", []))
         )

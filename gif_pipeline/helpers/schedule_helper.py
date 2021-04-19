@@ -151,7 +151,7 @@ class ScheduleHelper(Helper):
             # TODO: Check if queue empty has already been posted about
             return await self.client.send_text_message(channel.chat_data, "This queue is empty")
         # Check missing tags
-        missing_tags = self.tag_manager.missing_tags_for_video(video, channel, channel)
+        missing_tags = self.tag_manager.missing_tags_for_video(video, channel, channel.queue)
         # Create reminder
         return await self.menu_helper.schedule_reminder_menu(
             channel.queue,
