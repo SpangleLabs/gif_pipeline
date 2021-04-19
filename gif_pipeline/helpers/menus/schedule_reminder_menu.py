@@ -28,10 +28,10 @@ class ScheduleReminderMenu(Menu):
 
     @property
     def text(self) -> str:
-        time_str = self.post_time.strftime("%Y-%m-%d at %H:%M")
+        time_str = self.post_time.strftime("%Y-%m-%d at %H:%M (UTC)")
         now = datetime.now(timezone.utc)
         if self.post_time.date() == now.date():
-            time_str = f"today at {self.post_time.strftime('%H:%M')}"
+            time_str = f"today at {self.post_time.strftime('%H:%M')} (UTC)"
         return f"I am planning to post this video at {time_str}."
 
     @property
