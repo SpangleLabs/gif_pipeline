@@ -6,7 +6,7 @@ from datetime import timedelta, datetime, timezone
 from typing import Optional, List, TYPE_CHECKING, Dict
 
 from gif_pipeline.chat_config import ScheduleOrder
-from gif_pipeline.helpers.helpers import Helper
+from gif_pipeline.helpers.helpers import Helper, find_video_for_message
 from gif_pipeline.helpers.menus.schedule_reminder_menu import ScheduleReminderMenu, next_video_from_list
 
 if TYPE_CHECKING:
@@ -82,13 +82,19 @@ class ScheduleHelper(Helper):
             return await self.update_reminder_by_channel(chat, message)
         if chat in [channel.queue for channel in self.channels]:
             return await self.update_reminder_by_queue(chat, message)
-        # Manual schedule check command
-        if message.text.strip().lower() != "check schedules":
+        # Manual schedule set command
+        if message.text.strip().lower() != "schedule":
             return
-        for channel in self.channels:
-            if not channel.schedule_config:
-                continue
-        return [await self.send_text_reply(chat, message, "Mmm, schedules, yes.")]
+        video = find_video_for_message(chat, message)
+        if not video:
+            return [await self.send_text_reply(chat, message, "Please reply to the video you wish to schedule next.")]
+        reminder_menus = self.reminder_menus()
+        if chat.chat_data.chat_id not in reminder_menus:
+            return [await self.send_text_reply(chat, message, "There is no schedule reminder menu in this chat.")]
+        reminder_menu = reminder_menus[chat.chat_data.chat_id]
+        await reminder_menu.menu.delete()
+        reminder_menu.menu.video = video
+        return [await reminder_menu.menu.send()]
 
     async def update_reminder_by_channel(self, chat: 'Channel', message: 'Message') -> Optional[List['Message']]:
         if not chat.schedule_config:
@@ -100,7 +106,7 @@ class ScheduleHelper(Helper):
         menu.menu.post_time = next_post_time_for_channel(chat)
         return [await menu.menu.send()]
 
-    async def update_reminder_by_queue(self, chat: 'Channel', message: 'Message') -> Optional[List['Message']]:
+    async def update_reminder_by_queue(self, chat: 'Chat', message: 'Message') -> Optional[List['Message']]:
         if not message.has_video:
             return None
         reminder_menus = self.reminder_menus()
