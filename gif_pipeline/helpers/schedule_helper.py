@@ -84,12 +84,26 @@ class ScheduleHelper(Helper):
         self.tag_manager = tag_manager
 
     async def on_new_message(self, chat: 'Chat', message: 'Message') -> Optional[List['Message']]:
+        # If channel, update schedule time
+        if isinstance(chat, Channel):
+            return await self.update_reminder_by_channel(chat, message)
+        # Manual schedule check command
         if message.text.strip().lower() != "check schedules":
             return
         for channel in self.channels:
             if not channel.schedule_config:
                 continue
         return [await self.send_text_reply(chat, message, "Mmm, schedules, yes.")]
+
+    async def update_reminder_by_channel(self, chat: 'Channel', message: 'Message') -> Optional[List['Message']]:
+        if not chat.schedule_config:
+            return None
+        reminder_menus = self.reminder_menus()
+        if chat.chat_data.chat_id not in reminder_menus:
+            return None
+        menu = reminder_menus[chat.chat_data.chat_id]
+        menu.menu.post_time = next_post_time_for_channel(chat)
+        return [await menu.menu.send()]
 
     def reminder_menus(self) -> Dict[int, ScheduleReminderSentMenu]:
         schedule_menus = {}
