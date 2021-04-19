@@ -91,6 +91,12 @@ class Menu:
             return await self.edit_message(menu.msg)
         return await self.send_as_reply(self.video)
 
+    async def repost(self) -> Message:
+        menu = self.menu_helper.menu_cache.get_menu_by_video(self.video)
+        if menu:
+            await self.delete()
+        return await self.send_as_reply(self.video)
+
     async def delete(self) -> None:
         await self.menu_helper.delete_menu_for_video(self.video)
 
