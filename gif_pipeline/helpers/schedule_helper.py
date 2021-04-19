@@ -8,12 +8,12 @@ from typing import Optional, List, TYPE_CHECKING, Dict
 from gif_pipeline.chat_config import ScheduleOrder
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message
 from gif_pipeline.helpers.menus.schedule_reminder_menu import ScheduleReminderMenu, next_video_from_list
+from gif_pipeline.chat import Chat, Channel
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.send_helper import GifSendHelper
     from gif_pipeline.tag_manager import TagManager
     from gif_pipeline.message import Message
-    from gif_pipeline.chat import Chat, Channel
     from gif_pipeline.database import Database
     from gif_pipeline.telegram_client import TelegramClient
     from gif_pipeline.tasks.task_worker import TaskWorker
