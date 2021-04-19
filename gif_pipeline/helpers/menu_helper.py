@@ -271,8 +271,9 @@ class MenuHelper(Helper):
             self,
             chat: Chat,
             video: 'Message',
-            post_time: datetime
+            post_time: datetime,
+            missing_tags: Set[str]
     ) -> Message:
-        menu = ScheduleReminderMenu(self, chat, None, video, post_time)
+        menu = ScheduleReminderMenu(self, chat, None, video, post_time, missing_tags)
         message = await menu.send()
         return message

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import random
-from typing import Dict, TYPE_CHECKING, Optional, List
+from typing import Dict, TYPE_CHECKING, Optional, List, Set
 
 import dateutil.parser
 from telethon import Button
@@ -22,6 +22,7 @@ def next_video_from_list(messages: List['Message']) -> Optional['Message']:
         break
     return video
 
+
 class ScheduleReminderMenu(Menu):
     callback_re_roll = b"re-roll"
 
@@ -31,10 +32,12 @@ class ScheduleReminderMenu(Menu):
             chat: 'Chat',
             cmd: None,
             video: 'Message',
-            post_time: datetime
+            post_time: datetime,
+            missing_tags: Set[str]
     ):
         super().__init__(menu_helper, chat, cmd, video)
         self.post_time = post_time
+        self.missing_tags = missing_tags
 
     @property
     def text(self) -> str:
@@ -42,7 +45,13 @@ class ScheduleReminderMenu(Menu):
         now = datetime.now(timezone.utc)
         if self.post_time.date() == now.date():
             time_str = f"today at {self.post_time.strftime('%H:%M')} (UTC)"
-        return f"I am planning to post this video at {time_str}."
+        tags_str = ""
+        if self.missing_tags:
+            tags_str = (
+                    "\nHowever, it is currently missing these tags: \n" +
+                    "\n".join("- "+tag for tag in self.missing_tags)
+            )
+        return f"I am planning to post this video at {time_str}.{tags_str}"
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
