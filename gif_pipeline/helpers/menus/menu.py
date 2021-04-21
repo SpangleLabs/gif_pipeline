@@ -98,7 +98,7 @@ class Menu:
         return await self.send_as_reply(self.video)
 
     async def delete(self) -> None:
-        await self.menu_helper.delete_menu_for_video(self.video)
+        await self.menu_helper.delete_menu_for_video(self.chat, self.video)
 
     def capture_text(self) -> bool:
         return False

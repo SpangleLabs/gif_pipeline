@@ -44,7 +44,7 @@ class GifSendHelper(Helper):
         if video is None:
             return [await self.send_text_reply(chat, message, "I'm not sure which gif you want to send.")]
         # Clean up any menus for that message which already exist
-        await self.menu_helper.delete_menu_for_video(video)
+        await self.menu_helper.delete_menu_for_video(chat, video)
         # Read dest string
         dest_str = text_clean[4:].strip()
         if not was_giffed(self.database, video):
@@ -81,7 +81,7 @@ class GifSendHelper(Helper):
             return await self.send_forward(chat, cmd, video, destinations[1], destinations[0], sender_id)
         destination = self.get_destination_from_name(dest_str)
         if destination is None:
-            await self.menu_helper.delete_menu_for_video(video)
+            await self.menu_helper.delete_menu_for_video(chat, video)
             return [await self.send_text_reply(chat, cmd, f"Unrecognised destination: {dest_str}")]
         return await self.send_video(chat, video, cmd, destination, sender_id)
 
@@ -123,17 +123,17 @@ class GifSendHelper(Helper):
     ) -> List[Message]:
         chat_from = self.get_destination_from_name(destination_from)
         if chat_from is None:
-            await self.menu_helper.delete_menu_for_video(video)
+            await self.menu_helper.delete_menu_for_video(chat, video)
             return [await self.send_text_reply(chat, cmd_msg, f"Unrecognised destination from: {destination_from}")]
         chat_to = self.get_destination_from_name(destination_to)
         if chat_to is None:
-            await self.menu_helper.delete_menu_for_video(video)
+            await self.menu_helper.delete_menu_for_video(chat, video)
             return [await self.send_text_reply(chat, cmd_msg, f"Unrecognised destination to: {destination_to}")]
         # Check permissions in both groups
         from_admin_ids = await self.client.list_authorized_channel_posters(chat_from.chat_data)
         to_admin_ids = await self.client.list_authorized_channel_posters(chat_to.chat_data)
         if sender_id not in from_admin_ids or sender_id not in to_admin_ids:
-            await self.menu_helper.delete_menu_for_video(video)
+            await self.menu_helper.delete_menu_for_video(chat, video)
             error_text = "You need to be an admin of both channels to send a forwarded video."
             return [await self.send_text_reply(chat, cmd_msg, error_text)]
         # Send initial message
@@ -164,7 +164,7 @@ class GifSendHelper(Helper):
     ) -> List[Message]:
         dest_admin_ids = await self.client.list_authorized_channel_posters(destination.chat_data)
         if sender_id not in dest_admin_ids:
-            await self.menu_helper.delete_menu_for_video(video)
+            await self.menu_helper.delete_menu_for_video(chat, video)
             return [await self.send_text_reply(chat, cmd, "You do not have permission to post in that channel.")]
         tags = video.tags(self.database)
         hashes = set(self.database.get_hashes_for_message(video.message_data))

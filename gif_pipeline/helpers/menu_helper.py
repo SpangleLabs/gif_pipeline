@@ -166,12 +166,10 @@ class MenuHelper(Helper):
             return SentMenu(menu, menu_msg, clicked)
         return None
 
-    async def delete_menu_for_video(self, video: Message) -> None:
+    async def delete_menu_for_video(self, chat: 'Chat', video: Message) -> None:
         menu = self.menu_cache.get_menu_by_video(video)
         if menu:
-            await self.client.delete_message(menu.msg.message_data)
-            menu.msg.delete(self.database)
-            self.menu_cache.remove_menu_by_video(video)
+            await self.delete_helper.delete_msg(chat, menu.msg.message_data)
 
     async def send_not_gif_warning_menu(
             self,
@@ -263,7 +261,7 @@ class MenuHelper(Helper):
     ) -> Optional[Message]:
         admin_ids = await self.client.list_authorized_to_delete(chat.chat_data)
         if cmd is not None and cmd.message_data.sender_id not in admin_ids:
-            await self.delete_menu_for_video(video)
+            await self.delete_menu_for_video(chat, video)
             return None
         menu = DeleteMenu(self, chat, cmd, video, text)
         message = await menu.send()
