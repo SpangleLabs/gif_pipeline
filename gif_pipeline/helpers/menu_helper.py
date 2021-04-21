@@ -1,8 +1,10 @@
 import json
 from datetime import datetime
+import logging
 from typing import Optional, List, Tuple, Set, TYPE_CHECKING
 
 from scenedetect import FrameTimecode
+from tqdm import tqdm
 
 from gif_pipeline.chat_config import TagType
 from gif_pipeline.database import Database, MenuData
@@ -29,7 +31,11 @@ from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
 
 if TYPE_CHECKING:
+    from gif_pipeline.helpers.delete_helper import DeleteHelper
     from gif_pipeline.pipeline import Pipeline
+
+
+logger = logging.getLogger(__name__)
 
 
 class MenuHelper(Helper):
@@ -40,12 +46,14 @@ class MenuHelper(Helper):
             client: TelegramClient,
             worker: TaskWorker,
             pipeline: 'Pipeline',
+            delete_helper: 'DeleteHelper',
             tag_manager: TagManager,
     ):
         super().__init__(database, client, worker)
         # Cache of message ID the menu is replying to, to the menu
         self.pipeline = pipeline
         self.menu_cache = pipeline.menu_cache
+        self.delete_helper = delete_helper
         self.tag_manager = tag_manager
 
     def is_priority(self, chat: Chat, message: Message) -> bool:
@@ -79,16 +87,18 @@ class MenuHelper(Helper):
         resp = await menu.menu.handle_callback_query(callback_query, sender_id)
         return resp
 
-    def refresh_from_database(self) -> None:
+    async def refresh_from_database(self) -> None:
         list_menus = self.database.list_menus()
-        for menu_data in list_menus:
-            sent_menu = self.create_menu(menu_data)
+        for menu_data in tqdm(list_menus, desc="Loading menus"):
+            sent_menu = await self.create_menu(menu_data)
             if sent_menu:
+                logger.info(f"Loaded menu: {sent_menu.menu.json_name()}")
                 self.menu_cache.add_menu(sent_menu)
             else:
+                logger.info("Removing missing menu from database")
                 self.database.remove_menu(menu_data)
 
-    def create_menu(
+    async def create_menu(
             self,
             menu_data: MenuData
     ) -> Optional[SentMenu]:
@@ -98,6 +108,10 @@ class MenuHelper(Helper):
         if menu_msg is None:
             return None
         video_msg = chat.message_by_id(menu_data.video_msg_id)
+        if video_msg is None:
+            logger.info("Deleting menu referring to missing video")
+            await self.delete_helper.delete_msg(chat, menu_msg.message_data)
+            return None
         clicked = menu_data.clicked
         if menu_data.menu_type == CheckTagsMenu.json_name():
             send_helper = self.pipeline.helpers[GifSendHelper.__name__]

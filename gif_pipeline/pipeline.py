@@ -157,9 +157,9 @@ class Pipeline:
         logger.info("Initialising helpers")
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
         tag_manager = TagManager(self.channels, self.workshops, self.database)
-        menu_helper = MenuHelper(self.database, self.client, self.worker, self, tag_manager)
-        send_helper = GifSendHelper(self.database, self.client, self.worker, self.channels, menu_helper)
         delete_helper = DeleteHelper(self.database, self.client, self.worker, self.menu_cache)
+        menu_helper = MenuHelper(self.database, self.client, self.worker, self, delete_helper, tag_manager)
+        send_helper = GifSendHelper(self.database, self.client, self.worker, self.channels, menu_helper)
         schedule_helper = ScheduleHelper(
             self.database,
             self.client,
@@ -198,7 +198,7 @@ class Pipeline:
         for helper in helpers:
             self.helpers[helper.name] = helper
         # Load menus from database
-        menu_helper.refresh_from_database()
+        self.client.synchronise_async(menu_helper.refresh_from_database())
         # Load schedule helper
         self.client.synchronise_async(schedule_helper.initialise())
         logger.info(f"Initialised {len(self.helpers)} helpers")
