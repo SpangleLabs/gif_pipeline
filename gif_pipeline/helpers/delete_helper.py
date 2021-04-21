@@ -45,12 +45,15 @@ class DeleteHelper(Helper):
     async def delete_branch(self, chat: Chat, message: MessageData) -> Optional[List[Message]]:
         message_family = self.database.get_message_family(message)
         for msg_data in message_family:
-            msg = chat.message_by_id(msg_data.message_id)
-            await self.client.delete_message(msg_data)
-            msg.delete(self.database)
-            chat.remove_message(msg_data)
-            self.menu_cache.remove_menu_by_message(msg)
+            await self.delete_msg(chat, msg_data)
         return []
+
+    async def delete_msg(self, chat: Chat, msg_data: MessageData) -> None:
+        msg = chat.message_by_id(msg_data.message_id)
+        await self.client.delete_message(msg_data)
+        msg.delete(self.database)
+        chat.remove_message(msg_data)
+        self.menu_cache.remove_menu_by_message(msg)
 
     async def on_callback_query(
             self,
