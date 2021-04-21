@@ -3,7 +3,7 @@ from typing import Optional, List
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper
-from gif_pipeline.menu_cache import SentMenu
+from gif_pipeline.menu_cache import SentMenu, MenuCache
 from gif_pipeline.message import Message, MessageData
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
@@ -11,8 +11,9 @@ from gif_pipeline.telegram_client import TelegramClient
 
 class DeleteHelper(Helper):
 
-    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
+    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, menu_cache: 'MenuCache'):
         super().__init__(database, client, worker)
+        self.menu_cache = menu_cache
 
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         # If a message says to delete, delete it and delete local files
@@ -47,6 +48,7 @@ class DeleteHelper(Helper):
             msg = chat.message_by_id(msg_data.message_id)
             await self.client.delete_message(msg_data)
             msg.delete(self.database)
+            self.menu_cache.remove_menu_by_message(msg)
         return []
 
     async def on_callback_query(

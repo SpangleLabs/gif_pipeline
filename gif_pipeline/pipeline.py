@@ -159,6 +159,7 @@ class Pipeline:
         tag_manager = TagManager(self.channels, self.workshops, self.database)
         menu_helper = MenuHelper(self.database, self.client, self.worker, self, tag_manager)
         send_helper = GifSendHelper(self.database, self.client, self.worker, self.channels, menu_helper)
+        delete_helper = DeleteHelper(self.database, self.client, self.worker, self.menu_cache)
         schedule_helper = ScheduleHelper(
             self.database,
             self.client,
@@ -182,7 +183,7 @@ class Pipeline:
             FAHelper(self.database, self.client, self.worker),
             SceneSplitHelper(self.database, self.client, self.worker, menu_helper),
             send_helper,
-            DeleteHelper(self.database, self.client, self.worker),
+            delete_helper,
             MergeHelper(self.database, self.client, self.worker),
             ReverseHelper(self.database, self.client, self.worker),
             FFProbeHelper(self.database, self.client, self.worker),
