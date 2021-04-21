@@ -167,6 +167,7 @@ class Pipeline:
             self.channels,
             menu_helper,
             send_helper,
+            delete_helper,
             tag_manager
         )
         helpers = [

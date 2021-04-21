@@ -5,19 +5,20 @@ from dataclasses import dataclass
 from datetime import timedelta, datetime, timezone
 from typing import Optional, List, TYPE_CHECKING, Dict
 
+from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.chat_config import ScheduleOrder
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message
 from gif_pipeline.helpers.menus.schedule_reminder_menu import ScheduleReminderMenu, next_video_from_list
-from gif_pipeline.chat import Chat, Channel
 
 if TYPE_CHECKING:
-    from gif_pipeline.helpers.send_helper import GifSendHelper
-    from gif_pipeline.tag_manager import TagManager
-    from gif_pipeline.message import Message
     from gif_pipeline.database import Database
-    from gif_pipeline.telegram_client import TelegramClient
-    from gif_pipeline.tasks.task_worker import TaskWorker
+    from gif_pipeline.helpers.delete_helper import DeleteHelper
     from gif_pipeline.helpers.menu_helper import MenuHelper
+    from gif_pipeline.helpers.send_helper import GifSendHelper
+    from gif_pipeline.message import Message
+    from gif_pipeline.tag_manager import TagManager
+    from gif_pipeline.tasks.task_worker import TaskWorker
+    from gif_pipeline.telegram_client import TelegramClient
 
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,7 @@ class ScheduleHelper(Helper):
             channels: List['Channel'],
             menu_helper: 'MenuHelper',
             send_helper: 'GifSendHelper',
+            delete_helper: 'DeleteHelper',
             tag_manager: 'TagManager'
     ):
         super().__init__(database, client, worker)
@@ -74,6 +76,7 @@ class ScheduleHelper(Helper):
         self.menu_helper = menu_helper
         self.menu_cache = menu_helper.menu_cache
         self.send_helper = send_helper
+        self.delete_helper = delete_helper
         self.tag_manager = tag_manager
 
     async def on_new_message(self, chat: 'Chat', message: 'Message') -> Optional[List['Message']]:
@@ -169,7 +172,7 @@ class ScheduleHelper(Helper):
                 logger.error(f"Failed to check channels, due to exception: {e}")
             await asyncio.sleep(self.CHECK_DELAY)
 
-    async def check_channels(self):
+    async def check_channels(self) -> Optional[List['Message']]:
         logger.info("Checking channel queues")
         reminder_menus = self.reminder_menus()
         for channel in self.channels:
@@ -187,6 +190,14 @@ class ScheduleHelper(Helper):
                         return await self.menu_helper.additional_tags_menu(
                             menu.chat, None, menu.video, self.send_helper, channel, missing_tags
                         )
+                    if menu.auto_post:
+                        tags = menu.video.tags(self.database)
+                        hashes = set(self.database.get_hashes_for_message(menu.video.message_data))
+                        chan_msg = [await self.send_message(
+                            channel, video_path=menu.video.message_data.file_path, tags=tags, video_hashes=hashes
+                        )]
+                        await self.delete_helper.delete_family(channel.queue, menu.video)
+                        return chan_msg
                     return await self.menu_helper.confirmation_menu(
                         menu.chat, None, menu.video, self.send_helper, channel
                     )

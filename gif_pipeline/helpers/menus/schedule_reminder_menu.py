@@ -26,6 +26,7 @@ def next_video_from_list(messages: List['Message']) -> Optional['Message']:
 
 class ScheduleReminderMenu(Menu):
     callback_re_roll = b"re-roll"
+    callback_auto_post = b"auto_post"
 
     def __init__(
             self,
@@ -35,12 +36,14 @@ class ScheduleReminderMenu(Menu):
             video: 'Message',
             post_time: datetime,
             channel: 'Channel',
-            tag_manager: 'TagManager'
+            tag_manager: 'TagManager',
+            auto_post: bool = False
     ):
         super().__init__(menu_helper, chat, cmd, video)
         self.post_time = post_time
         self.channel = channel
         self.tag_manager = tag_manager
+        self.auto_post = auto_post
 
     @property
     def text(self) -> str:
@@ -49,17 +52,20 @@ class ScheduleReminderMenu(Menu):
         if self.post_time.date() == now.date():
             time_str = f"today at {self.post_time.strftime('%H:%M')} (UTC)"
         tags_str = ""
-        missing_tags = self.tag_manager.missing_tags_for_video(self.video, self.channel, self.chat)
-        if missing_tags:
+        if self.missing_tags:
             tags_str = (
                 "\nHowever, it is currently missing these tags: \n" +
-                "\n".join("- "+tag for tag in missing_tags)
+                "\n".join("- "+tag for tag in self.missing_tags)
             )
         return f"I am planning to post this video at {time_str}.{tags_str}"
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
-        return [[Button.inline("🎲 Re-roll", self.callback_re_roll)]]
+        buttons = [[Button.inline("🎲 Re-roll", self.callback_re_roll)]]
+        if not self.missing_tags:
+            auto_post_str = "{} auto post and remove".format("✔️" if self.auto_post else "❌")
+            buttons.append([Button.inline(auto_post_str, self.callback_auto_post)])
+        return buttons
 
     def allows_sender(self, sender_id: int) -> bool:
         return True
@@ -74,7 +80,15 @@ class ScheduleReminderMenu(Menu):
             new_video = next_video_from_list(messages)
             await self.delete()
             self.video = new_video
+            self.auto_post = False
             return [await self.send()]
+        if callback_query == self.callback_auto_post:
+            self.auto_post = not self.auto_post
+            return [await self.send()]
+
+    @property
+    def missing_tags(self) -> Set[str]:
+        return self.tag_manager.missing_tags_for_video(self.video, self.channel, self.chat)
 
     @classmethod
     def json_name(cls) -> str:
@@ -82,7 +96,8 @@ class ScheduleReminderMenu(Menu):
 
     def to_json(self) -> Dict:
         return {
-            "post_time": self.post_time.isoformat()
+            "post_time": self.post_time.isoformat(),
+            "auto_post": self.auto_post
         }
 
     @classmethod
@@ -103,5 +118,6 @@ class ScheduleReminderMenu(Menu):
             video,
             dateutil.parser.parse(json_data["post_time"]),
             destination,
-            tag_manager
+            tag_manager,
+            json_data.get("auto_post", False)
         )
