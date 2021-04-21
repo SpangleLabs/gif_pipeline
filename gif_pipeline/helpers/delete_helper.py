@@ -48,6 +48,7 @@ class DeleteHelper(Helper):
             msg = chat.message_by_id(msg_data.message_id)
             await self.client.delete_message(msg_data)
             msg.delete(self.database)
+            chat.remove_message(msg_data)
             self.menu_cache.remove_menu_by_message(msg)
         return []
 
