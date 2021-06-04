@@ -38,12 +38,12 @@ class FFProbeHelper(Helper):
                 async with self.progress_message(chat, message, "Getting video resolution"):
                     resolution = await self.video_resolution(video.message_data.file_path)
                     return [await self.send_text_reply(chat, message, f"{resolution[0]} x {resolution[1]}")]
-               return [await self.send_text_reply(
-                   chat,
-                   message,
-                   "Cannot work out which video you want the resolution of."
-                   "Please reply to the video you want to know the resolution of with the message \"resolution\"."
-               )]
+            return [await self.send_text_reply(
+               chat,
+               message,
+               "Cannot work out which video you want the resolution of."
+               "Please reply to the video you want to know the resolution of with the message \"resolution\"."
+            )]
         # Otherwise, ignore
         return
 
