@@ -168,7 +168,7 @@ class DuplicateHelper(Helper):
         progress_text = "Checking whether this video has been seen before"
         async with self.progress_message(chat, message, progress_text):
             # If hashes already exist, don't check it again (it has been sent from a workshop)
-            existing_hashes = await self.get_message_hashes(message.message_data)
+            existing_hashes = self.get_message_hashes(message.message_data)
             if existing_hashes:
                 return
             hashes = await self.get_or_create_message_hashes(message.message_data)
