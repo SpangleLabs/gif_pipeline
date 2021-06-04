@@ -68,4 +68,4 @@ class FFProbeHelper(Helper):
         )
         resolution_str = await self.worker.await_task(probe_task)
         resolution_split = resolution_str.split("x")
-        return int(resolution_split[0]), int(resolution_split[1]))
+        return int(resolution_split[0]), int(resolution_split[1])
