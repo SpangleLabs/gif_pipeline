@@ -33,7 +33,7 @@ class FFProbeHelper(Helper):
                 "Cannot work out which video you want the duration of. "
                 "Please reply to the video you want to know the duration of with the message \"duration\"."
             )]
-        if clean_test.startswith("resolution") or clean_text.startswith("size"):
+        if clean_text.startswith("resolution") or clean_text.startswith("size"):
             if video is not None:
                 async with self.progress_message(chat, message, "Getting video resolution"):
                     resolution = await self.video_resolution(video.message_data.file_path)
