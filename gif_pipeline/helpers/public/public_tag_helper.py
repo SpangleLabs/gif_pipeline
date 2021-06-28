@@ -30,7 +30,7 @@ class PublicTagHelper(PublicHelper):
                     )
                 else:
                     text += " It has no tags, sorry"
-                await message.reply(text)
+                await message.reply(text, parse_mode="html")
             else:
                 await message.reply("I do not recognise this message")
             return
