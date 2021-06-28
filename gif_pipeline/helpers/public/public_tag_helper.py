@@ -29,8 +29,8 @@ class PublicTagHelper(PublicHelper):
                         tag_title = tag_key
                         if tag_key.endswith("__rejected"):
                             continue
-                        if tag_title.endswith("__accepted"):
-                            tag_title = tag_key[:-len("__accepted")]
+                        if tag_title.endswith("__confirmed"):
+                            tag_title = tag_key[:-len("__confirmed")]
                         tag_entries.append(f"<b>{html.escape(tag_title)}:</b> " + ", ".join(html.escape(t) for t in tags.list_values_for_tag(tag_key)))
                     text += "\n".join(tag_entries)
                 else:
