@@ -27,6 +27,7 @@ class PublicTagHelper(PublicHelper):
                     text += "\n".join(
                         f"<b>{html.escape(tag_key)}:</b> " + ", ".join(html.escape(t) for t in tags.list_values_for_tag(tag_key))
                         for tag_key in sorted(tags.list_tag_names())
+                        if not tag_key.endswith("__rejected")
                     )
                 else:
                     text += " It has no tags, sorry"
