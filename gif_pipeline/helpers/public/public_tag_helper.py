@@ -25,7 +25,7 @@ class PublicTagHelper(PublicHelper):
                 if tags:
                     text += " It has the following tags:\n"
                     text += "\n".join(
-                        f"{html.escape(tag_key)}: " + ", ".join(html.escape(t) for t in tags.list_values_for_tag(tag_key))
+                        f"<b>{html.escape(tag_key)}:</b> " + ", ".join(html.escape(t) for t in tags.list_values_for_tag(tag_key))
                         for tag_key in tags.list_tag_names()
                     )
                 else:
