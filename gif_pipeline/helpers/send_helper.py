@@ -181,7 +181,7 @@ class GifSendHelper(Helper):
     def get_destination_from_name(self, destination_id: Union[str, int]) -> Optional[Channel]:
         destination = None
         for channel in self.writable_channels:
-            if channel.chat_data.matches_handle(destination_id):
+            if channel.chat_data.matches_handle(str(destination_id)):
                 destination = channel
                 break
         return destination
