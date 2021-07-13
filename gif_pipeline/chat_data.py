@@ -45,7 +45,7 @@ class ChatData(ABC):
 
     @abstractmethod
     def matches_config(self, conf: ChatConfig) -> bool:
-        return self.matches_handle(conf.handle)
+        return self.matches_handle(str(conf.handle))
 
     def matches_handle(self, handle: str) -> bool:
         return chat_username_matches(self.username, handle) or chat_id_matches(self.chat_id, handle)
