@@ -35,7 +35,10 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
         # Total list of tags also needs changing, because we have positive and negative values to list
         all_values_pos = self.tag_manager.get_values_for_tag(self.tag_name_pos, [destination, chat])
         all_values_neg = self.tag_manager.get_values_for_tag(self.tag_name_neg, [destination, chat])
-        self.known_tag_values = sorted(all_values_pos.union(all_values_neg))
+        # Omit tag values which have already been set
+        all_values_unset_pos = all_values_pos - self.current_tags.list_values_for_tag(self.tag_name_pos)
+        all_values_unset_neg = all_values_neg - self.current_tags.list_values_for_tag(self.tag_name_neg)
+        self.known_tag_values = sorted(all_values_unset_pos.union(all_values_unset_neg))
         self.new_tags = set()
 
     @property
