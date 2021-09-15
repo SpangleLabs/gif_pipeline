@@ -22,6 +22,9 @@ def message_data_from_telegram(msg: telethon.tl.custom.message.Message, schedule
     chat_id = chat_id_from_telegram(msg)
     sender_id = sender_id_from_telegram(msg)
     has_file = msg.file is not None and msg.web_preview is None
+    forward_link = None
+    if msg.forward and msg.forward.is_channel:
+        forward_link = f"https://t.me/{msg.forward.chat.username}/{msg.forward.channel_post}"
     return MessageData(
         chat_id,
         msg.id,
@@ -34,7 +37,8 @@ def message_data_from_telegram(msg: telethon.tl.custom.message.Message, schedule
         has_file and msg.file.size,
         msg.reply_to_msg_id,
         sender_id,
-        scheduled
+        scheduled,
+        forward_link
     )
 
 

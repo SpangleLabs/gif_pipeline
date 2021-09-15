@@ -35,7 +35,8 @@ class MessageData:
             file_size: Optional[int],
             reply_to: Optional[int],
             sender_id: int,
-            is_scheduled: bool
+            is_scheduled: bool,
+            forwarded_channel_link: Optional[str] = None
     ):
         self.chat_id = chat_id
         self.message_id = message_id
@@ -49,6 +50,7 @@ class MessageData:
         self.reply_to = reply_to
         self.sender_id = sender_id
         self.is_scheduled = is_scheduled
+        self.forwarded_channel_link = forwarded_channel_link
 
     def __repr__(self) -> str:
         return f"MessageData(chat_id={self.chat_id or self.chat_id}, message_id={self.message_id})"

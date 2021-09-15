@@ -32,7 +32,8 @@ create table if not exists messages
             references messages (message_id)
             on update restrict on delete restrict,
     sender_id      integer,
-    is_scheduled   boolean not null
+    is_scheduled   boolean not null,
+    forwarded_channel_link  text
 );
 
 create unique index if not exists messages_chat_id_message_id_is_scheduled_uindex
