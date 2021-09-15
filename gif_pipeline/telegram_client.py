@@ -7,7 +7,7 @@ from telethon import events, Button
 from telethon.tl.custom import message
 from telethon.tl.functions.channels import EditAdminRequest
 from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
-from telethon.tl.types import ChatAdminRights, ChannelParticipantsAdmins, ChannelParticipantCreator
+from telethon.tl.types import ChatAdminRights, ChannelParticipantsAdmins, ChannelParticipantCreator, ChannelForbidden
 
 from gif_pipeline.chat_data import ChatData, ChannelData, WorkshopData
 from gif_pipeline.message import MessageData
@@ -24,7 +24,8 @@ def message_data_from_telegram(msg: telethon.tl.custom.message.Message, schedule
     has_file = msg.file is not None and msg.web_preview is None
     forward_link = None
     if msg.forward and msg.forward.is_channel:
-        forward_link = f"https://t.me/{msg.forward.chat.username}/{msg.forward.channel_post}"
+        if not isinstance(msg.forward.chat, ChannelForbidden):
+            forward_link = f"https://t.me/{msg.forward.chat.username}/{msg.forward.channel_post}"
     return MessageData(
         chat_id,
         msg.id,
