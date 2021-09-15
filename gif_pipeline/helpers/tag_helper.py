@@ -46,7 +46,7 @@ class TagHelper(Helper):
             tags = video.tags(self.database)
             text = "List of tags:\n"
             text += "\n".join(
-                f"{html.escape(key)}: " + ", ".join(html.escape(t) for t in tags.list_values_for_tag(key))
+                f"<b>{html.escape(key)}</b>: " + ", ".join(html.escape(t) for t in tags.list_values_for_tag(key))
                 for key in tags.list_tag_names()
             )
             return [await self.send_text_reply(chat, message, text)]
