@@ -1,8 +1,8 @@
 import glob
 
-import youtube_dl
+from gif_pipeline.tasks.task import Task, run_subprocess
 
-from gif_pipeline.tasks.task import Task
+yt_dl_pkg = "yt-dlp"
 
 
 class YoutubeDLTask(Task[str]):
@@ -12,11 +12,13 @@ class YoutubeDLTask(Task[str]):
         self.output_path = output_path
 
     async def run(self) -> str:
-        ydl_opts = {"outtmpl": f"{self.output_path}%(ext)s"}
-        # If downloading from reddit, use the DASH video, not the HLS video, which has corruption at 6 second intervals
+        args = [yt_dl_pkg, "--outtmpl", f"{self.output_path}%(ext)s", self.link]
+        # TODO: Is this needed with yt-dlp
         if "v.redd.it" in self.link or "reddit.com" in self.link:
-            ydl_opts["format"] = "dash-VIDEO-1+dash-AUDIO-1/bestvideo+bestaudio/best"
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([self.link])
+            args += [
+                "--format",
+                "dash-VIDEO-1+dash-AUDIO-1/bestvideo+bestaudio/best"
+            ]
+        await run_subprocess(args)
         files = glob.glob(f"{self.output_path}*")
         return files[0]

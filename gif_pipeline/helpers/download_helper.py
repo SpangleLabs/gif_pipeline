@@ -1,11 +1,11 @@
 import re
 
-import youtube_dl
-
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.message import Message
+from gif_pipeline.tasks.task import TaskException
+from gif_pipeline.tasks.update_youtube_dl_task import UpdateYoutubeDLTask
 from gif_pipeline.video_tags import VideoTags
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.tasks.youtube_dl_task import YoutubeDLTask
@@ -69,7 +69,7 @@ class DownloadHelper(Helper):
             tags = VideoTags()
             tags.add_tag_value(VideoTags.source, link)
             return await self.send_video_reply(chat, message, download_filename, tags)
-        except (youtube_dl.utils.DownloadError, IndexError):
+        except (TaskException, IndexError):
             return await self.send_text_reply(chat, message, f"Could not download video from link: {link}")
 
     async def download_link(self, link: str) -> str:
