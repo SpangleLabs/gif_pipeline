@@ -34,6 +34,7 @@ class DownloadHelper(Helper):
 
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
+        self.yt_dl_checked = False
 
     async def on_new_message(self, chat: Chat, message: Message):
         if not message.text:
@@ -46,8 +47,12 @@ class DownloadHelper(Helper):
         links = [match.group(0) for match in matches if self.link_is_monitored(match.group(0))]
         if not links:
             return
+        replies = []
+        if not self.yt_dl_checked:
+            async with self.progress_message(chat, message, "Checking youtube downloader installation"):
+                resp = await self.worker.await_task(UpdateYoutubeDLTask())
+                replies.append(await self.send_text_reply(chat, message, f"Youtube downloader update returned: {resp}"))
         async with self.progress_message(chat, message, "Downloading linked videos"):
-            replies = []
             for link in links:
                 replies.append(await self.handle_link(chat, message, link))
             return replies
