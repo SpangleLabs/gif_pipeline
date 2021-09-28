@@ -12,7 +12,7 @@ class YoutubeDLTask(Task[str]):
         self.output_path = output_path
 
     async def run(self) -> str:
-        args = [yt_dl_pkg, "--outtmpl", f"{self.output_path}%(ext)s", self.link]
+        args = [yt_dl_pkg, "--output", f"{self.output_path}%(ext)s", self.link]
         # TODO: Is this needed with yt-dlp
         if "v.redd.it" in self.link or "reddit.com" in self.link:
             args += [
