@@ -90,7 +90,7 @@ class SplitScenesConfirmationMenu(Menu):
         return {
             "cmd_msg_id": self.cmd_msg_id,
             "threshold": self.threshold,
-            "scene_list": [scene_list],
+            "scene_list": scene_list,
             "cleared": self.cleared
         }
 
