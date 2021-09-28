@@ -13,12 +13,6 @@ class YoutubeDLTask(Task[str]):
 
     async def run(self) -> str:
         args = [yt_dl_pkg, "--output", f"{self.output_path}%(ext)s", self.link]
-        # TODO: Is this needed with yt-dlp
-        if "v.redd.it" in self.link or "reddit.com" in self.link:
-            args += [
-                "--format",
-                "dash-VIDEO-1+dash-AUDIO-1/bestvideo+bestaudio/best"
-            ]
         await run_subprocess(args)
         files = glob.glob(f"{self.output_path}*")
         return files[0]
