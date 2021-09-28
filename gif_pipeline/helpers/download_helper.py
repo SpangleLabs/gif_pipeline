@@ -52,6 +52,7 @@ class DownloadHelper(Helper):
             async with self.progress_message(chat, message, "Checking youtube downloader installation"):
                 resp = await self.worker.await_task(UpdateYoutubeDLTask())
                 replies.append(await self.send_text_reply(chat, message, f"Youtube downloader update returned: {resp}"))
+            self.yt_dl_checked = True
         async with self.progress_message(chat, message, "Downloading linked videos"):
             for link in links:
                 replies.append(await self.handle_link(chat, message, link))
