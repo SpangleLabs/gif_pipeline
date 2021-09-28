@@ -9,6 +9,7 @@ from gif_pipeline.chat_builder import ChannelBuilder, WorkshopBuilder
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat, Channel, WorkshopGroup
 from gif_pipeline.chat_config import ChannelConfig, WorkshopConfig
+from gif_pipeline.helpers.channel_fwd_tag_helper import ChannelFwdTagHelper
 from gif_pipeline.helpers.delete_helper import DeleteHelper
 from gif_pipeline.helpers.download_helper import DownloadHelper
 from gif_pipeline.helpers.duplicate_helper import DuplicateHelper
@@ -190,6 +191,7 @@ class Pipeline:
             FFProbeHelper(self.database, self.client, self.worker),
             ZipHelper(self.database, self.client, self.worker),
             TagHelper(self.database, self.client, self.worker, tag_manager),
+            ChannelFwdTagHelper(self.database, self.client, self.worker),
             schedule_helper
         ]
         if "imgur" in self.api_keys:
