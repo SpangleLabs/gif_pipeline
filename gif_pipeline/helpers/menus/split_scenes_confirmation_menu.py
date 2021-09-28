@@ -103,12 +103,16 @@ class SplitScenesConfirmationMenu(Menu):
             video: Message,
             split_helper: 'SceneSplitHelper'
     ) -> 'SplitScenesConfirmationMenu':
+        # Handling old scene lists which were doublly-enclosed lists, due to a bug
+        scene_list_data = json_data["scene_list"]
+        if len(scene_list_data) > 0 and isinstance(scene_list_data[0], list):
+            scene_list_data = scene_list_data[0]
         scene_list = [
             (
                 json_to_timecode(scene["start"]),
                 json_to_timecode(scene["end"])
             )
-            for scene in json_data["scene_list"]
+            for scene in scene_list_data
         ]
         menu = SplitScenesConfirmationMenu(
             menu_helper,
