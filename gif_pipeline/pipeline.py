@@ -27,6 +27,7 @@ from gif_pipeline.helpers.send_helper import GifSendHelper
 from gif_pipeline.helpers.stabilise_helper import StabiliseHelper
 from gif_pipeline.helpers.tag_helper import TagHelper
 from gif_pipeline.helpers.telegram_gif_helper import TelegramGifHelper
+from gif_pipeline.helpers.update_yt_dl_helper import UpdateYoutubeDlHelper
 from gif_pipeline.helpers.video_crop_helper import VideoCropHelper
 from gif_pipeline.helpers.video_cut_helper import VideoCutHelper
 from gif_pipeline.helpers.video_helper import VideoHelper
@@ -192,6 +193,7 @@ class Pipeline:
             ZipHelper(self.database, self.client, self.worker),
             TagHelper(self.database, self.client, self.worker, tag_manager),
             ChannelFwdTagHelper(self.database, self.client, self.worker),
+            UpdateYoutubeDlHelper(self.database, self.client, self.worker),
             schedule_helper
         ]
         if "imgur" in self.api_keys:
