@@ -1,7 +1,7 @@
 from typing import Optional, List
 
 from gif_pipeline.database import Database
-from gif_pipeline.chat import Chat
+from gif_pipeline.chat import Chat, WorkshopGroup
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.message import Message
 from gif_pipeline.video_tags import VideoTags
@@ -20,6 +20,9 @@ class ChannelFwdTagHelper(Helper):
             return
         # Ignore messages which don't have a video
         if not message.has_video:
+            return
+        # Ignore channel messages
+        if not isinstance(chat, WorkshopGroup):
             return
         # Get tags
         tags = message.tags(self.database)
