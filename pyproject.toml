@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "gif_pipeline"
+version = "1.0.0"
+description = "Telegram application to edit videos and create telegram-gifs, in telegram. Managing gif channels, tags, and checking for duplicates"
+authors = ["Joshua Coales <joshua@coales.co.uk>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+Telethon = "^1.23.0"
+tqdm = "^4.62.3"
+ImageHash = "^4.2.1"
+Pillow = "^8.4.0"
+cryptg = "^0.2.post4"
+ffmpy3 = "^0.2.4"
+requests = "^2.26.0"
+async_generator = "^1.10"
+python-dateutil = "^2.8.2"
+scenedetect = {extras = ["opencv", "progress_bar"], version = "^0.5.6"}
+isodate = "^0.6.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
