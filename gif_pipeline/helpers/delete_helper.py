@@ -20,6 +20,7 @@ class DeleteHelper(Helper):
         text_clean = message.text.strip().lower()
         if not text_clean.startswith("delete"):
             return None
+        self.usage_counter.inc()
         admin_ids = await self.client.list_authorized_to_delete(chat.chat_data)
         if text_clean == "delete family":
             if message.message_data.sender_id not in admin_ids:

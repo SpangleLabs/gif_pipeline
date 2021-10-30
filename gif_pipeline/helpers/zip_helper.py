@@ -15,6 +15,7 @@ from gif_pipeline.video_tags import VideoTags
 class ZipHelper(TelegramGifHelper):
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         if message.message_data.has_file and message.message_data.file_path.endswith(".zip"):
+            self.usage_counter.inc()
             async with self.progress_message(chat, message, "Unzipping file"):
                 results = await self.unzip(chat, message)
                 if results:

@@ -47,6 +47,7 @@ class DownloadHelper(Helper):
         links = [match.group(0) for match in matches if self.link_is_monitored(match.group(0))]
         if not links:
             return
+        self.usage_counter.inc()
         replies = []
         if not self.yt_dl_checked:
             async with self.progress_message(chat, message, "Checking youtube downloader installation"):

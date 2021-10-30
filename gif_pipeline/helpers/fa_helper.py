@@ -27,6 +27,7 @@ class FAHelper(TelegramGifHelper):
         matching_links = re.findall(r"furaffinity.net/view/([0-9]+)", message.text, re.IGNORECASE)
         if not matching_links:
             return None
+        self.usage_counter.inc()
         async with self.progress_message(chat, message, "Processing FA links in message"):
             return await asyncio.gather(*(self.handle_post_link(chat, message, post_id) for post_id in matching_links))
 

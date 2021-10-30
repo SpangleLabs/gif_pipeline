@@ -11,6 +11,7 @@ class ReverseHelper(Helper):
         clean_text = message.text.strip().lower()
         if clean_text != "reverse":
             return None
+        self.usage_counter.inc()
         video = find_video_for_message(chat, message)
         if video is None:
             return [await self.send_text_reply(chat, message, "Please reply to the video you want to reverse")]

@@ -25,6 +25,7 @@ class UpdateYoutubeDlHelper(Helper):
         cmds = [f"update {name}" for name in names]
         if not any(message.text.lower().strip().startswith(cmd) for cmd in cmds):
             return
+        self.usage_counter.inc()
         async with self.progress_message(chat, message, "Updating youtube downloader"):
             resp = await self.worker.await_task(UpdateYoutubeDLTask())
             return [

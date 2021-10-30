@@ -12,6 +12,7 @@ class FFProbeHelper(Helper):
         clean_text = message.text.strip().lower()
         video = find_video_for_message(chat, message)
         if clean_text.startswith("ffprobe") or clean_text.startswith("stats"):
+            self.usage_counter.inc()
             if video is not None:
                 async with self.progress_message(chat, message, "Getting video stats"):
                     stats = await self.stats_for_video(video.message_data.file_path)
@@ -23,6 +24,7 @@ class FFProbeHelper(Helper):
                 "Please reply to the video you want to get stats for with the message \"ffprobe\"."
             )]
         if clean_text.startswith("duration"):
+            self.usage_counter.inc()
             if video is not None:
                 async with self.progress_message(chat, message, "Getting video duration"):
                     duration = await self.duration_video(video.message_data.file_path)
@@ -34,6 +36,7 @@ class FFProbeHelper(Helper):
                 "Please reply to the video you want to know the duration of with the message \"duration\"."
             )]
         if clean_text.startswith("resolution") or clean_text.startswith("size"):
+            self.usage_counter.inc()
             if video is not None:
                 async with self.progress_message(chat, message, "Getting video resolution"):
                     resolution = await self.video_resolution(video.message_data.file_path)

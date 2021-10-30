@@ -88,6 +88,7 @@ class ScheduleHelper(Helper):
         # Manual schedule set command
         if message.text.strip().lower() != "schedule":
             return
+        self.usage_counter.inc()
         video = find_video_for_message(chat, message)
         if not video:
             return [await self.send_text_reply(chat, message, "Please reply to the video you wish to schedule next.")]

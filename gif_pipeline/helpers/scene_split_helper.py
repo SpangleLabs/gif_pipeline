@@ -31,6 +31,7 @@ class SceneSplitHelper(VideoCutHelper):
                 args = text_clean[len(key_word):].strip()
         if args is None:
             return None
+        self.usage_counter.inc()
         if len(args) == 0:
             threshold = 30
         else:

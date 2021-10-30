@@ -27,6 +27,7 @@ class MSGHelper(TelegramGifHelper):
         matching_links = re.findall(r"e621.net/(?:posts|post/show)/([0-9]+)", message.text, re.IGNORECASE)
         if not matching_links:
             return None
+        self.usage_counter.inc()
         async with self.progress_message(chat, message, "Processing MSG links in message"):
             return await asyncio.gather(*(self.handle_post_link(chat, message, post_id) for post_id in matching_links))
 

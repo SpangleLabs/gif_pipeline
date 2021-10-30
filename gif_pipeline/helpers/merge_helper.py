@@ -14,12 +14,15 @@ class MergeHelper(Helper):
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         text_clean = message.message_data.text.lower().strip()
         if text_clean.startswith("merge"):
+            self.usage_counter.inc()
             merge_command = text_clean[5:].strip()
             return await self.handle_merge(chat, message, merge_command)
         if text_clean.startswith("append"):
+            self.usage_counter.inc()
             append_command = text_clean[6:]
             return await self.handle_append(chat, message, append_command)
         if text_clean.startswith("prepend"):
+            self.usage_counter.inc()
             prepend_command = text_clean[7:]
             return await self.handle_prepend(chat, message, prepend_command)
         return None
