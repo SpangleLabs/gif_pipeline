@@ -17,6 +17,8 @@ async_generator = "^1.10"
 python-dateutil = "^2.8.2"
 scenedetect = {extras = ["opencv", "progress_bar"], version = "^0.5.6"}
 isodate = "^0.6.0"
+prometheus-client = "^0.12.0"
+tomlkit = "^0.7.2"
 
 [tool.poetry.dev-dependencies]
 
