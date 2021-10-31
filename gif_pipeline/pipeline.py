@@ -46,7 +46,7 @@ from gif_pipeline.utils import tqdm_gather
 logger = logging.getLogger(__name__)
 
 version_info = Info(
-    "gif_pipeline_version_info",
+    "gif_pipeline_version",
     "Version of gif pipeline currently running"
 )
 startup_time = Gauge(
