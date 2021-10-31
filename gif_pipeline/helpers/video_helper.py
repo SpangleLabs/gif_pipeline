@@ -15,6 +15,7 @@ class VideoHelper(Helper):
         text_clean = message.text.lower().strip()
         if not text_clean.startswith("video"):
             return
+        self.usage_counter.inc()
         video = find_video_for_message(chat, message)
         if video is None:
             return [await self.send_text_reply(chat, message, "I'm not sure which video you want to video.")]

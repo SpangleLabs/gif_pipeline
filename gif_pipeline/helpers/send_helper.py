@@ -40,6 +40,7 @@ class GifSendHelper(Helper):
         text_clean = message.text.lower().strip()
         if not text_clean.startswith("send"):
             return
+        self.usage_counter.inc()
         video = find_video_for_message(chat, message)
         if video is None:
             return [await self.send_text_reply(chat, message, "I'm not sure which gif you want to send.")]

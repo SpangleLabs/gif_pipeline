@@ -27,6 +27,7 @@ class ImgurGalleryHelper(Helper):
         matching_links = re.findall(r"imgur.com/(?:gallery|a)/([0-9a-z]+)", message.text, re.IGNORECASE)
         if not matching_links:
             return None
+        self.usage_counter.inc()
         async with self.progress_message(chat, message, "Processing imgur gallery links in message"):
             galleries = await asyncio.gather(*(
                 self.handle_gallery_link(chat, message, gallery_id) for gallery_id in matching_links

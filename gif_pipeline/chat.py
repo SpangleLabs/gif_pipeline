@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from abc import ABC
 from typing import TYPE_CHECKING, Awaitable
 from typing import TypeVar, List, Optional
+
+from prometheus_client.metrics import Gauge, Counter
 
 from gif_pipeline.chat_config import ChatConfig, ChannelConfig, WorkshopConfig, ScheduleConfig
 from gif_pipeline.chat_data import ChatData, ChannelData, WorkshopData
@@ -19,6 +22,27 @@ T = TypeVar('T', bound='Group')
 
 logger = logging.getLogger(__name__)
 
+video_count = Gauge(
+    "gif_pipeline_chat_video_count",
+    "Number of videos in the chat, which can go up and down",
+    labelnames=["chat_type", "chat_title"]
+)
+file_size_total = Gauge(
+    "gif_pipeline_chat_total_file_size_bytes",
+    "Total combined size of all files in a given chat, in bytes",
+    labelnames=["chat_type", "chat_title"]
+)
+subscriber_count = Gauge(
+    "gif_pipeline_channel_subscriber_count",
+    "Number of subscribers in the channel",
+    labelnames=["chat_title"]
+)
+workshop_new_message_count = Counter(
+    "gif_pipeline_workshop_new_message_count",
+    "Number of new messages posted in the workshop",
+    labelnames=["chat_title"]
+)
+
 
 class Chat(ABC):
     def __init__(
@@ -32,6 +56,17 @@ class Chat(ABC):
         self.config = config
         self.messages = messages
         self.client = client
+        self.init_metrics()
+
+    def init_metrics(self) -> None:
+        video_count.labels(
+            chat_type=self.__class__.__name__,
+            chat_title=self.chat_data.title
+        ).set_function(lambda: self.count_videos())
+        file_size_total.labels(
+            chat_type=self.__class__.__name__,
+            chat_title=self.chat_data.title
+        ).set_function(lambda: self.sum_file_size())
 
     @staticmethod
     async def list_message_initialisers(
@@ -78,6 +113,12 @@ class Chat(ABC):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.chat_data.title})"
 
+    def count_videos(self) -> int:
+        return len([True for msg in self.messages if msg.has_video])
+
+    def sum_file_size(self) -> int:
+        return sum([msg.message_data.file_size for msg in self.messages if msg.message_data.has_file])
+
     def remove_message(self, message_data: MessageData) -> None:
         self.messages = [msg for msg in self.messages if msg.message_data != message_data]
 
@@ -109,6 +150,22 @@ class Channel(Chat):
         super().__init__(chat_data, config, messages, client)
         self.config = config
         self.queue = queue
+        self.sub_count = subscriber_count.labels(
+            chat_title=self.chat_data.title
+        )
+        asyncio.ensure_future(self.periodically_update_sub_count())
+
+    async def periodically_update_sub_count(self) -> None:
+        logger.info("Starting subscription metric updater")
+        while True:
+            logger.info("Checking subscriber count")
+            await self.update_sub_count()
+            await asyncio.sleep(60*60)
+
+    async def update_sub_count(self) -> None:
+        sub_count = await self.client.get_subscriber_count(self.chat_data)
+        logger.info(f"Subscribers: {sub_count}")
+        self.sub_count.set(sub_count)
 
     @property
     def has_queue(self) -> bool:
@@ -131,3 +188,10 @@ class WorkshopGroup(Chat):
             client: TelegramClient
     ):
         super().__init__(chat_data, config, messages, client)
+        self.new_message_count = workshop_new_message_count.labels(
+            chat_title=self.chat_data.title
+        )
+
+    def add_message(self, message: Message) -> None:
+        self.new_message_count.inc()
+        super().add_message(message)

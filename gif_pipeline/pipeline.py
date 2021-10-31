@@ -1,7 +1,10 @@
 import asyncio
 import logging
+from pathlib import Path
 from typing import Dict, List, Iterator, Optional, Iterable, Union, Tuple
 
+import tomlkit
+from prometheus_client import Info, Gauge, start_http_server
 from telethon import events
 from tqdm import tqdm
 
@@ -41,6 +44,23 @@ from gif_pipeline.telegram_client import TelegramClient, message_data_from_teleg
 from gif_pipeline.utils import tqdm_gather
 
 logger = logging.getLogger(__name__)
+
+version_info = Info(
+    "gif_pipeline_version",
+    "Version of gif pipeline currently running"
+)
+startup_time = Gauge(
+    "gif_pipeline_startup_unixtime",
+    "Time the gif pipeline was last started"
+)
+PROM_PORT = 7180
+
+
+def get_current_version() -> str:
+    toml_path = Path(__file__).parent.parent / "pyproject.toml"
+    with open(toml_path, "r") as pyproject:
+        file_contents = pyproject.read()
+    return tomlkit.parse(file_contents)['tool']['poetry']['version']
 
 
 class PipelineConfig:
@@ -221,7 +241,14 @@ class Pipeline:
         return helper
 
     def watch_workshop(self) -> None:
+        # Start prometheus server
+        start_http_server(PROM_PORT)
+        startup_time.set_to_current_time()
+        version_info.info({
+            "version": get_current_version()
+        })
         logger.info("Watching workshop")
+        # Set up handlers
         self.client.add_message_handler(self.on_new_message, self.all_chat_ids)
         self.client.add_public_message_handler(self.pass_message_to_public_handlers)
         self.client.add_edit_handler(self.on_edit_message, self.all_chat_ids)

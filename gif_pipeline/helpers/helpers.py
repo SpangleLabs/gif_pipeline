@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, List, Set
 
 from async_generator import asynccontextmanager
+from prometheus_client import Counter
 from telethon import Button
 
 from gif_pipeline.database import Database
@@ -14,6 +15,12 @@ from gif_pipeline.message import Message
 from gif_pipeline.video_tags import VideoTags
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram
+
+usage_counter = Counter(
+    "gif_pipeline_helper_usage_total",
+    "Total usage of gif pipeline helpers",
+    labelnames=["class_name"]
+)
 
 
 def find_video_for_message(chat: Chat, message: Message) -> Optional[Message]:
@@ -38,6 +45,7 @@ class Helper(ABC):
         self.database = database
         self.client = client
         self.worker = worker
+        self.usage_counter = usage_counter.labels(class_name=self.__class__.__name__)
 
     async def send_text_reply(
             self,

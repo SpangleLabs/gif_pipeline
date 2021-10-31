@@ -152,6 +152,7 @@ class DuplicateHelper(Helper):
         # If no file, check if someone has requested manual check
         if message.message_data.file_path is None:
             if message.message_data.text.strip().lower() == "check":
+                self.usage_counter.inc()
                 reply_to = chat.message_by_id(message.message_data.reply_to)
                 if reply_to is None:
                     return [await self.send_text_reply(chat, message, "I can't check a message without a video")]

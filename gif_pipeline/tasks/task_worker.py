@@ -1,7 +1,14 @@
 import asyncio
 from typing import List, Awaitable
 
+from prometheus_client import Gauge
+
 from gif_pipeline.tasks.task import Task, T
+
+worker_queue_length = Gauge(
+    "gif_pipeline_taskworker_tasks_in_progress",
+    "Number of tasks currently in progress"
+)
 
 
 class Bottleneck:
@@ -18,7 +25,8 @@ class Bottleneck:
 class TaskWorker(Bottleneck):
 
     async def await_task(self, task: Task[T]) -> T:
-        return await self.await_run(task.run())
+        with worker_queue_length.track_inprogress():
+            return await self.await_run(task.run())
 
     async def await_tasks(self, tasks: List[Task]):
         return await asyncio.gather(*[self.await_task(task) for task in tasks])

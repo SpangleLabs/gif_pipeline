@@ -5,7 +5,7 @@ from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any
 import telethon
 from telethon import events, Button
 from telethon.tl.custom import message
-from telethon.tl.functions.channels import EditAdminRequest
+from telethon.tl.functions.channels import EditAdminRequest, GetFullChannelRequest
 from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
 from telethon.tl.types import ChatAdminRights, ChannelParticipantsAdmins, ChannelParticipantCreator, ChannelForbidden
 
@@ -275,3 +275,8 @@ class TelegramClient:
             ):
                 allowed_ids.append(admin.id)
         return allowed_ids
+
+    async def get_subscriber_count(self, chat_data: ChatData) -> int:
+        entity = await self.client.get_entity(chat_data.chat_id)
+        channel_full_info = await self.client(GetFullChannelRequest(channel=entity))
+        return channel_full_info.full_chat.participants_count

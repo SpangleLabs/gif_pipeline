@@ -113,11 +113,13 @@ class TelegramGifHelper(Helper):
         # If message has text which is a link to a gif, download it, then convert it
         gif_links = re.findall(r"[^\s]+\.gif", message.text, re.IGNORECASE)
         if gif_links:
+            self.usage_counter.inc()
             async with self.progress_message(chat, message, "Processing gif links in message"):
                 return await asyncio.gather(*(self.convert_gif_link(chat, message, gif_link) for gif_link in gif_links))
         # If a message has text saying gif, and is a reply to a video, convert that video
         clean_text = message.text.strip().lower()
         if clean_text.startswith("gif"):
+            self.usage_counter.inc()
             args = clean_text[3:].strip().split()
             gif_settings = GifSettings.from_input(args)
             video = find_video_for_message(chat, message)

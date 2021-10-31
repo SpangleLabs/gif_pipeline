@@ -35,6 +35,7 @@ class VideoRotateHelper(Helper):
             transpose = self.get_flip_direction(text_clean[len("flip"):].strip())
         else:
             return
+        self.usage_counter.inc()
         video = find_video_for_message(chat, message)
         if video is None:
             await self.send_text_reply(chat, message, "Cannot work out which video you want to rotate/flip.")

@@ -73,6 +73,7 @@ class MenuHelper(Helper):
         if not menu:
             return None
         if menu.menu.capture_text():
+            self.usage_counter.inc()
             return await menu.menu.handle_text(message.text)
         return None
 

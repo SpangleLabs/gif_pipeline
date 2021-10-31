@@ -27,6 +27,7 @@ class VideoCutHelper(Helper):
             start, end = VideoCutHelper.get_start_and_end(text_clean[len("cut"):].strip())
         else:
             return None
+        self.usage_counter.inc()
         video = find_video_for_message(chat, message)
         if video is None:
             return [await self.send_text_reply(

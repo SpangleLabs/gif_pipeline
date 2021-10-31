@@ -26,6 +26,7 @@ class TagHelper(Helper):
         clean_args = message.text.strip().split()
         if not clean_args or clean_args[0].lower() not in ["tag", "tags"]:
             return
+        self.usage_counter.inc()
         args = clean_args[1:]
         # Get video
         video = chat.message_by_id(message.message_data.reply_to)

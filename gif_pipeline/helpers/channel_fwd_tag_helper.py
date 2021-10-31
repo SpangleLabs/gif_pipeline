@@ -24,6 +24,7 @@ class ChannelFwdTagHelper(Helper):
         # Ignore channel messages
         if not isinstance(chat, WorkshopGroup):
             return
+        self.usage_counter.inc()
         # Get tags
         tags = message.tags(self.database)
         tags.add_tag_value(VideoTags.source, message.message_data.forwarded_channel_link)

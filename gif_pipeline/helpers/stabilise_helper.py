@@ -12,6 +12,7 @@ class StabiliseHelper(Helper):
         text_clean = message.text.lower().strip()
         if text_clean not in ["stabilise", "stabilize", "stab", "deshake", "unshake"]:
             return
+        self.usage_counter.inc()
         video = find_video_for_message(chat, message)
         if video is None:
             return [await self.send_text_reply(chat, message, "I'm not sure which video you would like to stabilise.")]
