@@ -82,3 +82,28 @@ create table if not exists menu_cache
 
 create unique index if not exists menu_cache_entry_id_uindex
     on menu_cache (menu_entry_id);
+
+create table if not exists subscriptions
+(
+    subscription_id integer not null
+        constraint subscriptions_pk
+            primary key autoincrement,
+    feed_link text not null,
+    last_check_time text,
+    check_rate text,
+    enabled boolean
+);
+
+create unique index if not exists subscription_id_uindex
+    on subscriptions (subscription_id);
+
+create table if not exists subscription_items
+(
+    subscription_id integer not null
+        references subscriptions
+            on update restrict on delete restrict,
+    item_id text not null
+);
+
+create unique index if not exists subscription_items_subscription_id_item_id_uindex
+	on subscription_items (subscription_id, item_id);
