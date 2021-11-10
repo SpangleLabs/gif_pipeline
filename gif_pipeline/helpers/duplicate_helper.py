@@ -106,6 +106,22 @@ class DuplicateHelper(Helper):
             warning_msg = await self.post_duplicate_warning(chat, message, warning_messages, has_blank_frame)
         return warning_msg
 
+    def get_duplicate_warnings(
+            self,
+            potential_matches: Set[MessageData],
+            has_blank_frame: bool
+    ) -> List[str]:
+        warning_messages = []
+        if has_blank_frame:
+            warning_messages.append("This video contains at least one blank frame.")
+        if potential_matches:
+            message_links = []
+            for message in potential_matches:
+                chat_data = self.database.get_chat_by_id(message.chat_id)
+                message_links.append(chat_data.telegram_link_for_message(message))
+            warning_messages.append("This video might be a duplicate of:\n" + "\n".join(message_links))
+        return warning_messages
+
     async def post_duplicate_warning(
             self,
             chat: Chat,
@@ -113,15 +129,7 @@ class DuplicateHelper(Helper):
             potential_matches: Set[MessageData],
             has_blank_frame: bool
     ) -> Message:
-        warning_messages = []
-        if has_blank_frame:
-            warning_messages.append("This video contains at least one blank frame.")
-        if potential_matches:
-            message_links = []
-            for message in potential_matches:
-                chat_data = self.database.get_chat_by_id(message.chat_id) or chat.chat_data
-                message_links.append(chat_data.telegram_link_for_message(message))
-            warning_messages.append("This video might be a duplicate of:\n" + "\n".join(message_links))
+        warning_messages = self.get_duplicate_warnings(potential_matches, has_blank_frame)
         return await self.send_text_reply(chat, new_message, "\n".join(warning_messages))
 
     @staticmethod
