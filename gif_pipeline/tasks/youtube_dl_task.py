@@ -1,4 +1,5 @@
 import glob
+from typing import Optional
 
 from gif_pipeline.tasks.task import Task, run_subprocess
 
@@ -16,3 +17,18 @@ class YoutubeDLTask(Task[str]):
         await run_subprocess(args)
         files = glob.glob(f"{self.output_path}*")
         return files[0]
+
+
+class YoutubeDLDumpJsonTask(Task[str]):
+
+    def __init__(self, link: str, max_items: Optional[int] = None):
+        self.link = link
+        self.max_items = max_items
+
+    async def run(self) -> str:
+        args = [yt_dl_pkg, "--dump-json"]
+        if self.max_items:
+            args += [f"--playlist-end", self.max_items]
+        args.append(self.link)
+        resp = await run_subprocess(args)
+        return resp
