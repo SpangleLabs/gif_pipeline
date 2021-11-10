@@ -12,6 +12,7 @@ from typing import List, Optional, TYPE_CHECKING
 import isodate
 
 from gif_pipeline.chat import Chat
+from gif_pipeline.database import SubscriptionData
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.helpers.duplicate_helper import hash_image
 from gif_pipeline.message import Message
@@ -19,7 +20,7 @@ from gif_pipeline.tasks.youtube_dl_task import YoutubeDLDumpJsonTask
 from gif_pipeline.video_tags import VideoTags
 
 if TYPE_CHECKING:
-    from gif_pipeline.database import Database, SubscriptionData
+    from gif_pipeline.database import Database
     from gif_pipeline.helpers.duplicate_helper import DuplicateHelper
     from gif_pipeline.helpers.download_helper import DownloadHelper
     from gif_pipeline.tasks.task_worker import TaskWorker
@@ -38,9 +39,9 @@ class SubscriptionHelper(Helper):
 
     def __init__(
             self,
-            database: Database,
-            client: TelegramClient,
-            worker: TaskWorker,
+            database: "Database",
+            client: "TelegramClient",
+            worker: "TaskWorker",
             pipeline: "Pipeline",
             duplicate_helper: "DuplicateHelper",
             download_helper: "DownloadHelper"
@@ -144,7 +145,7 @@ class SubscriptionHelper(Helper):
                 subscription.subscription_id = saved_data.subscription_id
 
 
-async def load_subs_from_database(database: Database, helper: SubscriptionHelper) -> List["Subscription"]:
+async def load_subs_from_database(database: "Database", helper: SubscriptionHelper) -> List["Subscription"]:
     sub_data = database.list_subscriptions()
     subscriptions = []
     for sub_entry in sub_data:
