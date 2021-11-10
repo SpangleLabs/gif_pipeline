@@ -1,22 +1,27 @@
 import asyncio
 import glob
+import json
 import logging
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from json import JSONDecodeError
 from typing import List, Optional, TYPE_CHECKING
 
 import isodate
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper
+from gif_pipeline.helpers.duplicate_helper import hash_image
 from gif_pipeline.message import Message
+from gif_pipeline.tasks.youtube_dl_task import YoutubeDLDumpJsonTask
 from gif_pipeline.video_tags import VideoTags
 
 if TYPE_CHECKING:
     from gif_pipeline.database import Database, SubscriptionData
-    from gif_pipeline.helpers.duplicate_helper import DuplicateHelper, hash_image
+    from gif_pipeline.helpers.duplicate_helper import DuplicateHelper
+    from gif_pipeline.helpers.download_helper import DownloadHelper
     from gif_pipeline.tasks.task_worker import TaskWorker
     from gif_pipeline.telegram_client import TelegramClient
     from gif_pipeline.pipeline import Pipeline
@@ -37,14 +42,17 @@ class SubscriptionHelper(Helper):
             client: TelegramClient,
             worker: TaskWorker,
             pipeline: "Pipeline",
-            duplicate_helper: "DuplicateHelper"
+            duplicate_helper: "DuplicateHelper",
+            download_helper: "DownloadHelper"
     ):
         super().__init__(database, client, worker)
         self.pipeline = pipeline
         self.duplicate_helper = duplicate_helper
-        self.subscriptions = load_subs_from_database(database)
+        self.download_helper = download_helper
+        self.subscriptions = []
 
-    def initialise(self) -> None:
+    async def initialise(self) -> None:
+        self.subscriptions = await load_subs_from_database(self.database, self)
         asyncio.get_event_loop().create_task(self.sub_checker())
 
     async def sub_checker(self) -> None:
@@ -61,7 +69,7 @@ class SubscriptionHelper(Helper):
         for subscription in subscriptions:
             chat = self.pipeline.chat_by_id(subscription.chat_id)
             try:
-                new_items = subscription.check_for_new_items()
+                new_items = await subscription.check_for_new_items()
             except Exception as e:
                 logger.error(f"Subscription to {subscription.feed_url} failed due to: {e}")
                 await self.send_message(chat, text=f"Subscription to {subscription.feed_url} failed due to: {e}")
@@ -123,7 +131,7 @@ class SubscriptionHelper(Helper):
             return [await self.send_text_reply(chat, message, "Please specify a feed link to subscribe to.")]
         feed_link = split_text[1]
         # TODO: Allow specifying extra arguments?
-        subscription = create_sub_for_link(feed_link, chat.chat_data.chat_id)
+        subscription = await create_sub_for_link(feed_link, chat.chat_data.chat_id, self)
         self.subscriptions.append(subscription)
         self.save_subscriptions()
         return [await self.send_text_reply(chat, message, f"Added subscription for {feed_link}")]
@@ -136,14 +144,15 @@ class SubscriptionHelper(Helper):
                 subscription.subscription_id = saved_data.subscription_id
 
 
-def load_subs_from_database(database: Database) -> List["Subscription"]:
+async def load_subs_from_database(database: Database, helper: SubscriptionHelper) -> List["Subscription"]:
     sub_data = database.list_subscriptions()
     subscriptions = []
     for sub_entry in sub_data:
         seen_items = database.list_item_ids_for_subscription(sub_entry)
-        subscription = create_sub_for_link(
+        subscription = await create_sub_for_link(
             sub_entry.feed_link,
             sub_entry.chat_id,
+            helper,
             subscription_id=sub_entry.subscription_id,
             last_check_time=sub_entry.last_check_time,
             check_rate=sub_entry.check_rate,
@@ -156,9 +165,10 @@ def load_subs_from_database(database: Database) -> List["Subscription"]:
     return subscriptions
 
 
-def create_sub_for_link(
+async def create_sub_for_link(
         feed_link: str,
         chat_id: int,
+        helper: SubscriptionHelper,
         *,
         subscription_id: int = None,
         last_check_time: Optional[datetime] = None,
@@ -166,12 +176,13 @@ def create_sub_for_link(
         enabled: bool = True,
         seen_item_ids: Optional[List[str]] = None
 ) -> Optional["Subscription"]:
-    sub_classes = []  # TODO: Some implementations
+    sub_classes = [YoutubeDLSubscription]
     for sub_class in sub_classes:
-        if sub_class.can_handle_link(feed_link):
+        if await sub_class.can_handle_link(feed_link, helper):
             return Subscription(
                 feed_link,
                 chat_id,
+                helper,
                 subscription_id=subscription_id,
                 last_check_time=last_check_time,
                 check_rate=check_rate,
@@ -187,6 +198,7 @@ class Subscription(ABC):
             self,
             feed_url: str,
             chat_id: int,
+            helper: SubscriptionHelper,
             *,
             subscription_id: int = None,
             last_check_time: Optional[datetime] = None,
@@ -196,6 +208,7 @@ class Subscription(ABC):
     ):
         self.subscription_id = subscription_id
         self.chat_id = chat_id
+        self.helper = helper
         self.feed_url = feed_url
         self.last_check_time = last_check_time
         self.check_rate = check_rate or isodate.parse_duration("1h")
@@ -203,12 +216,12 @@ class Subscription(ABC):
         self.seen_item_ids = seen_item_ids or []
 
     @abstractmethod
-    def check_for_new_items(self) -> List["Item"]:
+    async def check_for_new_items(self) -> List["Item"]:
         raise NotImplementedError
 
     @classmethod
     @abstractmethod
-    def can_handle_link(cls, feed_link: str) -> bool:
+    async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
         pass
 
     def to_data(self) -> SubscriptionData:
@@ -220,6 +233,45 @@ class Subscription(ABC):
             isodate.duration_isoformat(self.check_rate),
             self.enabled
         )
+
+
+class YoutubeDLSubscription(Subscription):
+    CHECK_MAX = 10
+    VALIDATE_MAX = 2
+
+    async def check_for_new_items(self) -> List["Item"]:
+        json_resp = await self.helper.worker.await_task(YoutubeDLDumpJsonTask(self.feed_url, self.CHECK_MAX))
+        new_items = []
+        for json_line in json_resp:
+            json_obj = json.loads(json_line)
+            item_id = json_obj["id"]
+            if item_id in self.seen_item_ids:
+                continue
+            video_path = await self.helper.download_helper.download_link(json_obj["url"])
+            item = Item(
+                json_obj["id"],
+                json_obj["url"],
+                json_obj["title"],
+                video_path,
+                is_video=True
+            )
+            new_items.append(item)
+            self.seen_item_ids.append(item.item_id)
+        return new_items
+
+    @classmethod
+    async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
+        await helper.download_helper.check_yt_dl()
+        json_resp = await helper.worker.await_task(YoutubeDLDumpJsonTask(feed_link, 1))
+        if not json_resp:
+            logger.info(f"Json dump from yt-dl for {feed_link} was empty")
+            return False
+        try:
+            json.loads(json_resp)
+            return True
+        except JSONDecodeError:
+            logger.info(f"Could not parse yt-dl json for feed link: {feed_link}")
+            return False
 
 
 @dataclass
