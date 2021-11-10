@@ -186,7 +186,7 @@ async def create_sub_for_link(
     sub_classes = [YoutubeDLSubscription]
     for sub_class in sub_classes:
         if await sub_class.can_handle_link(feed_link, helper):
-            return Subscription(
+            return sub_class(
                 feed_link,
                 chat_id,
                 helper,
@@ -218,7 +218,7 @@ class Subscription(ABC):
         self.helper = helper
         self.feed_url = feed_url
         self.last_check_time = last_check_time
-        self.check_rate = check_rate or isodate.parse_duration("1h")
+        self.check_rate = check_rate or isodate.parse_duration("PT1H")
         self.enabled = enabled
         self.seen_item_ids = seen_item_ids or []
 
