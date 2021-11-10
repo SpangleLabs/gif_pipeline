@@ -89,6 +89,9 @@ create table if not exists subscriptions
         constraint subscriptions_pk
             primary key autoincrement,
     feed_link text not null,
+    chat_id integer not null
+        references chats
+            on update restrict on delete cascade,
     last_check_time text,
     check_rate text,
     enabled boolean
@@ -101,7 +104,7 @@ create table if not exists subscription_items
 (
     subscription_id integer not null
         references subscriptions
-            on update restrict on delete restrict,
+            on update restrict on delete cascade,
     item_id text not null
 );
 
