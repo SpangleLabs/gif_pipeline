@@ -459,7 +459,11 @@ class Database:
             "INSERT INTO subscriptions (subscription_id, feed_link, chat_id, last_check_time, check_rate, enabled)"
             " VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (subscription_id)"
             " DO UPDATE SET feed_link=excluded.feed_link, chat_id=excluded.chat_id, "
-            " last_check_time=excluded.last_check_time, check_rate=excluded.check_rate, enabled=excluded.enabled"
+            " last_check_time=excluded.last_check_time, check_rate=excluded.check_rate, enabled=excluded.enabled",
+            (
+                subscription.subscription_id, subscription.feed_link, subscription.chat_id,
+                subscription.last_check_time, subscription.check_rate, subscription.enabled
+            )
         ) as result:
             if subscription.subscription_id is None:
                 subscription.subscription_id = result.lastrowid
