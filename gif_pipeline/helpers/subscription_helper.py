@@ -137,6 +137,12 @@ class SubscriptionHelper(Helper):
         self.save_subscriptions()
         return [await self.send_text_reply(chat, message, f"Added subscription for {feed_link}")]
 
+    def is_priority(self, chat: Chat, message: Message) -> bool:
+        clean_args = message.text.strip().split()
+        if not clean_args or clean_args[0].lower() not in ["subscribe"]:
+            return False
+        return True
+
     def save_subscriptions(self):
         for subscription in self.subscriptions:
             new_sub = subscription.subscription_id is None
