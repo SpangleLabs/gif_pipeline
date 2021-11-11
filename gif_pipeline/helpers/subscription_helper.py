@@ -86,6 +86,7 @@ class SubscriptionHelper(Helper):
                             chat,
                             text=f"Failed to post item {item.link} from {subscription.feed_url} feed due to: {e}"
                         )
+            self.save_subscriptions()
 
     async def post_item(self, item: "Item", subscription: "Subscription"):
         # Get chat
