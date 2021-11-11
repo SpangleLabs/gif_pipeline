@@ -69,6 +69,7 @@ class SubscriptionHelper(Helper):
         self.sub_classes = [YoutubeDLSubscription]
         # Initialise counters
         for sub_class in self.sub_classes:
+            # TODO: add metric labels for workshop titles
             subscription_count.labels(subscription_class_name=sub_class.__name__)
             subscription_posts.labels(subscription_class_name=sub_class.__name__)
             subscription_count.labels(subscription_class_name=sub_class.__name__).set_function(
