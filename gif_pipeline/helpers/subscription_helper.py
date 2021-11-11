@@ -68,6 +68,8 @@ class SubscriptionHelper(Helper):
         logger.info("Checking subscriptions")
         subscriptions = self.subscriptions[:]
         for subscription in subscriptions:
+            if not subscription.needs_check():
+                continue
             chat = self.pipeline.chat_by_id(subscription.chat_id)
             try:
                 new_items = await subscription.check_for_new_items()
@@ -222,6 +224,11 @@ class Subscription(ABC):
         self.check_rate = check_rate or isodate.parse_duration("PT1H")
         self.enabled = enabled
         self.seen_item_ids = seen_item_ids or []
+
+    def needs_check(self) -> bool:
+        if self.last_check_time is None:
+            return True
+        return datetime.now() > self.last_check_time + self.check_rate
 
     @abstractmethod
     async def check_for_new_items(self) -> List["Item"]:
