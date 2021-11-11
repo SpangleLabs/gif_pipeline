@@ -100,12 +100,22 @@ class Helper(ABC):
                 buttons=buttons
             )
         else:
+            # Set filename
+            est_next_msg_id = 1
+            if chat.latest_message():
+                est_next_msg_id = chat.latest_message().message_data.message_id + 1
+            file_ext = video_path.split(".")[-1]
+            if chat.chat_data.username:
+                filename = f"{chat.chat_data.username}_{est_next_msg_id}.{file_ext}"
+            else:
+                filename = f"gif_pipeline_{est_next_msg_id}.{file_ext}"
             msg = await self.client.send_video_message(
                 chat.chat_data,
                 video_path,
                 text,
                 reply_to_msg_id=reply_id,
-                buttons=buttons
+                buttons=buttons,
+                filename=filename
             )
         message_data = message_data_from_telegram(msg)
         if video_path is not None:

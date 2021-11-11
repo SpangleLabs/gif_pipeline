@@ -7,7 +7,8 @@ from telethon import events, Button
 from telethon.tl.custom import message
 from telethon.tl.functions.channels import EditAdminRequest, GetFullChannelRequest
 from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
-from telethon.tl.types import ChatAdminRights, ChannelParticipantsAdmins, ChannelParticipantCreator, ChannelForbidden
+from telethon.tl.types import ChatAdminRights, ChannelParticipantsAdmins, ChannelParticipantCreator, ChannelForbidden, \
+    DocumentAttributeFilename
 
 from gif_pipeline.chat_data import ChatData, ChannelData, WorkshopData
 from gif_pipeline.message import MessageData
@@ -197,8 +198,12 @@ class TelegramClient:
             text: str = None,
             *,
             reply_to_msg_id: int = None,
-            buttons: Optional[List[List[Button]]] = None
+            buttons: Optional[List[List[Button]]] = None,
+            filename: Optional[str] = None
     ) -> telethon.tl.custom.message.Message:
+        attributes = None
+        if filename:
+            attributes = [DocumentAttributeFilename(filename)]
         return await self.pipeline_bot_client.send_file(
             chat.chat_id,
             video_path,
@@ -206,7 +211,8 @@ class TelegramClient:
             reply_to=reply_to_msg_id,
             allow_cache=False,
             buttons=buttons,
-            parse_mode="html"
+            parse_mode="html",
+            attributes=attributes
         )
 
     async def delete_message(self, message_data: MessageData) -> None:
