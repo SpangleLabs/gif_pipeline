@@ -3,6 +3,7 @@ import glob
 import json
 import logging
 import os
+import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -118,6 +119,11 @@ class SubscriptionHelper(Helper):
         image_files = glob.glob(f"{message_decompose_path}/*.png")
         hash_list = self.duplicate_helper.hash_pool.map(hash_image, image_files)
         hash_set = set(hash_list)
+        # Delete the images
+        try:
+            shutil.rmtree(message_decompose_path)
+        except FileNotFoundError:
+            pass
         # Find duplicates
         has_blank_frame = self.duplicate_helper.blank_frame_hash in hash_set
         if has_blank_frame:
