@@ -60,7 +60,7 @@ def add_audio_track_task(input_path: str, output_path: str) -> FfmpegTask:
     )
 
 
-def video_to_video(input_path: str, output_path: str, video_settings: Optional[GifSettings]) -> List[FfmpegTask]:
+def video_to_video(input_path: str, output_path: str, video_settings: Optional[GifSettings] = None) -> List[FfmpegTask]:
     if not video_settings:
         return [FfmpegTask(
             inputs={input_path: None},
