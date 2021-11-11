@@ -8,9 +8,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from json import JSONDecodeError
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING, Type
 
 import isodate
+from prometheus_client import Counter, Gauge
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.database import SubscriptionData
@@ -30,6 +31,18 @@ if TYPE_CHECKING:
     from gif_pipeline.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
+
+subscription_count = Gauge(
+    "gif_pipeline_subscription_helper_subscription_count",
+    "Number of active subscriptions in the subscription helper",
+    labelnames=["subscription_class_name"]
+)
+
+subscription_posts = Counter(
+    "gif_pipeline_subscription_helper_post_count_total",
+    "Total number of posts sent by the subscription helper",
+    labelnames=["subscription_class_name"]
+)
 
 
 class SubscriptionException(Exception):
@@ -53,6 +66,14 @@ class SubscriptionHelper(Helper):
         self.duplicate_helper = duplicate_helper
         self.download_helper = download_helper
         self.subscriptions = []
+        self.sub_classes = [YoutubeDLSubscription]
+        # Initialise counters
+        for sub_class in self.sub_classes:
+            subscription_count.labels(subscription_class_name=sub_class.__name__)
+            subscription_posts.labels(subscription_class_name=sub_class.__name__)
+            subscription_count.labels(subscription_class_name=sub_class.__name__).set_function(
+                lambda: len([s for s in self.subscriptions if isinstance(s, sub_class)])
+            )
 
     async def initialise(self) -> None:
         self.subscriptions = await load_subs_from_database(self.database, self)
@@ -91,7 +112,7 @@ class SubscriptionHelper(Helper):
             self.save_subscriptions()
 
     async def post_item(self, item: "Item", subscription: "Subscription"):
-        # TODO: Add metrics
+        subscription_posts.labels(subscription_class_name=subscription.__class__.__name__).inc()
         # Get chat
         chat = self.pipeline.chat_by_id(subscription.chat_id)
         # Construct caption
@@ -150,7 +171,7 @@ class SubscriptionHelper(Helper):
             return [await self.send_text_reply(chat, message, "Please specify a feed link to subscribe to.")]
         feed_link = split_text[1]
         # TODO: Allow specifying extra arguments?
-        subscription = await create_sub_for_link(feed_link, chat.chat_data.chat_id, self)
+        subscription = await create_sub_for_link(feed_link, chat.chat_data.chat_id, self, self.sub_classes)
         await subscription.check_for_new_items()
         self.subscriptions.append(subscription)
         self.save_subscriptions()
@@ -179,6 +200,7 @@ async def load_subs_from_database(database: "Database", helper: SubscriptionHelp
             sub_entry.feed_link,
             sub_entry.chat_id,
             helper,
+            helper.sub_classes,
             subscription_id=sub_entry.subscription_id,
             last_check_time=datetime.fromisoformat(sub_entry.last_check_time) if sub_entry.last_check_time else None,
             check_rate=isodate.parse_duration(sub_entry.check_rate),
@@ -195,6 +217,7 @@ async def create_sub_for_link(
         feed_link: str,
         chat_id: int,
         helper: SubscriptionHelper,
+        sub_classes: List[Type["Subscription"]],
         *,
         subscription_id: int = None,
         last_check_time: Optional[datetime] = None,
@@ -202,7 +225,6 @@ async def create_sub_for_link(
         enabled: bool = True,
         seen_item_ids: Optional[List[str]] = None
 ) -> Optional["Subscription"]:
-    sub_classes = [YoutubeDLSubscription]
     for sub_class in sub_classes:
         if await sub_class.can_handle_link(feed_link, helper):
             return sub_class(
