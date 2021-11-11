@@ -106,8 +106,7 @@ class SubscriptionHelper(Helper):
             tags = VideoTags()
             tags.add_tag_value(VideoTags.source, item.link)
         # Post item
-        if item.is_video:
-            await self.send_message(chat, text=caption, video_path=item.file_path, video_hashes=hash_set, tags=tags)
+        await self.send_message(chat, text=caption, video_path=item.file_path, video_hashes=hash_set, tags=tags)
 
     async def check_item_duplicate(self, item: "Item", subscription: "Subscription") -> List[str]:
         # Hash video
