@@ -249,7 +249,7 @@ class YoutubeDLSubscription(Subscription):
     async def check_for_new_items(self) -> List["Item"]:
         json_resp = await self.helper.worker.await_task(YoutubeDLDumpJsonTask(self.feed_url, self.CHECK_MAX))
         new_items = []
-        for json_line in json_resp:
+        for json_line in json_resp.split("\n"):
             json_obj = json.loads(json_line)
             item_id = json_obj["id"]
             if item_id in self.seen_item_ids:
