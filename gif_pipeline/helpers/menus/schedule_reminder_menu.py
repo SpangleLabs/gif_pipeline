@@ -61,10 +61,11 @@ class ScheduleReminderMenu(Menu):
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
-        buttons = [[Button.inline("🎲 Re-roll", self.callback_re_roll)]]
-        if not self.missing_tags:
-            auto_post_str = "{} auto post and remove".format("✔️" if self.auto_post else "❌")
-            buttons.append([Button.inline(auto_post_str, self.callback_auto_post)])
+        auto_post_str = "{} auto post and remove".format("✔️" if self.auto_post else "❌")
+        buttons = [
+            [Button.inline("🎲 Re-roll", self.callback_re_roll)],
+            [Button.inline(auto_post_str, self.callback_auto_post)]
+        ]
         return buttons
 
     def allows_sender(self, sender_id: int) -> bool:
