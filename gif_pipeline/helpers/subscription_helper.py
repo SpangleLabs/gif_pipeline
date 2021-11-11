@@ -133,6 +133,7 @@ class SubscriptionHelper(Helper):
         feed_link = split_text[1]
         # TODO: Allow specifying extra arguments?
         subscription = await create_sub_for_link(feed_link, chat.chat_data.chat_id, self)
+        await subscription.check_for_new_items()
         self.subscriptions.append(subscription)
         self.save_subscriptions()
         return [await self.send_text_reply(chat, message, f"Added subscription for {feed_link}")]
