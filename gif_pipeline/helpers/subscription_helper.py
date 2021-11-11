@@ -14,8 +14,9 @@ import isodate
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.database import SubscriptionData
-from gif_pipeline.helpers.helpers import Helper
+from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.helpers.duplicate_helper import hash_image
+from gif_pipeline.helpers.video_helper import video_to_video
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.youtube_dl_task import YoutubeDLDumpJsonTask
 from gif_pipeline.video_tags import VideoTags
@@ -90,6 +91,7 @@ class SubscriptionHelper(Helper):
             self.save_subscriptions()
 
     async def post_item(self, item: "Item", subscription: "Subscription"):
+        # TODO: Add metrics
         # Get chat
         chat = self.pipeline.chat_by_id(subscription.chat_id)
         # Construct caption
@@ -98,6 +100,13 @@ class SubscriptionHelper(Helper):
         hash_set = None
         tags = None
         if item.is_video:
+            # Convert to video
+            output_path = random_sandbox_video_path()
+            tasks = video_to_video(item.file_path, output_path)
+            for task in tasks:
+                await self.worker.await_task(task)
+            item.file_path = output_path
+            # Check duplicate warnings
             if chat.config.duplicate_detection:
                 warnings = await self.check_item_duplicate(item, subscription)
                 if warnings:
@@ -135,6 +144,7 @@ class SubscriptionHelper(Helper):
         text_clean = message.text.lower().strip()
         if not text_clean.startswith("subscribe"):
             return None
+        self.usage_counter.inc()
         split_text = message.text.split()
         if len(split_text) < 2:
             return [await self.send_text_reply(chat, message, "Please specify a feed link to subscribe to.")]
