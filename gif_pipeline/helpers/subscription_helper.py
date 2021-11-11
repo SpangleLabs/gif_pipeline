@@ -265,6 +265,7 @@ class YoutubeDLSubscription(Subscription):
             )
             new_items.append(item)
             self.seen_item_ids.append(item.item_id)
+        self.last_check_time = datetime.now()
         return new_items
 
     @classmethod
