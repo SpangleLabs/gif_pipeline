@@ -49,6 +49,16 @@ class MenuData:
     clicked: bool
 
 
+@dataclass
+class SubscriptionData:
+    subscription_id: int
+    feed_link: str
+    chat_id: int
+    last_check_time: Optional[str]
+    check_rate: Optional[str]
+    enabled: Optional[bool]
+
+
 class Database:
     DB_FILE = "pipeline.sqlite"
 
@@ -409,6 +419,61 @@ class Database:
 
     def _remove_menu_by_entry_id(self, menu_entry_id: int) -> None:
         self._just_execute("DELETE FROM menu_cache WHERE menu_entry_id = ?", (menu_entry_id,))
+
+    def list_subscriptions(self) -> List[SubscriptionData]:
+        sub_entries = []
+        with self._execute(
+            "SELECT subscription_id, feed_link, chat_id, last_check_time, check_rate, enabled "
+            "FROM subscriptions"
+        ) as result:
+            for row in result:
+                sub_entries.append(
+                    SubscriptionData(
+                        row["subscription_id"],
+                        row["feed_link"],
+                        row["chat_id"],
+                        row["last_check_time"],
+                        row["check_rate"],
+                        bool(row["enabled"])
+                    )
+                )
+        return sub_entries
+
+    def list_item_ids_for_subscription(self, subscription: SubscriptionData) -> List[str]:
+        items = []
+        with self._execute(
+            "SELECT item_id FROM subscription_items WHERE subscription_id = ?",
+                (subscription.subscription_id, )
+        ) as result:
+            for row in result:
+                items.append(row["item_id"])
+        return items
+
+    def save_subscription(
+            self,
+            subscription: SubscriptionData,
+            seen_item_ids: Optional[List[str]] = None
+    ) -> SubscriptionData:
+        seen_item_ids = seen_item_ids or []
+        with self._execute(
+            "INSERT INTO subscriptions (subscription_id, feed_link, chat_id, last_check_time, check_rate, enabled)"
+            " VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (subscription_id)"
+            " DO UPDATE SET feed_link=excluded.feed_link, chat_id=excluded.chat_id, "
+            " last_check_time=excluded.last_check_time, check_rate=excluded.check_rate, enabled=excluded.enabled",
+            (
+                subscription.subscription_id, subscription.feed_link, subscription.chat_id,
+                subscription.last_check_time, subscription.check_rate, subscription.enabled
+            )
+        ) as result:
+            if subscription.subscription_id is None:
+                subscription.subscription_id = result.lastrowid
+            for seen_item_id in seen_item_ids:
+                self._just_execute(
+                    "INSERT INTO subscription_items (subscription_id, item_id) VALUES (?, ?)"
+                    " ON CONFLICT (subscription_id, item_id) DO NOTHING",
+                    (subscription.subscription_id, seen_item_id)
+                )
+        return subscription
 
 
 S = TypeVar('S')

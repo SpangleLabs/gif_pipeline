@@ -1,4 +1,6 @@
+import logging
 import re
+from typing import Optional, List
 
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
@@ -10,6 +12,8 @@ from gif_pipeline.video_tags import VideoTags
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.tasks.youtube_dl_task import YoutubeDLTask
 from gif_pipeline.telegram_client import TelegramClient
+
+logger = logging.getLogger(__name__)
 
 
 class DownloadHelper(Helper):
@@ -36,7 +40,7 @@ class DownloadHelper(Helper):
         super().__init__(database, client, worker)
         self.yt_dl_checked = False
 
-    async def on_new_message(self, chat: Chat, message: Message):
+    async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         if not message.text:
             return
         # Ignore messages the bot has sent.
@@ -49,15 +53,19 @@ class DownloadHelper(Helper):
             return
         self.usage_counter.inc()
         replies = []
-        if not self.yt_dl_checked:
-            async with self.progress_message(chat, message, "Checking youtube downloader installation"):
-                resp = await self.worker.await_task(UpdateYoutubeDLTask())
-                replies.append(await self.send_text_reply(chat, message, f"Youtube downloader update returned: {resp}"))
-            self.yt_dl_checked = True
+        check_msg = self.check_yt_dl()
+        if check_msg:
+            replies.append(check_msg)
         async with self.progress_message(chat, message, "Downloading linked videos"):
             for link in links:
                 replies.append(await self.handle_link(chat, message, link))
             return replies
+
+    async def check_yt_dl(self) -> None:
+        if not self.yt_dl_checked:
+            resp = await self.worker.await_task(UpdateYoutubeDLTask())
+            self.yt_dl_checked = True
+            logger.info(f"Youtube downloader update returned: {resp}")
 
     @staticmethod
     def link_is_monitored(link: str) -> bool:

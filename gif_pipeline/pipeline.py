@@ -28,6 +28,7 @@ from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
 from gif_pipeline.helpers.schedule_helper import ScheduleHelper
 from gif_pipeline.helpers.send_helper import GifSendHelper
 from gif_pipeline.helpers.stabilise_helper import StabiliseHelper
+from gif_pipeline.helpers.subscription_helper import SubscriptionHelper
 from gif_pipeline.helpers.tag_helper import TagHelper
 from gif_pipeline.helpers.telegram_gif_helper import TelegramGifHelper
 from gif_pipeline.helpers.update_yt_dl_helper import UpdateYoutubeDlHelper
@@ -192,6 +193,15 @@ class Pipeline:
             delete_helper,
             tag_manager
         )
+        download_helper = DownloadHelper(self.database, self.client, self.worker)
+        subscription_helper = SubscriptionHelper(
+            self.database,
+            self.client,
+            self.worker,
+            self,
+            duplicate_helper,
+            download_helper
+        )
         helpers = [
             duplicate_helper,
             menu_helper,
@@ -199,7 +209,7 @@ class Pipeline:
             VideoRotateHelper(self.database, self.client, self.worker),
             VideoCutHelper(self.database, self.client, self.worker),
             VideoCropHelper(self.database, self.client, self.worker),
-            DownloadHelper(self.database, self.client, self.worker),
+            download_helper,
             StabiliseHelper(self.database, self.client, self.worker),
             VideoHelper(self.database, self.client, self.worker),
             MSGHelper(self.database, self.client, self.worker),
@@ -214,7 +224,8 @@ class Pipeline:
             TagHelper(self.database, self.client, self.worker, tag_manager),
             ChannelFwdTagHelper(self.database, self.client, self.worker),
             UpdateYoutubeDlHelper(self.database, self.client, self.worker),
-            schedule_helper
+            schedule_helper,
+            subscription_helper
         ]
         if "imgur" in self.api_keys:
             helpers.append(
@@ -223,9 +234,12 @@ class Pipeline:
             self.helpers[helper.name] = helper
         # Load menus from database
         self.client.synchronise_async(menu_helper.refresh_from_database())
-        # Load schedule helper
+        # Load schedule helper and subscription helper
         self.client.synchronise_async(schedule_helper.initialise())
+        self.client.synchronise_async(subscription_helper.initialise())
+        # Helpers complete
         logger.info(f"Initialised {len(self.helpers)} helpers")
+        # Set up public helpers
         public_helpers = [
             PublicTagHelper(self.database, self.client, self.worker, tag_manager)
         ]

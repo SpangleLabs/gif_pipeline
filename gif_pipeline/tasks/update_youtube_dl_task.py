@@ -18,7 +18,7 @@ class UpdateYoutubeDLTask(Task[str]):
                 return f"Updated {yt_dl_pkg} to {yt_update}"
             return "Updated other packages"
         up_to_date_regex = re.compile(
-            f"^Requirement already up-to-date: {re.escape(yt_dl_pkg)} .* \\(([^)]+)\\)$",
+            f"^Requirement already (up-to-date|satisfied): {re.escape(yt_dl_pkg)} .* \\(([^)]+)\\)$",
             re.MULTILINE
         )
         yt_up_to_date = up_to_date_regex.search(stdout)
