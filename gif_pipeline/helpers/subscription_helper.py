@@ -161,8 +161,8 @@ async def load_subs_from_database(database: "Database", helper: SubscriptionHelp
             sub_entry.chat_id,
             helper,
             subscription_id=sub_entry.subscription_id,
-            last_check_time=sub_entry.last_check_time,
-            check_rate=sub_entry.check_rate,
+            last_check_time=datetime.fromisoformat(sub_entry.last_check_time) if sub_entry.last_check_time else None,
+            check_rate=isodate.parse_duration(sub_entry.check_rate),
             enabled=sub_entry.enabled,
             seen_item_ids=seen_items
         )
