@@ -1,4 +1,5 @@
 import glob
+import logging
 import os
 import shutil
 from multiprocessing.pool import ThreadPool
@@ -15,6 +16,9 @@ from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
 from gif_pipeline.utils import tqdm_gather
+
+
+logger = logging.getLogger(__name__)
 
 
 def hash_image(image_file: str) -> str:
@@ -45,7 +49,13 @@ class DuplicateHelper(Helper):
         if workshop is not None and not workshop.config.duplicate_detection:
             return
         # Create hashes for message
-        new_hashes = await self.create_message_hashes(message_data)
+        try:
+            new_hashes = await self.create_message_hashes(message_data)
+        except:
+            logger.error(f"Duplicate helper failed to check video during startup: {message_data}")
+            if workshop is not None:
+                await self.send_message(workshop, text="During startup, duplicate helper failed to check this video")
+            return
         # Send alerts for workshop messages
         if workshop is not None:
             message = workshop.message_by_id(message_data.message_id)
