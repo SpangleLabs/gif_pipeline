@@ -54,7 +54,12 @@ class DuplicateHelper(Helper):
         except:
             logger.error(f"Duplicate helper failed to check video during startup: {message_data}")
             if workshop is not None:
-                await self.send_message(workshop, text="During startup, duplicate helper failed to check this video")
+                message = workshop.message_by_id(message_data.message_id)
+                await self.send_text_reply(
+                    workshop,
+                    message,
+                    "During startup, duplicate helper failed to check this video"
+                )
             return
         # Send alerts for workshop messages
         if workshop is not None:
