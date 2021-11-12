@@ -53,7 +53,7 @@ class DownloadHelper(Helper):
             return
         self.usage_counter.inc()
         replies = []
-        check_msg = self.check_yt_dl()
+        check_msg = await self.check_yt_dl()
         if check_msg:
             replies.append(check_msg)
         async with self.progress_message(chat, message, "Downloading linked videos"):
