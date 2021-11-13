@@ -360,7 +360,7 @@ class ImgurSearchSubscription(Subscription):
                 new_item = Item(
                     post_image["id"],
                     post_image["link"],
-                    post_image["title"],
+                    post["title"],
                     file_path,
                     True
                 )
