@@ -54,6 +54,7 @@ class SubscriptionException(Exception):
 
 class SubscriptionHelper(Helper):
     CHECK_DELAY = 60
+    NAMES = ["subscribe", "sub", "subs", "subscription", "subscriptions"]
 
     def __init__(
             self,
@@ -172,7 +173,7 @@ class SubscriptionHelper(Helper):
 
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         split_text = message.text.split()
-        if not split_text[0].lower() in ["subscribe", "subscription", "sub", "subscriptions", "subs"]:
+        if not split_text or split_text[0].lower() not in self.NAMES:
             return None
         self.usage_counter.inc()
         if len(split_text) < 2:
@@ -213,8 +214,8 @@ class SubscriptionHelper(Helper):
             )]
 
     def is_priority(self, chat: Chat, message: Message) -> bool:
-        clean_args = message.text.strip().split()
-        if not clean_args or clean_args[0].lower() not in ["subscribe"]:
+        split_text = message.text.strip().split()
+        if not split_text or split_text[0].lower() not in self.NAMES:
             return False
         return True
 
