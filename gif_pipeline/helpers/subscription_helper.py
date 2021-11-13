@@ -125,7 +125,7 @@ class SubscriptionHelper(Helper):
         # Get chat
         chat = self.pipeline.chat_by_id(subscription.chat_id)
         # Construct caption
-        caption = f"<a href=\"{item.link}\">{item.title}</a>\n\nFeed: {subscription.feed_url}"
+        caption = f"<a href=\"{item.link}\">{html.escape(item.title)}</a>\n\nFeed: {html.escape(subscription.feed_url)}"
         # If item has video and chat has duplicate detection
         hash_set = None
         tags = None
