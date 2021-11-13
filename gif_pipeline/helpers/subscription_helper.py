@@ -181,7 +181,11 @@ class SubscriptionHelper(Helper):
             return [await self.send_text_reply(chat, message, "Please specify a feed link to subscribe to.")]
         if split_text[1] in ["list"]:
             msg = "List of subscriptions currently posting to this chat are:\n"
-            msg += "\n".join(f"- {html.escape(sub.feed_url)}" for sub in self.subscriptions if sub.chat_id == chat.chat_data.chat_id)
+            msg += "\n".join(
+                f"- {html.escape(sub.feed_url)}"
+                for sub in self.subscriptions
+                if sub.chat_id == chat.chat_data.chat_id
+            )
             return [await self.send_text_reply(chat, message, msg)]
         if split_text[1] in ["remove", "delete"]:
             feed_link = split_text[2]
