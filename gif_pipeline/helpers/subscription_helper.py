@@ -388,10 +388,9 @@ class YoutubeDLSubscription(Subscription):
     VALIDATE_MAX = 2
 
     async def check_for_new_items(self) -> List["Item"]:
-        json_resp = await self.helper.worker.await_task(YoutubeDLDumpJsonTask(self.feed_url, self.CHECK_MAX))
+        json_objs = await self.get_json_dump(self.feed_url, self.helper, self.CHECK_MAX)
         new_items = []
-        for json_line in json_resp.split("\n"):
-            json_obj = json.loads(json_line)
+        for json_obj in json_objs:
             item_id = json_obj["id"]
             if item_id in self.seen_item_ids:
                 continue
@@ -413,16 +412,40 @@ class YoutubeDLSubscription(Subscription):
     @classmethod
     async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
         await helper.download_helper.check_yt_dl()
-        json_resp = await helper.worker.await_task(YoutubeDLDumpJsonTask(feed_link, 1))
-        if not json_resp:
-            logger.info(f"Json dump from yt-dl for {feed_link} was empty")
-            return False
         try:
-            json.loads(json_resp)
+            json_resp = await cls.get_json_dump(feed_link, helper, 1)
+            if not json_resp:
+                logger.info(f"Json dump from yt-dl for {feed_link} was empty")
+                return False
             return True
         except JSONDecodeError:
             logger.info(f"Could not parse yt-dl json for feed link: {feed_link}")
             return False
+
+    @classmethod
+    async def get_json_dump(
+            cls,
+            feed_link: str,
+            helper: SubscriptionHelper,
+            feed_items: Optional[int] = None
+    ) -> List[Dict]:
+        feed_items = feed_items or cls.CHECK_MAX
+        attempts = 5
+        sleep_wait = 3
+        attempt = 1
+        while True:
+            try:
+                json_resp = await helper.worker.await_task(YoutubeDLDumpJsonTask(feed_link, feed_items))
+                return [
+                    json.loads(line)
+                    for line in json_resp.split("\n")
+                ]
+            except Exception as e:
+                attempt += 1
+                logger.warning("Youtube dl dump json task failed: ", exc_info=e)
+                await asyncio.sleep(sleep_wait)
+                if attempt > attempts:
+                    raise e
 
 
 @dataclass
