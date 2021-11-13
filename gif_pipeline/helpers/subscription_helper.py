@@ -163,13 +163,16 @@ class SubscriptionHelper(Helper):
         return warnings
 
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
-        text_clean = message.text.lower().strip()
-        if not text_clean.startswith("subscribe"):
+        split_text = message.text.split()
+        if not split_text[0].lower() in ["subscribe", "subscription", "sub", "subscriptions", "subs"]:
             return None
         self.usage_counter.inc()
-        split_text = message.text.split()
         if len(split_text) < 2:
             return [await self.send_text_reply(chat, message, "Please specify a feed link to subscribe to.")]
+        if split_text[1] in ["list"]:
+            msg = "Subscriptions currently posting to this chat are:\n"
+            msg += "\n".join(f"- {sub.feed_link}" for sub in self.subscriptions if sub.chat_id == chat.chat_data.chat_id)
+            return [await self.send_text_reply(chat, message, msg)]
         feed_link = split_text[1]
         # TODO: Allow specifying extra arguments?
         try:
