@@ -173,6 +173,16 @@ class SubscriptionHelper(Helper):
             msg = "Subscriptions currently posting to this chat are:\n"
             msg += "\n".join(f"- {sub.feed_link}" for sub in self.subscriptions if sub.chat_id == chat.chat_data.chat_id)
             return [await self.send_text_reply(chat, message, msg)]
+        if split_text[1] in ["remove", "delete"]:
+            feed_link = split_text[2]
+            matching_sub = next([sub for sub in self.subscriptions if sub.feed_link == feed_link], None)
+            if not matching_sub:
+                return [await self.send_text_reply(
+                    chat, message, f"Cannot remove subscription, as none match the feed link: {feed_link}"
+                )]
+            self.subscriptions.remove(matching_sub)
+            self.save_subscriptions()
+            return [await self.send_text_reply(chat, message, f"Removed subscription to {feed_link}")]
         feed_link = split_text[1]
         # TODO: Allow specifying extra arguments?
         try:
