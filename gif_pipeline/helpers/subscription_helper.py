@@ -1,16 +1,19 @@
 import asyncio
 import glob
+import html
 import json
 import logging
 import os
+import re
 import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from json import JSONDecodeError
-from typing import List, Optional, TYPE_CHECKING, Type
+from typing import List, Optional, TYPE_CHECKING, Type, Dict
 
 import isodate
+import requests
 from prometheus_client import Counter, Gauge
 
 from gif_pipeline.chat import Chat
@@ -59,14 +62,18 @@ class SubscriptionHelper(Helper):
             worker: "TaskWorker",
             pipeline: "Pipeline",
             duplicate_helper: "DuplicateHelper",
-            download_helper: "DownloadHelper"
+            download_helper: "DownloadHelper",
+            api_keys: Dict[str, Dict[str, str]]
     ):
         super().__init__(database, client, worker)
         self.pipeline = pipeline
         self.duplicate_helper = duplicate_helper
         self.download_helper = download_helper
+        self.api_keys = api_keys
         self.subscriptions: List[Subscription] = []
         self.sub_classes = [YoutubeDLSubscription]
+        if "imgur" in self.api_keys:
+            self.sub_classes.append(ImgurSearchSubscription)
         # Initialise counters
         for sub_class in self.sub_classes:
             # TODO: add metric labels for workshop titles
@@ -320,6 +327,51 @@ class Subscription(ABC):
             isodate.duration_isoformat(self.check_rate),
             self.enabled
         )
+
+
+class ImgurSearchSubscription(Subscription):
+    SEARCH_PATTERN = re.compile(r"imgur.com/(?:t/|search.*\?q=)([^&\n]+)", re.IGNORECASE)
+
+    async def check_for_new_items(self) -> List["Item"]:
+        search_term = self.SEARCH_PATTERN.search(self.feed_url)
+        api_url = f"https://api.imgur.com/3/gallery/search/?q={search_term.group(1)}"
+        api_key = f"Client-ID {self.helper.api_keys['imgur']['client_id']}"
+        api_resp = requests.get(api_url, headers={"Authorization": api_key})
+        api_data = api_resp.json()
+        posts = api_data['data']
+        new_items = []
+        for post in posts:
+            # Handle galleries
+            if "images" in post:
+                post_images = post["images"]
+            else:
+                post_images = [post]
+            for post_image in post_images:
+                if "mp4" not in post_image:
+                    continue
+                if post_image["id"] in self.seen_item_ids:
+                    continue
+                file_url = post_image["mp4"]
+                file_ext = file_url.split(".")[-1]
+                resp = requests.get(file_url)
+                file_path = random_sandbox_video_path(file_ext)
+                with open(file_path, "wb") as f:
+                    f.write(resp.content)
+                new_items.append(Item(
+                    post_image["id"],
+                    post_image["link"],
+                    post_image["title"],
+                    file_path,
+                    True
+                ))
+        return new_items
+
+    @classmethod
+    async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
+        search_term = cls.SEARCH_PATTERN.search(feed_link)
+        if search_term:
+            return True
+        return False
 
 
 class YoutubeDLSubscription(Subscription):

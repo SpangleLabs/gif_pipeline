@@ -200,7 +200,8 @@ class Pipeline:
             self.worker,
             self,
             duplicate_helper,
-            download_helper
+            download_helper,
+            self.api_keys
         )
         helpers = [
             duplicate_helper,
