@@ -308,10 +308,13 @@ class YoutubeDLSubscription(Subscription):
             item_id = json_obj["id"]
             if item_id in self.seen_item_ids:
                 continue
-            video_path = await self.helper.download_helper.download_link(json_obj["url"])
+            video_url = json_obj["webpage_url"]
+            if "tiktok.com" in self.feed_url:
+                video_url = f"{json_obj['webpage_url']}/video/{json_obj['id']}"
+            video_path = await self.helper.download_helper.download_link(video_url)
             item = Item(
                 json_obj["id"],
-                json_obj["url"],
+                video_url,
                 json_obj["title"],
                 video_path,
                 is_video=True
