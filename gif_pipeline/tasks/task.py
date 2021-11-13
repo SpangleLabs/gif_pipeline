@@ -45,6 +45,7 @@ async def log_stream(stream: StreamReader, timeout: int = DEFAULT_TIMEOUT, prefi
 async def run_subprocess(args, timeout: int = DEFAULT_TIMEOUT) -> str:
     proc = await asyncio.create_subprocess_exec(
         *args,
+        limit=1024 * 512,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
