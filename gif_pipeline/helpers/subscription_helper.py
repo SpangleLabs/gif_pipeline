@@ -357,13 +357,15 @@ class ImgurSearchSubscription(Subscription):
                 file_path = random_sandbox_video_path(file_ext)
                 with open(file_path, "wb") as f:
                     f.write(resp.content)
-                new_items.append(Item(
+                new_item = Item(
                     post_image["id"],
                     post_image["link"],
                     post_image["title"],
                     file_path,
                     True
-                ))
+                )
+                new_items.append(new_item)
+                self.seen_item_ids.append(new_item.item_id)
         return new_items
 
     @classmethod
