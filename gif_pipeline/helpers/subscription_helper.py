@@ -110,6 +110,7 @@ class SubscriptionHelper(Helper):
                             chat,
                             text=f"Failed to post item {item.link} from {subscription.feed_url} feed due to: {e}"
                         )
+            subscription.last_check_time = datetime.now()
             self.save_subscriptions()
 
     async def post_item(self, item: "Item", subscription: "Subscription"):
@@ -334,7 +335,6 @@ class YoutubeDLSubscription(Subscription):
             )
             new_items.append(item)
             self.seen_item_ids.append(item.item_id)
-        self.last_check_time = datetime.now()
         return new_items
 
     @classmethod
