@@ -65,7 +65,7 @@ class SubscriptionHelper(Helper):
         self.pipeline = pipeline
         self.duplicate_helper = duplicate_helper
         self.download_helper = download_helper
-        self.subscriptions = []
+        self.subscriptions: List[Subscription] = []
         self.sub_classes = [YoutubeDLSubscription]
         # Initialise counters
         for sub_class in self.sub_classes:
@@ -172,11 +172,11 @@ class SubscriptionHelper(Helper):
             return [await self.send_text_reply(chat, message, "Please specify a feed link to subscribe to.")]
         if split_text[1] in ["list"]:
             msg = "Subscriptions currently posting to this chat are:\n"
-            msg += "\n".join(f"- {sub.feed_link}" for sub in self.subscriptions if sub.chat_id == chat.chat_data.chat_id)
+            msg += "\n".join(f"- {sub.feed_url}" for sub in self.subscriptions if sub.chat_id == chat.chat_data.chat_id)
             return [await self.send_text_reply(chat, message, msg)]
         if split_text[1] in ["remove", "delete"]:
             feed_link = split_text[2]
-            matching_sub = next([sub for sub in self.subscriptions if sub.feed_link == feed_link], None)
+            matching_sub = next([sub for sub in self.subscriptions if sub.feed_url == feed_link], None)
             if not matching_sub:
                 return [await self.send_text_reply(
                     chat, message, f"Cannot remove subscription, as none match the feed link: {feed_link}"
