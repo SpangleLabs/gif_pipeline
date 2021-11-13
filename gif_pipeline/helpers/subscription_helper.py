@@ -190,6 +190,10 @@ class SubscriptionHelper(Helper):
         # TODO: Allow specifying extra arguments?
         try:
             subscription = await create_sub_for_link(feed_link, chat.chat_data.chat_id, self, self.sub_classes)
+            if subscription is None:
+                return [await self.send_text_reply(
+                    chat, message, f"No subscription handler was able to handle {feed_link_out}"
+                )]
             await subscription.check_for_new_items()
             self.subscriptions.append(subscription)
             self.save_subscriptions()
@@ -250,7 +254,13 @@ async def create_sub_for_link(
         seen_item_ids: Optional[List[str]] = None
 ) -> Optional["Subscription"]:
     for sub_class in sub_classes:
-        if await sub_class.can_handle_link(feed_link, helper):
+        try:
+            can_handle_link = await sub_class.can_handle_link(feed_link, helper)
+        except:
+            continue
+        else:
+            if not can_handle_link:
+                continue
             return sub_class(
                 feed_link,
                 chat_id,
