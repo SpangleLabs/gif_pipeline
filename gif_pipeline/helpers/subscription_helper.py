@@ -197,15 +197,16 @@ class SubscriptionHelper(Helper):
         feed_link_out = html.escape(feed_link)
         # TODO: Allow specifying extra arguments?
         try:
-            subscription = await create_sub_for_link(feed_link, chat.chat_data.chat_id, self, self.sub_classes)
-            if subscription is None:
-                return [await self.send_text_reply(
-                    chat, message, f"No subscription handler was able to handle {feed_link_out}"
-                )]
-            await subscription.check_for_new_items()
-            self.subscriptions.append(subscription)
-            self.save_subscriptions()
-            return [await self.send_text_reply(chat, message, f"Added subscription for {feed_link_out}")]
+            async with self.progress_message(chat, message, "Creating subscription"):
+                subscription = await create_sub_for_link(feed_link, chat.chat_data.chat_id, self, self.sub_classes)
+                if subscription is None:
+                    return [await self.send_text_reply(
+                        chat, message, f"No subscription handler was able to handle {feed_link_out}"
+                    )]
+                await subscription.check_for_new_items()
+                self.subscriptions.append(subscription)
+                self.save_subscriptions()
+                return [await self.send_text_reply(chat, message, f"Added subscription for {feed_link_out}")]
         except Exception as e:
             logger.error(f"Failed to create subscription to {feed_link_out}", exc_info=e)
             return [await self.send_text_reply(
