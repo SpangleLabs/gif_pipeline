@@ -172,11 +172,18 @@ class SubscriptionHelper(Helper):
             return [await self.send_text_reply(chat, message, "Please specify a feed link to subscribe to.")]
         feed_link = split_text[1]
         # TODO: Allow specifying extra arguments?
-        subscription = await create_sub_for_link(feed_link, chat.chat_data.chat_id, self, self.sub_classes)
-        await subscription.check_for_new_items()
-        self.subscriptions.append(subscription)
-        self.save_subscriptions()
-        return [await self.send_text_reply(chat, message, f"Added subscription for {feed_link}")]
+        try:
+            subscription = await create_sub_for_link(feed_link, chat.chat_data.chat_id, self, self.sub_classes)
+            await subscription.check_for_new_items()
+            self.subscriptions.append(subscription)
+            self.save_subscriptions()
+            return [await self.send_text_reply(chat, message, f"Added subscription for {feed_link}")]
+        except Exception as e:
+            logger.error(f"Failed to create subscription to {feed_link}", exc_info=e)
+            return [await self.send_text_reply(
+                chat, message,
+                f"Could not add subscription to {feed_link}. Encountered error: {repr(e)}"
+            )]
 
     def is_priority(self, chat: Chat, message: Message) -> bool:
         clean_args = message.text.strip().split()
