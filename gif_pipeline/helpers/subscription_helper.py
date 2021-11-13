@@ -172,31 +172,33 @@ class SubscriptionHelper(Helper):
             return [await self.send_text_reply(chat, message, "Please specify a feed link to subscribe to.")]
         if split_text[1] in ["list"]:
             msg = "Subscriptions currently posting to this chat are:\n"
-            msg += "\n".join(f"- {sub.feed_url}" for sub in self.subscriptions if sub.chat_id == chat.chat_data.chat_id)
+            msg += "\n".join(f"- {html.escape(sub.feed_url)}" for sub in self.subscriptions if sub.chat_id == chat.chat_data.chat_id)
             return [await self.send_text_reply(chat, message, msg)]
         if split_text[1] in ["remove", "delete"]:
             feed_link = split_text[2]
+            feed_link_out = html.escape(feed_link)
             matching_sub = next([sub for sub in self.subscriptions if sub.feed_url == feed_link], None)
             if not matching_sub:
                 return [await self.send_text_reply(
-                    chat, message, f"Cannot remove subscription, as none match the feed link: {feed_link}"
+                    chat, message, f"Cannot remove subscription, as none match the feed link: {feed_link_out}"
                 )]
             self.subscriptions.remove(matching_sub)
             self.save_subscriptions()
-            return [await self.send_text_reply(chat, message, f"Removed subscription to {feed_link}")]
+            return [await self.send_text_reply(chat, message, f"Removed subscription to {feed_link_out}")]
         feed_link = split_text[1]
+        feed_link_out = html.escape(feed_link)
         # TODO: Allow specifying extra arguments?
         try:
             subscription = await create_sub_for_link(feed_link, chat.chat_data.chat_id, self, self.sub_classes)
             await subscription.check_for_new_items()
             self.subscriptions.append(subscription)
             self.save_subscriptions()
-            return [await self.send_text_reply(chat, message, f"Added subscription for {feed_link}")]
+            return [await self.send_text_reply(chat, message, f"Added subscription for {feed_link_out}")]
         except Exception as e:
-            logger.error(f"Failed to create subscription to {feed_link}", exc_info=e)
+            logger.error(f"Failed to create subscription to {feed_link_out}", exc_info=e)
             return [await self.send_text_reply(
                 chat, message,
-                f"Could not add subscription to {feed_link}. Encountered error: {repr(e)}"
+                f"Could not add subscription to {feed_link_out}. Encountered error: {repr(e)}"
             )]
 
     def is_priority(self, chat: Chat, message: Message) -> bool:
