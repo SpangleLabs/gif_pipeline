@@ -72,9 +72,10 @@ class SubscriptionHelper(Helper):
         self.download_helper = download_helper
         self.api_keys = api_keys
         self.subscriptions: List[Subscription] = []
-        self.sub_classes = [YoutubeDLSubscription]
+        self.sub_classes = []
         if "imgur" in self.api_keys:
             self.sub_classes.append(ImgurSearchSubscription)
+        self.sub_classes.append(YoutubeDLSubscription)
         # Initialise counters
         for sub_class in self.sub_classes:
             # TODO: add metric labels for workshop titles
