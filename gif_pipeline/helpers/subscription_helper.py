@@ -114,10 +114,12 @@ class SubscriptionHelper(Helper):
                     try:
                         await self.post_item(item, subscription)
                     except Exception as e:
-                        logger.error(f"Failed to post item {item.link} from {subscription.feed_url} feed due to: {e}")
+                        logger.error(
+                            f"Failed to post item {item.source_link} from {subscription.feed_url} feed due to: {e}"
+                        )
                         await self.send_message(
                             chat,
-                            text=f"Failed to post item {item.link} from {subscription.feed_url} feed due to: {e}"
+                            text=f"Failed to post item {item.source_link} from {subscription.feed_url} feed due to: {e}"
                         )
             subscription.last_check_time = datetime.now()
             self.save_subscriptions()
@@ -127,34 +129,38 @@ class SubscriptionHelper(Helper):
         # Get chat
         chat = self.pipeline.chat_by_id(subscription.chat_id)
         # Construct caption
-        caption = f"<a href=\"{item.link}\">{html.escape(item.title)}</a>\n\nFeed: {html.escape(subscription.feed_url)}"
+        caption = (
+            f"<a href=\"{item.source_link}\">{html.escape(item.title)}</a>\n\n"
+            f"Feed: {html.escape(subscription.feed_url)}"
+        )
         # If item has video and chat has duplicate detection
         hash_set = None
         tags = None
+        file_path = await subscription.download_item(item)
         if item.is_video:
             # Convert to video
             output_path = random_sandbox_video_path()
-            tasks = video_to_video(item.file_path, output_path)
+            tasks = video_to_video(file_path, output_path)
             for task in tasks:
                 await self.worker.await_task(task)
-            item.file_path = output_path
+            file_path = output_path
             # Check duplicate warnings
             if chat.config.duplicate_detection:
-                warnings = await self.check_item_duplicate(item, subscription)
+                warnings = await self.check_item_duplicate(file_path, item.item_id, subscription)
                 if warnings:
                     caption += "\n\n" + "\n".join(warnings)
             # Build tags
             tags = VideoTags()
-            tags.add_tag_value(VideoTags.source, item.link)
+            tags.add_tag_value(VideoTags.source, item.source_link)
         # Post item
-        await self.send_message(chat, text=caption, video_path=item.file_path, video_hashes=hash_set, tags=tags)
+        await self.send_message(chat, text=caption, video_path=file_path, video_hashes=hash_set, tags=tags)
 
-    async def check_item_duplicate(self, item: "Item", subscription: "Subscription") -> List[str]:
+    async def check_item_duplicate(self, file_path: str, item_id: str, subscription: "Subscription") -> List[str]:
         # Hash video
-        message_decompose_path = f"sandbox/decompose/subs/{subscription.subscription_id}-{item.item_id}/"
+        message_decompose_path = f"sandbox/decompose/subs/{subscription.subscription_id}/{item_id}/"
         # Decompose video into images
         os.makedirs(message_decompose_path, exist_ok=True)
-        await self.duplicate_helper.decompose_video(item.file_path, message_decompose_path)
+        await self.duplicate_helper.decompose_video(file_path, message_decompose_path)
         # Hash the images
         image_files = glob.glob(f"{message_decompose_path}/*.png")
         hash_list = self.duplicate_helper.hash_pool.map(hash_image, image_files)
@@ -325,6 +331,10 @@ class Subscription(ABC):
     async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
         pass
 
+    @abstractmethod
+    async def download_item(self, item: "Item") -> str:
+        raise NotImplementedError
+
     def to_data(self) -> SubscriptionData:
         return SubscriptionData(
             self.subscription_id,
@@ -358,22 +368,30 @@ class ImgurSearchSubscription(Subscription):
                     continue
                 if post_image["id"] in self.seen_item_ids:
                     continue
-                file_url = post_image["mp4"]
-                file_ext = file_url.split(".")[-1]
-                resp = requests.get(file_url)
-                file_path = random_sandbox_video_path(file_ext)
-                with open(file_path, "wb") as f:
-                    f.write(resp.content)
+                # file_url = post_image["mp4"]
+                # file_ext = file_url.split(".")[-1]
+                # resp = requests.get(file_url)
+                # file_path = random_sandbox_video_path(file_ext)
+                # with open(file_path, "wb") as f:
+                #     f.write(resp.content)
                 new_item = Item(
                     post_image["id"],
-                    post_image["link"],
+                    post_image["mp4"],
+                    post["link"],
                     post["title"],
-                    file_path,
                     True
                 )
                 new_items.append(new_item)
                 self.seen_item_ids.append(new_item.item_id)
         return new_items
+
+    async def download_item(self, item: "Item") -> str:
+        resp = requests.get(item.download_link)
+        file_ext = item.download_link.split(".")[-1]
+        file_path = random_sandbox_video_path(file_ext)
+        with open(file_path, "wb") as f:
+            f.write(resp.content)
+        return file_path
 
     @classmethod
     async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
@@ -397,17 +415,22 @@ class YoutubeDLSubscription(Subscription):
             video_url = json_obj["webpage_url"]
             if "tiktok.com" in self.feed_url:
                 video_url = f"{json_obj['webpage_url']}/video/{json_obj['id']}"
-            video_path = await self.helper.download_helper.download_link(video_url)
+            # video_path = await self.helper.download_helper.download_link(video_url)
             item = Item(
                 json_obj["id"],
                 video_url,
+                video_url,
                 json_obj["title"],
-                video_path,
+                # video_path,
                 is_video=True
             )
             new_items.append(item)
             self.seen_item_ids.append(item.item_id)
         return new_items
+
+    async def download_item(self, item: "Item") -> str:
+        video_path = await self.helper.download_helper.download_link(item.download_link)
+        return video_path
 
     @classmethod
     async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
@@ -451,7 +474,8 @@ class YoutubeDLSubscription(Subscription):
 @dataclass
 class Item:
     item_id: str
-    link: str
+    download_link: str
+    source_link: str
     title: Optional[str]
-    file_path: Optional[str]
+    # file_path: Optional[str]
     is_video: bool = False
