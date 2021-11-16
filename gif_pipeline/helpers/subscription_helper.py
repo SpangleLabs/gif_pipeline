@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from json import JSONDecodeError
-from typing import List, Optional, TYPE_CHECKING, Type, Dict
+from typing import List, Optional, TYPE_CHECKING, Type, Dict, Set
 
 import isodate
 import requests
@@ -146,7 +146,8 @@ class SubscriptionHelper(Helper):
             file_path = output_path
             # Check duplicate warnings
             if chat.config.duplicate_detection:
-                warnings = await self.check_item_duplicate(file_path, item.item_id, subscription)
+                hash_set = await self.get_item_hash_set(file_path, item.item_id, subscription)
+                warnings = await self.check_item_duplicate(hash_set)
                 if warnings:
                     caption += "\n\n" + "\n".join(warnings)
             # Build tags
@@ -155,7 +156,7 @@ class SubscriptionHelper(Helper):
         # Post item
         await self.send_message(chat, text=caption, video_path=file_path, video_hashes=hash_set, tags=tags)
 
-    async def check_item_duplicate(self, file_path: str, item_id: str, subscription: "Subscription") -> List[str]:
+    async def get_item_hash_set(self, file_path: str, item_id: str, subscription: "Subscription") -> Set[str]:
         # Hash video
         message_decompose_path = f"sandbox/decompose/subs/{subscription.subscription_id}/{item_id}/"
         # Decompose video into images
@@ -170,6 +171,9 @@ class SubscriptionHelper(Helper):
             shutil.rmtree(message_decompose_path)
         except FileNotFoundError:
             pass
+        return hash_set
+
+    async def check_item_duplicate(self, hash_set: Set[str]) -> List[str]:
         # Find duplicates
         has_blank_frame = self.duplicate_helper.blank_frame_hash in hash_set
         if has_blank_frame:
