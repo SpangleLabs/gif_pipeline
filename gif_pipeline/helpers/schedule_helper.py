@@ -186,11 +186,6 @@ class ScheduleHelper(Helper):
                 sent_menu = reminder_menus[channel.queue.chat_data.chat_id]
                 menu = sent_menu.menu
                 if datetime.now(timezone.utc) > menu.post_time:
-                    missing_tags = self.tag_manager.missing_tags_for_video(menu.video, channel, menu.chat)
-                    if missing_tags:
-                        return await self.menu_helper.additional_tags_menu(
-                            menu.chat, None, menu.video, self.send_helper, channel, missing_tags
-                        )
                     if menu.auto_post:
                         tags = menu.video.tags(self.database)
                         hashes = set(self.database.get_hashes_for_message(menu.video.message_data))
