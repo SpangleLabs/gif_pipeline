@@ -1,13 +1,12 @@
 import asyncio
 import logging
-from pathlib import Path
 from typing import Dict, List, Iterator, Optional, Iterable, Union, Tuple
 
-import tomlkit
 from prometheus_client import Info, Gauge, start_http_server
 from telethon import events
 from tqdm import tqdm
 
+from gif_pipeline import _version
 from gif_pipeline.chat_builder import ChannelBuilder, WorkshopBuilder
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat, Channel, WorkshopGroup
@@ -56,12 +55,6 @@ startup_time = Gauge(
 )
 PROM_PORT = 7180
 
-
-def get_current_version() -> str:
-    toml_path = Path(__file__).parent.parent / "pyproject.toml"
-    with open(toml_path, "r") as pyproject:
-        file_contents = pyproject.read()
-    return tomlkit.parse(file_contents)['tool']['poetry']['version']
 
 
 class PipelineConfig:
@@ -260,7 +253,7 @@ class Pipeline:
         start_http_server(PROM_PORT)
         startup_time.set_to_current_time()
         version_info.info({
-            "version": get_current_version()
+            "version": _version.__VERSION__
         })
         logger.info("Watching workshop")
         # Set up handlers
