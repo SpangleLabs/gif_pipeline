@@ -137,7 +137,7 @@ class SubscriptionHelper(Helper):
         hash_set = None
         tags = None
         file_path = await subscription.download_item(item)
-        if item.is_video:
+        if file_path:
             # Convert to video
             output_path = random_sandbox_video_path()
             tasks = video_to_video(file_path, output_path)
@@ -372,18 +372,11 @@ class ImgurSearchSubscription(Subscription):
                     continue
                 if post_image["id"] in self.seen_item_ids:
                     continue
-                # file_url = post_image["mp4"]
-                # file_ext = file_url.split(".")[-1]
-                # resp = requests.get(file_url)
-                # file_path = random_sandbox_video_path(file_ext)
-                # with open(file_path, "wb") as f:
-                #     f.write(resp.content)
                 new_item = Item(
                     post_image["id"],
                     post_image["mp4"],
                     post["link"],
-                    post["title"],
-                    True
+                    post["title"]
                 )
                 new_items.append(new_item)
                 self.seen_item_ids.append(new_item.item_id)
@@ -419,14 +412,11 @@ class YoutubeDLSubscription(Subscription):
             video_url = json_obj["webpage_url"]
             if "tiktok.com" in self.feed_url:
                 video_url = f"{json_obj['webpage_url']}/video/{json_obj['id']}"
-            # video_path = await self.helper.download_helper.download_link(video_url)
             item = Item(
                 json_obj["id"],
                 video_url,
                 video_url,
-                json_obj["title"],
-                # video_path,
-                is_video=True
+                json_obj["title"]
             )
             new_items.append(item)
             self.seen_item_ids.append(item.item_id)
@@ -481,5 +471,3 @@ class Item:
     download_link: str
     source_link: str
     title: Optional[str]
-    # file_path: Optional[str]
-    is_video: bool = False
