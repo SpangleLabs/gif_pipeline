@@ -19,6 +19,7 @@ scenedetect = {extras = ["opencv", "progress_bar"], version = "^0.5.6"}
 isodate = "^0.6.0"
 prometheus-client = "^0.12.0"
 tomlkit = "^0.7.2"
+asyncpraw = "^7.5.0"
 
 [tool.poetry.dev-dependencies]
 
