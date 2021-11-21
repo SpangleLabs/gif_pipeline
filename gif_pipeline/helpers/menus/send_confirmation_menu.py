@@ -42,6 +42,9 @@ class SendConfirmationMenu(Menu):
                 duration = now - last_post.message_data.datetime
                 duration_str = delta_to_string(duration)
                 msg += f"\nThe last post there was {duration_str} ago"
+        if self.destination.has_queue:
+            queue_count = self.destination.queue.count_videos()
+            msg += f"\nThere are {queue_count} videos in the queue"
         return msg
 
     @property
