@@ -341,9 +341,9 @@ class Subscription(ABC):
     async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
         pass
 
-    @abstractmethod
     async def download_item(self, item: "Item") -> str:
-        raise NotImplementedError
+        video_path = await self.helper.download_helper.download_link(item.download_link)
+        return video_path
 
     def to_data(self) -> SubscriptionData:
         return SubscriptionData(
@@ -427,10 +427,6 @@ class YoutubeDLSubscription(Subscription):
             new_items.append(item)
             self.seen_item_ids.append(item.item_id)
         return new_items
-
-    async def download_item(self, item: "Item") -> str:
-        video_path = await self.helper.download_helper.download_link(item.download_link)
-        return video_path
 
     @classmethod
     async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
