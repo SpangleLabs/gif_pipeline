@@ -95,9 +95,9 @@ class SubscriptionHelper(Helper):
                     subscription_class_name=sub_class.__name__,
                     chat_title=workshop.chat_data.title
                 ).set_function(
-                    lambda: len([
+                    lambda cls=sub_class, chat_id=workshop.chat_data.chat_id: len([
                         s for s in self.subscriptions
-                        if isinstance(s, sub_class) and s.chat_id == workshop.chat_data.chat_id
+                        if isinstance(s, cls) and s.chat_id == chat_id
                     ])
                 )
 
