@@ -209,7 +209,7 @@ class SubscriptionHelper(Helper):
         if split_text[1] in ["remove", "delete"]:
             feed_link = split_text[2]
             feed_link_out = html.escape(feed_link)
-            matching_sub = next([sub for sub in self.subscriptions if sub.feed_url == feed_link], None)
+            matching_sub = next((sub for sub in self.subscriptions if sub.feed_url == feed_link), None)
             if not matching_sub:
                 return [await self.send_text_reply(
                     chat, message, f"Cannot remove subscription, as none match the feed link: {feed_link_out}"
