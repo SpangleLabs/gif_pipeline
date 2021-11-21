@@ -20,6 +20,8 @@ isodate = "^0.6.0"
 prometheus-client = "^0.12.0"
 tomlkit = "^0.7.2"
 asyncpraw = "^7.5.0"
+feedparser = "^6.0.8"
+bleach = "^4.1.0"
 
 [tool.poetry.dev-dependencies]
 

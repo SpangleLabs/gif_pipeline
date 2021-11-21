@@ -13,9 +13,11 @@ from datetime import datetime, timedelta
 from json import JSONDecodeError
 from typing import List, Optional, TYPE_CHECKING, Type, Dict, Set
 
+import bleach
 import isodate
 import asyncpraw
 import asyncprawcore
+import feedparser
 import requests
 from prometheus_client import Counter, Gauge
 
@@ -512,15 +514,45 @@ class RedditSubscription(Subscription):
         if search_term:
             try:
                 async with reddit_client(helper) as reddit:
-                    async for result in reddit.subreddits.search_by_name(search_term.group(1), exact=True):
+                    async for _ in reddit.subreddits.search_by_name(search_term.group(1), exact=True):
                         return True
             except asyncprawcore.NotFound:
                 return False
         return False
 
-    async def download_item(self, item: "Item") -> str:
-        video_path = await self.helper.download_helper.download_link(item.download_link)
-        return video_path
+
+class RSSSubscription(Subscription):
+
+    async def check_for_new_items(self) -> List["Item"]:
+        new_items = []
+        feed = feedparser.parse(self.feed_url)
+        for entry in feed.entries:
+            if entry.id in self.seen_item_ids:
+                continue
+            new_item = Item(
+                entry.id,
+                entry.link,
+                entry.link,
+                bleach.clean(entry.title, tags=[], strip=True)
+            )
+            new_items.append(new_item)
+            self.seen_item_ids.append(new_item.item_id)
+        return new_items
+
+    @classmethod
+    async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
+        try:
+            feed = feedparser.parse(feed_link)
+            for entry in feed.entries:
+                Item(
+                    entry.id,
+                    entry.link,
+                    entry.link,
+                    bleach.clean(entry.title, tags=[], strip=True)
+                )
+            return True
+        except:
+            return False
 
 
 @dataclass
