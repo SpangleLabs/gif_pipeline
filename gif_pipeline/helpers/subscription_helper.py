@@ -135,8 +135,11 @@ class SubscriptionHelper(Helper):
         # Get chat
         chat = self.pipeline.chat_by_id(subscription.chat_id)
         # Construct caption
+        title = "-"
+        if item.title:
+            title = html.escape(item.title)
         caption = (
-            f"<a href=\"{item.source_link}\">{html.escape(item.title)}</a>\n\n"
+            f"<a href=\"{item.source_link}\">{title}</a>\n\n"
             f"Feed: {html.escape(subscription.feed_url)}"
         )
         # If item has video and chat has duplicate detection
