@@ -44,13 +44,13 @@ logger = logging.getLogger(__name__)
 subscription_count = Gauge(
     "gif_pipeline_subscription_helper_subscription_count",
     "Number of active subscriptions in the subscription helper",
-    labelnames=["subscription_class_name"]
+    labelnames=["subscription_class_name", "chat_title"]
 )
 
 subscription_posts = Counter(
     "gif_pipeline_subscription_helper_post_count_total",
     "Total number of posts sent by the subscription helper",
-    labelnames=["subscription_class_name"]
+    labelnames=["subscription_class_name", "chat_title"]
 )
 
 
@@ -86,12 +86,20 @@ class SubscriptionHelper(Helper):
         self.sub_classes.append(YoutubeDLSubscription)
         # Initialise counters
         for sub_class in self.sub_classes:
-            # TODO: add metric labels for workshop titles
-            subscription_count.labels(subscription_class_name=sub_class.__name__)
-            subscription_posts.labels(subscription_class_name=sub_class.__name__)
-            subscription_count.labels(subscription_class_name=sub_class.__name__).set_function(
-                lambda: len([s for s in self.subscriptions if isinstance(s, sub_class)])
-            )
+            for workshop in self.pipeline.workshops:
+                subscription_posts.labels(
+                    subscription_class_name=sub_class.__name__,
+                    chat_title=workshop.chat_data.title
+                )
+                subscription_count.labels(
+                    subscription_class_name=sub_class.__name__,
+                    chat_title=workshop.chat_data.title
+                ).set_function(
+                    lambda: len([
+                        s for s in self.subscriptions
+                        if isinstance(s, sub_class) and s.chat_id == workshop.chat_data.chat_id
+                    ])
+                )
 
     async def initialise(self) -> None:
         self.subscriptions = await load_subs_from_database(self.database, self)
@@ -133,9 +141,13 @@ class SubscriptionHelper(Helper):
             self.save_subscriptions()
 
     async def post_item(self, item: "Item", subscription: "Subscription"):
-        subscription_posts.labels(subscription_class_name=subscription.__class__.__name__).inc()
         # Get chat
         chat = self.pipeline.chat_by_id(subscription.chat_id)
+        # Metrics
+        subscription_posts.labels(
+            subscription_class_name=subscription.__class__.__name__,
+            chat_title=chat.chat_data.title
+        ).inc()
         # Construct caption
         title = "-"
         if item.title:
