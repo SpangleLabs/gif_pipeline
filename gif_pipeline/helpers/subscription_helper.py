@@ -509,6 +509,8 @@ class RedditSubscription(Subscription):
             async for submission in subreddit.new(limit=self.LIMIT):
                 if submission.id in self.seen_item_ids:
                     continue
+                if submission.is_self:
+                    continue
                 link = f"https://reddit.com{submission.permalink}"
                 new_item = Item(
                     submission.id,
