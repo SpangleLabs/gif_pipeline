@@ -94,6 +94,7 @@ class SubscriptionHelper(Helper):
             self.sub_classes.append(ImgurSearchSubscription)
         if "reddit" in self.api_keys:
             self.sub_classes.append(RedditSubscription)
+        self.sub_classes.append(RSSSubscription)
         self.sub_classes.append(YoutubeDLSubscription)
         # Initialise counters
         for sub_class in self.sub_classes:
