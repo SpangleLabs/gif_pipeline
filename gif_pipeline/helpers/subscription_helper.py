@@ -15,6 +15,7 @@ from typing import List, Optional, TYPE_CHECKING, Type, Dict, Set
 
 import bleach
 import isodate
+from PIL import Image
 import asyncpraw
 import asyncprawcore
 import feedparser
@@ -52,6 +53,16 @@ subscription_posts = Counter(
     "Total number of posts sent by the subscription helper",
     labelnames=["subscription_class_name", "chat_title"]
 )
+
+def is_static_image(file_path: str) -> bool:
+    file_ext = file_path.split(".")[-1]
+    if file_ext in ["jpg", "jpeg"]:
+        return True
+    if file_ext in ["gif", "png"]:
+        with Image.open(file_path) as img:
+            # is_animated attribute might not exist, if file is a jpg named ".png"
+            return getattr(img, "is_animated", False)
+    return False
 
 
 class SubscriptionException(Exception):
@@ -160,7 +171,7 @@ class SubscriptionHelper(Helper):
         hash_set = None
         tags = None
         file_path = await subscription.download_item(item)
-        if file_path:
+        if file_path and not is_static_image(file_path):
             # Convert to video
             output_path = random_sandbox_video_path()
             tasks = video_to_video(file_path, output_path)
