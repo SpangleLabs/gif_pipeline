@@ -152,7 +152,7 @@ class SubscriptionHelper(Helper):
             subscription.last_check_time = datetime.now()
             self.save_subscriptions()
 
-    async def post_item(self, item: "Item", subscription: "Subscription"):
+    async def post_item(self, item: "Item", subscription: "Subscription") -> None:
         # Get chat
         chat = self.pipeline.chat_by_id(subscription.chat_id)
         # Metrics
@@ -172,22 +172,24 @@ class SubscriptionHelper(Helper):
         hash_set = None
         tags = None
         file_path = await subscription.download_item(item)
-        if file_path and not is_static_image(file_path):
-            # Convert to video
-            output_path = random_sandbox_video_path()
-            tasks = video_to_video(file_path, output_path)
-            for task in tasks:
-                await self.worker.await_task(task)
-            file_path = output_path
-            # Check duplicate warnings
-            if chat.config.duplicate_detection:
-                hash_set = await self.get_item_hash_set(file_path, item.item_id, subscription)
-                warnings = await self.check_item_duplicate(hash_set)
-                if warnings:
-                    caption += "\n\n" + "\n".join(warnings)
-            # Build tags
-            tags = VideoTags()
-            tags.add_tag_value(VideoTags.source, item.source_link)
+        # Only post videos
+        if not file_path or is_static_image(file_path):
+            return
+        # Convert to video
+        output_path = random_sandbox_video_path()
+        tasks = video_to_video(file_path, output_path)
+        for task in tasks:
+            await self.worker.await_task(task)
+        file_path = output_path
+        # Check duplicate warnings
+        if chat.config.duplicate_detection:
+            hash_set = await self.get_item_hash_set(file_path, item.item_id, subscription)
+            warnings = await self.check_item_duplicate(hash_set)
+            if warnings:
+                caption += "\n\n" + "\n".join(warnings)
+        # Build tags
+        tags = VideoTags()
+        tags.add_tag_value(VideoTags.source, item.source_link)
         # Post item
         await self.send_message(chat, text=caption, video_path=file_path, video_hashes=hash_set, tags=tags)
 
