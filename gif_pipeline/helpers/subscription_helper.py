@@ -1,35 +1,26 @@
 import asyncio
-import contextlib
 import glob
 import html
-import json
 import logging
 import os
-import re
 import shutil
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from datetime import datetime, timedelta
-from json import JSONDecodeError
 from typing import List, Optional, TYPE_CHECKING, Type, Dict, Set
 
-import bleach
 import isodate
 from PIL import Image
-import asyncpraw
-import asyncprawcore
-import feedparser
-import requests
 from prometheus_client import Counter, Gauge
 
-from gif_pipeline import _version
 from gif_pipeline.chat import Chat
-from gif_pipeline.database import SubscriptionData
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.helpers.duplicate_helper import hash_image
+from gif_pipeline.helpers.subscriptions.imgur_subscription import ImgurSearchSubscription
+from gif_pipeline.helpers.subscriptions.reddit_subscription import RedditSubscription
+from gif_pipeline.helpers.subscriptions.rss_subscription import RSSSubscription
+from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item
+from gif_pipeline.helpers.subscriptions.youtube_dl_subscription import YoutubeDLSubscription
 from gif_pipeline.helpers.video_helper import video_to_video
 from gif_pipeline.message import Message
-from gif_pipeline.tasks.youtube_dl_task import YoutubeDLDumpJsonTask
 from gif_pipeline.video_tags import VideoTags
 
 if TYPE_CHECKING:
@@ -53,6 +44,7 @@ subscription_posts = Counter(
     "Total number of posts sent by the subscription helper",
     labelnames=["subscription_class_name", "chat_title"]
 )
+
 
 def is_static_image(file_path: str) -> bool:
     file_ext = file_path.split(".")[-1]
@@ -170,7 +162,6 @@ class SubscriptionHelper(Helper):
         )
         # If item has video and chat has duplicate detection
         hash_set = None
-        tags = None
         file_path = await subscription.download_item(item)
         # Only post videos
         if not file_path or is_static_image(file_path):
@@ -333,259 +324,3 @@ async def create_sub_for_link(
                 seen_item_ids=seen_item_ids
             )
     return None
-
-
-class Subscription(ABC):
-
-    def __init__(
-            self,
-            feed_url: str,
-            chat_id: int,
-            helper: SubscriptionHelper,
-            *,
-            subscription_id: int = None,
-            last_check_time: Optional[datetime] = None,
-            check_rate: Optional[timedelta] = None,
-            enabled: bool = True,
-            seen_item_ids: Optional[List[str]] = None
-    ):
-        self.subscription_id = subscription_id
-        self.chat_id = chat_id
-        self.helper = helper
-        self.feed_url = feed_url
-        self.last_check_time = last_check_time
-        self.check_rate = check_rate or isodate.parse_duration("PT1H")
-        self.enabled = enabled
-        self.seen_item_ids = seen_item_ids or []
-
-    def needs_check(self) -> bool:
-        if self.last_check_time is None:
-            return True
-        return datetime.now() > self.last_check_time + self.check_rate
-
-    @abstractmethod
-    async def check_for_new_items(self) -> List["Item"]:
-        raise NotImplementedError
-
-    @classmethod
-    @abstractmethod
-    async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
-        pass
-
-    async def download_item(self, item: "Item") -> str:
-        video_path = await self.helper.download_helper.download_link(item.download_link)
-        return video_path
-
-    def to_data(self) -> SubscriptionData:
-        return SubscriptionData(
-            self.subscription_id,
-            self.feed_url,
-            self.chat_id,
-            self.last_check_time.isoformat() if self.last_check_time else None,
-            isodate.duration_isoformat(self.check_rate),
-            self.enabled
-        )
-
-
-class ImgurSearchSubscription(Subscription):
-    SEARCH_PATTERN = re.compile(r"imgur.com/(?:t/|search.*\?q=)([^&\n]+)", re.IGNORECASE)
-
-    async def check_for_new_items(self) -> List["Item"]:
-        search_term = self.SEARCH_PATTERN.search(self.feed_url)
-        api_url = f"https://api.imgur.com/3/gallery/search/?q={search_term.group(1)}"
-        api_key = f"Client-ID {self.helper.api_keys['imgur']['client_id']}"
-        api_resp = requests.get(api_url, headers={"Authorization": api_key})
-        api_data = api_resp.json()
-        posts = api_data['data']
-        new_items = []
-        for post in posts:
-            # Handle galleries
-            if "images" in post:
-                post_images = post["images"]
-            else:
-                post_images = [post]
-            for post_image in post_images:
-                if "mp4" not in post_image:
-                    continue
-                if post_image["id"] in self.seen_item_ids:
-                    continue
-                new_item = Item(
-                    post_image["id"],
-                    post_image["mp4"],
-                    post["link"],
-                    post["title"]
-                )
-                new_items.append(new_item)
-                self.seen_item_ids.append(new_item.item_id)
-        return new_items
-
-    async def download_item(self, item: "Item") -> str:
-        resp = requests.get(item.download_link)
-        file_ext = item.download_link.split(".")[-1]
-        file_path = random_sandbox_video_path(file_ext)
-        with open(file_path, "wb") as f:
-            f.write(resp.content)
-        return file_path
-
-    @classmethod
-    async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
-        search_term = cls.SEARCH_PATTERN.search(feed_link)
-        if search_term:
-            return True
-        return False
-
-
-class YoutubeDLSubscription(Subscription):
-    CHECK_MAX = 10
-    VALIDATE_MAX = 2
-
-    async def check_for_new_items(self) -> List["Item"]:
-        json_objs = await self.get_json_dump(self.feed_url, self.helper, self.CHECK_MAX)
-        new_items = []
-        for json_obj in json_objs:
-            item_id = json_obj["id"]
-            if item_id in self.seen_item_ids:
-                continue
-            video_url = json_obj["webpage_url"]
-            if "tiktok.com" in self.feed_url:
-                video_url = f"{json_obj['webpage_url']}/video/{json_obj['id']}"
-            item = Item(
-                json_obj["id"],
-                video_url,
-                video_url,
-                json_obj["title"]
-            )
-            new_items.append(item)
-            self.seen_item_ids.append(item.item_id)
-        return new_items
-
-    @classmethod
-    async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
-        await helper.download_helper.check_yt_dl()
-        try:
-            json_resp = await cls.get_json_dump(feed_link, helper, 1)
-            if not json_resp:
-                logger.info(f"Json dump from yt-dl for {feed_link} was empty")
-                return False
-            return True
-        except JSONDecodeError:
-            logger.info(f"Could not parse yt-dl json for feed link: {feed_link}")
-            return False
-
-    @classmethod
-    async def get_json_dump(
-            cls,
-            feed_link: str,
-            helper: SubscriptionHelper,
-            feed_items: Optional[int] = None
-    ) -> List[Dict]:
-        feed_items = feed_items or cls.CHECK_MAX
-        attempts = 5
-        sleep_wait = 3
-        attempt = 1
-        while True:
-            try:
-                json_resp = await helper.worker.await_task(YoutubeDLDumpJsonTask(feed_link, feed_items))
-                return [
-                    json.loads(line)
-                    for line in json_resp.split("\n")
-                ]
-            except Exception as e:
-                attempt += 1
-                logger.warning("Youtube dl dump json task failed: ", exc_info=e)
-                await asyncio.sleep(sleep_wait)
-                if attempt > attempts:
-                    raise e
-
-
-@contextlib.asynccontextmanager
-async def reddit_client(helper: SubscriptionHelper) -> asyncpraw.Reddit:
-    username = helper.api_keys['reddit']['owner_username']
-    user_agent = f"line:gif_pipeline:v{_version.__VERSION__} (by u/{username})"
-    reddit = asyncpraw.Reddit(
-        client_id=helper.api_keys["reddit"]["client_id"],
-        client_secret=helper.api_keys["reddit"]["client_secret"],
-        user_agent=user_agent
-    )
-    yield reddit
-    await reddit.close()
-
-
-class RedditSubscription(Subscription):
-    SEARCH_PATTERN = re.compile(r"reddit.com/r/(\S+)", re.IGNORECASE)
-    LIMIT = 10
-
-    async def check_for_new_items(self) -> List["Item"]:
-        subreddit_name = self.SEARCH_PATTERN.search(self.feed_url)
-        new_items = []
-        async with reddit_client(self.helper) as reddit:
-            subreddit = await reddit.subreddit(subreddit_name.group(1))
-            async for submission in subreddit.new(limit=self.LIMIT):
-                if submission.id in self.seen_item_ids:
-                    continue
-                if submission.is_self:
-                    continue
-                link = f"https://reddit.com{submission.permalink}"
-                new_item = Item(
-                    submission.id,
-                    link,
-                    link,
-                    submission.title
-                )
-                new_items.append(new_item)
-                self.seen_item_ids.append(new_item.item_id)
-        return new_items
-
-    @classmethod
-    async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
-        search_term = cls.SEARCH_PATTERN.search(feed_link)
-        if search_term:
-            try:
-                async with reddit_client(helper) as reddit:
-                    async for _ in reddit.subreddits.search_by_name(search_term.group(1), exact=True):
-                        return True
-            except asyncprawcore.NotFound:
-                return False
-        return False
-
-
-class RSSSubscription(Subscription):
-
-    async def check_for_new_items(self) -> List["Item"]:
-        new_items = []
-        feed = feedparser.parse(self.feed_url)
-        for entry in feed.entries:
-            if entry.id in self.seen_item_ids:
-                continue
-            new_item = Item(
-                entry.id,
-                entry.link,
-                entry.link,
-                bleach.clean(entry.title, tags=[], strip=True)
-            )
-            new_items.append(new_item)
-            self.seen_item_ids.append(new_item.item_id)
-        return new_items
-
-    @classmethod
-    async def can_handle_link(cls, feed_link: str, helper: SubscriptionHelper) -> bool:
-        try:
-            feed = feedparser.parse(feed_link)
-            for entry in feed.entries:
-                Item(
-                    entry.id,
-                    entry.link,
-                    entry.link,
-                    bleach.clean(entry.title, tags=[], strip=True)
-                )
-            return True
-        except:
-            return False
-
-
-@dataclass
-class Item:
-    item_id: str
-    download_link: str
-    source_link: str
-    title: Optional[str]
