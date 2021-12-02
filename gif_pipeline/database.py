@@ -475,6 +475,10 @@ class Database:
                 )
         return subscription
 
+    def remove_subscription(self, sub: SubscriptionData) -> None:
+        self._just_execute("DELETE FROM subscription_items WHERE subscription_id = ?", (sub.subscription_id,))
+        self._just_execute("DELETE FROM subscriptions WHERE subscription_id = ?", (sub.subscription_id,))
+
 
 S = TypeVar('S')
 

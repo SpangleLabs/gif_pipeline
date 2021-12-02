@@ -235,6 +235,7 @@ class SubscriptionHelper(Helper):
                     chat, message, f"Cannot remove subscription, as none match the feed link: {feed_link_out}"
                 )]
             self.subscriptions.remove(matching_sub)
+            self.database.remove_subscription(matching_sub.to_data())
             self.save_subscriptions()
             return [await self.send_text_reply(chat, message, f"Removed subscription to {feed_link_out}")]
         feed_link = split_text[1]
