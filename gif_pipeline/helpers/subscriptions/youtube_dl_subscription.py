@@ -26,8 +26,6 @@ class YoutubeDLSubscription(Subscription):
             if item_id in self.seen_item_ids:
                 continue
             video_url = json_obj["webpage_url"]
-            if "tiktok.com" in self.feed_url:
-                video_url = f"{json_obj['webpage_url']}/video/{json_obj['id']}"
             item = Item(
                 json_obj["id"],
                 video_url,
