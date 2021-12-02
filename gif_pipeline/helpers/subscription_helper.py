@@ -142,7 +142,8 @@ class SubscriptionHelper(Helper):
                             text=f"Failed to post item {item.source_link} from {subscription.feed_url} feed due to: {e}"
                         )
             subscription.last_check_time = datetime.now()
-            self.save_subscriptions()
+            if subscription.feed_url in [sub.feed_url for sub in self.subscriptions[:]]:
+                self.save_subscription(subscription)
 
     async def post_item(self, item: "Item", subscription: "Subscription") -> None:
         # Get chat
@@ -263,12 +264,15 @@ class SubscriptionHelper(Helper):
             return False
         return True
 
-    def save_subscriptions(self):
+    def save_subscriptions(self) -> None:
         for subscription in self.subscriptions:
-            new_sub = subscription.subscription_id is None
-            saved_data = self.database.save_subscription(subscription.to_data(), subscription.seen_item_ids)
-            if new_sub:
-                subscription.subscription_id = saved_data.subscription_id
+            self.save_subscription(subscription)
+
+    def save_subscription(self, subscription: Subscription) -> None:
+        new_sub = subscription.subscription_id is None
+        saved_data = self.database.save_subscription(subscription.to_data(), subscription.seen_item_ids)
+        if new_sub:
+            subscription.subscription_id = saved_data.subscription_id
 
 
 async def load_subs_from_database(database: "Database", helper: SubscriptionHelper) -> List["Subscription"]:
