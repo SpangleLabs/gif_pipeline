@@ -31,6 +31,8 @@ class RSSSubscription(Subscription):
     async def can_handle_link(cls, feed_link: str, helper: "SubscriptionHelper") -> bool:
         try:
             feed = feedparser.parse(feed_link)
+            if not feed.entries:
+                return False
             for entry in feed.entries:
                 Item(
                     entry.id,
