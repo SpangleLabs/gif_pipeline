@@ -3,11 +3,13 @@ import re
 from gif_pipeline.tasks.task import Task, run_subprocess, TaskException
 from gif_pipeline.tasks.youtube_dl_task import yt_dl_pkg
 
+yt_dl_github_repo = "https://github.com/yt-dlp/yt-dlp/"
 
 class UpdateYoutubeDLTask(Task[str]):
 
     async def run(self) -> str:
-        args = ["pip", "install", yt_dl_pkg, "--upgrade"]
+        git_url = f"git+{yt_dl_github_repo.rstrip('/')}.git"
+        args = ["pip", "install", git_url, "--force-reinstall"]
         stdout = await run_subprocess(args)
         lines = stdout.splitlines()
         last_line = lines[-1]
