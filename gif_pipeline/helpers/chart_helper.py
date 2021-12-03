@@ -43,7 +43,7 @@ class ChartHelper(Helper):
         counter = self.tag_manager.tag_value_rates_for_chat(target_chat, tag_name)
         counter_tuples = counter.most_common()
         values = [t[0] for t in counter_tuples]
-        keys = [t[1] for t in counter_tuples]
+        keys = [f"{t[1]} ({t[0]})" for t in counter_tuples]
         plt.pie(values, labels=keys)
         plt.legend()
         filename = random_sandbox_video_path("png")
