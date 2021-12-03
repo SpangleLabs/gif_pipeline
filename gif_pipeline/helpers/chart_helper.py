@@ -39,18 +39,20 @@ class ChartHelper(Helper):
                 message,
                 "Unrecognised chat. Command format: chart {destination} {tag_name}"
             )]
-        tag_name = split_text[2]
-        counter = self.tag_manager.tag_value_rates_for_chat(target_chat, tag_name)
-        counter_tuples = counter.most_common()
-        values = [t[1] for t in counter_tuples]
-        keys = [f"{t[0]} ({t[1]})" for t in counter_tuples]
-        plt.pie(values, labels=keys)
-        plt.legend()
-        filename = random_sandbox_video_path("png")
-        plt.savefig(filename)
-        return [await self.send_message(
-            chat,
-            reply_to_msg=message,
-            video_path=filename,
-            text=f"Pie chart of tag values for {tag_name} in {target_chat.chat_data.title}"
-        )]
+        async with self.progress_message(chat, message, "Generating chart"):
+            tag_name = split_text[2]
+            counter = self.tag_manager.tag_value_rates_for_chat(target_chat, tag_name)
+            counter_tuples = counter.most_common()
+            values = [t[1] for t in counter_tuples]
+            keys = [f"{t[0]} ({t[1]})" for t in counter_tuples]
+            plt.pie(values, labels=keys)
+            plt.legend()
+            filename = random_sandbox_video_path("png")
+            plt.savefig(filename)
+            plt.clf()
+            return [await self.send_message(
+                chat,
+                reply_to_msg=message,
+                video_path=filename,
+                text=f"Pie chart of tag values for {tag_name} in {target_chat.chat_data.title}"
+            )]
