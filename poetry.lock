@@ -222,6 +222,14 @@ cffi = ">=1.0.0"
 pycparser = "*"
 
 [[package]]
+name = "cycler"
+version = "0.11.0"
+description = "Composable style cycles"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "feedparser"
 version = "6.0.8"
 description = "Universal feed parser, handles RSS 0.9x, RSS 1.0, RSS 2.0, CDF, Atom 0.3, and Atom 1.0 feeds"
@@ -239,6 +247,27 @@ description = "A simple asynchronous Python wrapper for ffmpeg"
 category = "main"
 optional = false
 python-versions = "*"
+
+[[package]]
+name = "fonttools"
+version = "4.28.2"
+description = "Tools to manipulate font files"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+all = ["fs (>=2.2.0,<3)", "lxml (>=4.0,<5)", "zopfli (>=0.1.4)", "lz4 (>=1.7.4.2)", "matplotlib", "sympy", "skia-pathops (>=0.5.0)", "brotlicffi (>=0.8.0)", "scipy", "brotli (>=1.0.1)", "munkres", "unicodedata2 (>=13.0.0)", "xattr"]
+graphite = ["lz4 (>=1.7.4.2)"]
+interpolatable = ["scipy", "munkres"]
+lxml = ["lxml (>=4.0,<5)"]
+pathops = ["skia-pathops (>=0.5.0)"]
+plot = ["matplotlib"]
+symfont = ["sympy"]
+type1 = ["xattr"]
+ufo = ["fs (>=2.2.0,<3)"]
+unicode = ["unicodedata2 (>=13.0.0)"]
+woff = ["zopfli (>=0.1.4)", "brotlicffi (>=0.8.0)", "brotli (>=1.0.1)"]
 
 [[package]]
 name = "frozenlist"
@@ -298,6 +327,33 @@ python-versions = "*"
 
 [package.dependencies]
 six = "*"
+
+[[package]]
+name = "kiwisolver"
+version = "1.3.2"
+description = "A fast implementation of the Cassowary constraint solver"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
+name = "matplotlib"
+version = "3.5.0"
+description = "Python plotting package"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+cycler = ">=0.10"
+fonttools = ">=4.22.0"
+kiwisolver = ">=1.0.1"
+numpy = ">=1.17"
+packaging = ">=20.0"
+pillow = ">=6.2.0"
+pyparsing = ">=2.2.1"
+python-dateutil = ">=2.7"
+setuptools_scm = ">=4"
 
 [[package]]
 name = "multidict"
@@ -472,6 +528,21 @@ python-versions = ">=3.7"
 numpy = ">=1.16.5"
 
 [[package]]
+name = "setuptools-scm"
+version = "6.3.2"
+description = "the blessed package to manage your versions by scm tags"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+packaging = ">=20.0"
+tomli = ">=1.0.0"
+
+[package.extras]
+toml = ["setuptools (>=42)", "tomli (>=1.0.0)"]
+
+[[package]]
 name = "sgmllib3k"
 version = "1.0.0"
 description = "Py3k port of sgmllib."
@@ -501,6 +572,14 @@ rsa = "*"
 
 [package.extras]
 cryptg = ["cryptg"]
+
+[[package]]
+name = "tomli"
+version = "1.2.2"
+description = "A lil' TOML parser"
+category = "main"
+optional = false
+python-versions = ">=3.6"
 
 [[package]]
 name = "tomlkit"
@@ -599,7 +678,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "9084c3ab8b674859f7a2dfe9b31a0bfdf29bdae9892c1995ef9e6a8d94f12a2b"
+content-hash = "8c39d6b20eb894a1257eed03cd74e836014046dab51270ee9f3b5ca323bd48e6"
 
 [metadata.files]
 aiofiles = [
@@ -824,6 +903,10 @@ cryptg = [
     {file = "cryptg-0.2.post4-pp37-pypy37_pp73-win32.whl", hash = "sha256:2cd8224eb64af756f45cdceab16d048494313db8acec1e38d75d97716082267b"},
     {file = "cryptg-0.2.post4.tar.gz", hash = "sha256:a4de1730ca56aa8a945f176c25586901ed5e9f15ffb70c6459eedf466eb6299b"},
 ]
+cycler = [
+    {file = "cycler-0.11.0-py3-none-any.whl", hash = "sha256:3a27e95f763a428a739d2add979fa7494c912a32c17c4c38c4d5f082cad165a3"},
+    {file = "cycler-0.11.0.tar.gz", hash = "sha256:9c87405839a19696e837b3b818fed3f5f69f16f1eec1a1ad77e043dcea9c772f"},
+]
 feedparser = [
     {file = "feedparser-6.0.8-py3-none-any.whl", hash = "sha256:1b7f57841d9cf85074deb316ed2c795091a238adb79846bc46dccdaf80f9c59a"},
     {file = "feedparser-6.0.8.tar.gz", hash = "sha256:5ce0410a05ab248c8c7cfca3a0ea2203968ee9ff4486067379af4827a59f9661"},
@@ -831,6 +914,10 @@ feedparser = [
 ffmpy3 = [
     {file = "ffmpy3-0.2.4-py3-none-any.whl", hash = "sha256:092521e5f0e1974a1b4850d0e283d9d893d0b830216ddd2a44c6eaf463f8a365"},
     {file = "ffmpy3-0.2.4.tar.gz", hash = "sha256:fffb1b9e3efc95e94a02b01f29f24ee8177b86329aec8a8af078bf2a42b03094"},
+]
+fonttools = [
+    {file = "fonttools-4.28.2-py3-none-any.whl", hash = "sha256:eff1da7ea274c54cb8842853005a139f711646cbf6f1bcfb6c9b86a627f35ff0"},
+    {file = "fonttools-4.28.2.zip", hash = "sha256:dca694331af74c8ad47acc5171e57f6b78fac5692bf050f2ab572964577ac0dd"},
 ]
 frozenlist = [
     {file = "frozenlist-1.2.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:977a1438d0e0d96573fd679d291a1542097ea9f4918a8b6494b06610dfeefbf9"},
@@ -920,6 +1007,89 @@ importlib-metadata = [
 isodate = [
     {file = "isodate-0.6.0-py2.py3-none-any.whl", hash = "sha256:aa4d33c06640f5352aca96e4b81afd8ab3b47337cc12089822d6f322ac772c81"},
     {file = "isodate-0.6.0.tar.gz", hash = "sha256:2e364a3d5759479cdb2d37cce6b9376ea504db2ff90252a2e5b7cc89cc9ff2d8"},
+]
+kiwisolver = [
+    {file = "kiwisolver-1.3.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:1d819553730d3c2724582124aee8a03c846ec4362ded1034c16fb3ef309264e6"},
+    {file = "kiwisolver-1.3.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:8d93a1095f83e908fc253f2fb569c2711414c0bfd451cab580466465b235b470"},
+    {file = "kiwisolver-1.3.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:c4550a359c5157aaf8507e6820d98682872b9100ce7607f8aa070b4b8af6c298"},
+    {file = "kiwisolver-1.3.2-cp310-cp310-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:2210f28778c7d2ee13f3c2a20a3a22db889e75f4ec13a21072eabb5693801e84"},
+    {file = "kiwisolver-1.3.2-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:82f49c5a79d3839bc8f38cb5f4bfc87e15f04cbafa5fbd12fb32c941cb529cfb"},
+    {file = "kiwisolver-1.3.2-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9661a04ca3c950a8ac8c47f53cbc0b530bce1b52f516a1e87b7736fec24bfff0"},
+    {file = "kiwisolver-1.3.2-cp310-cp310-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:2ddb500a2808c100e72c075cbb00bf32e62763c82b6a882d403f01a119e3f402"},
+    {file = "kiwisolver-1.3.2-cp310-cp310-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:72be6ebb4e92520b9726d7146bc9c9b277513a57a38efcf66db0620aec0097e0"},
+    {file = "kiwisolver-1.3.2-cp310-cp310-win32.whl", hash = "sha256:83d2c9db5dfc537d0171e32de160461230eb14663299b7e6d18ca6dca21e4977"},
+    {file = "kiwisolver-1.3.2-cp310-cp310-win_amd64.whl", hash = "sha256:cba430db673c29376135e695c6e2501c44c256a81495da849e85d1793ee975ad"},
+    {file = "kiwisolver-1.3.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:4116ba9a58109ed5e4cb315bdcbff9838f3159d099ba5259c7c7fb77f8537492"},
+    {file = "kiwisolver-1.3.2-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:19554bd8d54cf41139f376753af1a644b63c9ca93f8f72009d50a2080f870f77"},
+    {file = "kiwisolver-1.3.2-cp37-cp37m-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:a7a4cf5bbdc861987a7745aed7a536c6405256853c94abc9f3287c3fa401b174"},
+    {file = "kiwisolver-1.3.2-cp37-cp37m-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:0007840186bacfaa0aba4466d5890334ea5938e0bb7e28078a0eb0e63b5b59d5"},
+    {file = "kiwisolver-1.3.2-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:ec2eba188c1906b05b9b49ae55aae4efd8150c61ba450e6721f64620c50b59eb"},
+    {file = "kiwisolver-1.3.2-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:3dbb3cea20b4af4f49f84cffaf45dd5f88e8594d18568e0225e6ad9dec0e7967"},
+    {file = "kiwisolver-1.3.2-cp37-cp37m-win32.whl", hash = "sha256:5326ddfacbe51abf9469fe668944bc2e399181a2158cb5d45e1d40856b2a0589"},
+    {file = "kiwisolver-1.3.2-cp37-cp37m-win_amd64.whl", hash = "sha256:c6572c2dab23c86a14e82c245473d45b4c515314f1f859e92608dcafbd2f19b8"},
+    {file = "kiwisolver-1.3.2-cp38-cp38-macosx_10_9_universal2.whl", hash = "sha256:b5074fb09429f2b7bc82b6fb4be8645dcbac14e592128beeff5461dcde0af09f"},
+    {file = "kiwisolver-1.3.2-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:22521219ca739654a296eea6d4367703558fba16f98688bd8ce65abff36eaa84"},
+    {file = "kiwisolver-1.3.2-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:c358721aebd40c243894298f685a19eb0491a5c3e0b923b9f887ef1193ddf829"},
+    {file = "kiwisolver-1.3.2-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7ba5a1041480c6e0a8b11a9544d53562abc2d19220bfa14133e0cdd9967e97af"},
+    {file = "kiwisolver-1.3.2-cp38-cp38-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:44e6adf67577dbdfa2d9f06db9fbc5639afefdb5bf2b4dfec25c3a7fbc619536"},
+    {file = "kiwisolver-1.3.2-cp38-cp38-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:1d45d1c74f88b9f41062716c727f78f2a59a5476ecbe74956fafb423c5c87a76"},
+    {file = "kiwisolver-1.3.2-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:70adc3658138bc77a36ce769f5f183169bc0a2906a4f61f09673f7181255ac9b"},
+    {file = "kiwisolver-1.3.2-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:b6a5431940f28b6de123de42f0eb47b84a073ee3c3345dc109ad550a3307dd28"},
+    {file = "kiwisolver-1.3.2-cp38-cp38-win32.whl", hash = "sha256:ee040a7de8d295dbd261ef2d6d3192f13e2b08ec4a954de34a6fb8ff6422e24c"},
+    {file = "kiwisolver-1.3.2-cp38-cp38-win_amd64.whl", hash = "sha256:8dc3d842fa41a33fe83d9f5c66c0cc1f28756530cd89944b63b072281e852031"},
+    {file = "kiwisolver-1.3.2-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:a498bcd005e8a3fedd0022bb30ee0ad92728154a8798b703f394484452550507"},
+    {file = "kiwisolver-1.3.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:80efd202108c3a4150e042b269f7c78643420cc232a0a771743bb96b742f838f"},
+    {file = "kiwisolver-1.3.2-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:f8eb7b6716f5b50e9c06207a14172cf2de201e41912ebe732846c02c830455b9"},
+    {file = "kiwisolver-1.3.2-cp39-cp39-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:f441422bb313ab25de7b3dbfd388e790eceb76ce01a18199ec4944b369017009"},
+    {file = "kiwisolver-1.3.2-cp39-cp39-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:30fa008c172355c7768159983a7270cb23838c4d7db73d6c0f6b60dde0d432c6"},
+    {file = "kiwisolver-1.3.2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:2f8f6c8f4f1cff93ca5058d6ec5f0efda922ecb3f4c5fb76181f327decff98b8"},
+    {file = "kiwisolver-1.3.2-cp39-cp39-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:ba677bcaff9429fd1bf01648ad0901cea56c0d068df383d5f5856d88221fe75b"},
+    {file = "kiwisolver-1.3.2-cp39-cp39-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:7843b1624d6ccca403a610d1277f7c28ad184c5aa88a1750c1a999754e65b439"},
+    {file = "kiwisolver-1.3.2-cp39-cp39-win32.whl", hash = "sha256:e6f5eb2f53fac7d408a45fbcdeda7224b1cfff64919d0f95473420a931347ae9"},
+    {file = "kiwisolver-1.3.2-cp39-cp39-win_amd64.whl", hash = "sha256:eedd3b59190885d1ebdf6c5e0ca56828beb1949b4dfe6e5d0256a461429ac386"},
+    {file = "kiwisolver-1.3.2-pp37-pypy37_pp73-macosx_10_9_x86_64.whl", hash = "sha256:dedc71c8eb9c5096037766390172c34fb86ef048b8e8958b4e484b9e505d66bc"},
+    {file = "kiwisolver-1.3.2-pp37-pypy37_pp73-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:bf7eb45d14fc036514c09554bf983f2a72323254912ed0c3c8e697b62c4c158f"},
+    {file = "kiwisolver-1.3.2-pp37-pypy37_pp73-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:2b65bd35f3e06a47b5c30ea99e0c2b88f72c6476eedaf8cfbc8e66adb5479dcf"},
+    {file = "kiwisolver-1.3.2-pp37-pypy37_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:25405f88a37c5f5bcba01c6e350086d65e7465fd1caaf986333d2a045045a223"},
+    {file = "kiwisolver-1.3.2-pp37-pypy37_pp73-win_amd64.whl", hash = "sha256:bcadb05c3d4794eb9eee1dddf1c24215c92fb7b55a80beae7a60530a91060560"},
+    {file = "kiwisolver-1.3.2.tar.gz", hash = "sha256:fc4453705b81d03568d5b808ad8f09c77c47534f6ac2e72e733f9ca4714aa75c"},
+]
+matplotlib = [
+    {file = "matplotlib-3.5.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:4b018ea6f26424a0852eb60eb406420d9f0d34f65736ea7bbfbb104946a66d86"},
+    {file = "matplotlib-3.5.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a07ff2565da72a7b384a9e000b15b6b8270d81370af8a3531a16f6fbcee023cc"},
+    {file = "matplotlib-3.5.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:2eea16883aa7724c95eea0eb473ab585c6cf66f0e28f7f13e63deb38f4fd6d0f"},
+    {file = "matplotlib-3.5.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0e020a42f3338823a393dd2f80e39a2c07b9f941dfe2c778eb104eeb33d60bb5"},
+    {file = "matplotlib-3.5.0-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:9bac8eb1eccef540d7f4e844b6313d9f7722efd48c07e1b4bfec1056132127fd"},
+    {file = "matplotlib-3.5.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7a7cb59ebd63a8ac4542ec1c61dd08724f82ec3aa7bb6b4b9e212d43c611ce3d"},
+    {file = "matplotlib-3.5.0-cp310-cp310-win32.whl", hash = "sha256:6e0e6b2111165522ad336705499b1f968c34a9e84d05d498ee5af0b5697d1efe"},
+    {file = "matplotlib-3.5.0-cp310-cp310-win_amd64.whl", hash = "sha256:ff5d9fe518ad2de14ce82ab906b6ab5c2b0c7f4f984400ff8a7a905daa580a0a"},
+    {file = "matplotlib-3.5.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:66b172610db0ececebebb09d146f54205f87c7b841454e408fba854764f91bdd"},
+    {file = "matplotlib-3.5.0-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ee3d9ff16d749a9aa521bd7d86f0dbf256b2d2ac8ce31b19e4d2c86d2f2ff0b6"},
+    {file = "matplotlib-3.5.0-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:970aa97297537540369d05fe0fd1bb952593f9ab696c9b427c06990a83e2418b"},
+    {file = "matplotlib-3.5.0-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:153a0cf6a6ff4f406a0600d2034710c49988bacc6313d193b32716f98a697580"},
+    {file = "matplotlib-3.5.0-cp37-cp37m-win32.whl", hash = "sha256:6db02c5605f063b67780f4d5753476b6a4944343284aa4e93c5e8ff6e9ec7f76"},
+    {file = "matplotlib-3.5.0-cp37-cp37m-win_amd64.whl", hash = "sha256:df0042cab69f4d246f4cb8fc297770ac4ae6ec2983f61836b04a117722037dcd"},
+    {file = "matplotlib-3.5.0-cp38-cp38-macosx_10_9_universal2.whl", hash = "sha256:a7bf8b05c214d32fb7ca7c001fde70b9b426378e897b0adbf77b85ea3569d56a"},
+    {file = "matplotlib-3.5.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:0abf8b51cc6d3ba34d1b15b26e329f23879848a0cf1216954c1f432ffc7e1af7"},
+    {file = "matplotlib-3.5.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:13930a0c9bec0fd25f43c448b047a21af1353328b946f044a8fc3be077c6b1a8"},
+    {file = "matplotlib-3.5.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:18f6e52386300db5cc4d1e9019ad9da2e80658bab018834d963ebb0aa5355095"},
+    {file = "matplotlib-3.5.0-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:ba107add08e12600b072cf3c47aaa1ab85dd4d3c48107a5d3377d1bf80f8b235"},
+    {file = "matplotlib-3.5.0-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:2089b9014792dcc87bb1d620cde847913338abf7d957ef05587382b0cb76d44e"},
+    {file = "matplotlib-3.5.0-cp38-cp38-win32.whl", hash = "sha256:f23fbf70d2e80f4e03a83fc1206a8306d9bc50482fee4239f10676ce7e470c83"},
+    {file = "matplotlib-3.5.0-cp38-cp38-win_amd64.whl", hash = "sha256:71a1851111f23f82fc43d2b6b2bfdd3f760579a664ebc939576fe21cc6133d01"},
+    {file = "matplotlib-3.5.0-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:d092b7ba63182d2dd427904e3eb58dd5c46ec67c5968de14a4b5007010a3a4cc"},
+    {file = "matplotlib-3.5.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:ac17a7e7b06ee426a4989f0b7f24ab1a592e39cdf56353a90f4e998bc0bf44d6"},
+    {file = "matplotlib-3.5.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:a5b62d1805cc83d755972033c05cea78a1e177a159fc84da5c9c4ab6303ccbd9"},
+    {file = "matplotlib-3.5.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:666d717a4798eb9c5d3ae83fe80c7bc6ed696b93e879cb01cb24a74155c73612"},
+    {file = "matplotlib-3.5.0-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:65f877882b7ddede7090c7d87be27a0f4720fe7fc6fddd4409c06e1aa0f1ae8d"},
+    {file = "matplotlib-3.5.0-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:7baf23adb698d8c6ca7339c9dde00931bc47b2dd82fa912827fef9f93db77f5e"},
+    {file = "matplotlib-3.5.0-cp39-cp39-win32.whl", hash = "sha256:b3b687e905da32e5f2e5f16efa713f5d1fcd9fb8b8c697895de35c91fedeb086"},
+    {file = "matplotlib-3.5.0-cp39-cp39-win_amd64.whl", hash = "sha256:a6cef5b31e27c31253c0f852b629a38d550ae66ec6850129c49d872f9ee428cb"},
+    {file = "matplotlib-3.5.0-pp37-pypy37_pp73-macosx_10_9_x86_64.whl", hash = "sha256:a0dcaf5648cecddc328e81a0421821a1f65a1d517b20746c94a1f0f5c36fb51a"},
+    {file = "matplotlib-3.5.0-pp37-pypy37_pp73-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:b5e439d9e55d645f2a4dca63e2f66d68fe974c405053b132d61c7e98c25dfeb2"},
+    {file = "matplotlib-3.5.0-pp37-pypy37_pp73-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:dc8c5c23e7056e126275dbf29efba817b3d94196690930d0968873ac3a94ab82"},
+    {file = "matplotlib-3.5.0-pp37-pypy37_pp73-win_amd64.whl", hash = "sha256:a0ea10faa3bab0714d3a19c7e0921279a68d57552414d6eceaea99f97d7735db"},
+    {file = "matplotlib-3.5.0.tar.gz", hash = "sha256:38892a254420d95594285077276162a5e9e9c30b6da08bdc2a4d53331ad9a6fa"},
 ]
 multidict = [
     {file = "multidict-5.2.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:3822c5894c72e3b35aae9909bef66ec83e44522faf767c0ad39e0e2de11d3b55"},
@@ -1197,6 +1367,10 @@ scipy = [
     {file = "scipy-1.6.1-cp39-cp39-win_amd64.whl", hash = "sha256:a5193a098ae9f29af283dcf0041f762601faf2e595c0db1da929875b7570353f"},
     {file = "scipy-1.6.1.tar.gz", hash = "sha256:c4fceb864890b6168e79b0e714c585dbe2fd4222768ee90bc1aa0f8218691b11"},
 ]
+setuptools-scm = [
+    {file = "setuptools_scm-6.3.2-py3-none-any.whl", hash = "sha256:4c64444b1d49c4063ae60bfe1680f611c8b13833d556fd1d6050c0023162a119"},
+    {file = "setuptools_scm-6.3.2.tar.gz", hash = "sha256:a49aa8081eeb3514eb9728fa5040f2eaa962d6c6f4ec9c32f6c1fba88f88a0f2"},
+]
 sgmllib3k = [
     {file = "sgmllib3k-1.0.0.tar.gz", hash = "sha256:7868fb1c8bfa764c1ac563d3cf369c381d1325d36124933a726f29fcdaa812e9"},
 ]
@@ -1207,6 +1381,10 @@ six = [
 telethon = [
     {file = "Telethon-1.23.0-py3-none-any.whl", hash = "sha256:60c976f290806445cf9b8468d6dc98c72ad4d8a4ee2ad9de170aaecb1e96cc8e"},
     {file = "Telethon-1.23.0.tar.gz", hash = "sha256:ba7551ce447e954aad67f3eeba4bab7574cca07a2c6f41e5be69904e6e0ec313"},
+]
+tomli = [
+    {file = "tomli-1.2.2-py3-none-any.whl", hash = "sha256:f04066f68f5554911363063a30b108d2b5a5b1a010aa8b6132af78489fe3aade"},
+    {file = "tomli-1.2.2.tar.gz", hash = "sha256:c6ce0015eb38820eaf32b5db832dbc26deb3dd427bd5f6556cf0acac2c214fee"},
 ]
 tomlkit = [
     {file = "tomlkit-0.7.2-py2.py3-none-any.whl", hash = "sha256:173ad840fa5d2aac140528ca1933c29791b79a374a0861a80347f42ec9328117"},

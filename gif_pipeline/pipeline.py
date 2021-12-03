@@ -12,6 +12,7 @@ from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat, Channel, WorkshopGroup
 from gif_pipeline.chat_config import ChannelConfig, WorkshopConfig
 from gif_pipeline.helpers.channel_fwd_tag_helper import ChannelFwdTagHelper
+from gif_pipeline.helpers.chart_helper import ChartHelper
 from gif_pipeline.helpers.delete_helper import DeleteHelper
 from gif_pipeline.helpers.download_helper import DownloadHelper
 from gif_pipeline.helpers.duplicate_helper import DuplicateHelper
@@ -169,6 +170,20 @@ class Pipeline:
                 return chat
         return None
 
+    def chat_by_handle(self, name: str) -> Optional[Chat]:
+        name = name.lstrip("@")
+        for chat in self.all_chats:
+            if chat.chat_data.matches_handle(name):
+                return chat
+        return None
+
+    def channel_by_handle(self, name: str) -> Optional[Channel]:
+        name = name.lstrip("@")
+        for chat in self.channels:
+            if chat.chat_data.matches_handle(name):
+                return chat
+        return None
+
     def initialise_helpers(self) -> None:
         logger.info("Initialising helpers")
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
@@ -218,6 +233,7 @@ class Pipeline:
             TagHelper(self.database, self.client, self.worker, tag_manager),
             ChannelFwdTagHelper(self.database, self.client, self.worker),
             UpdateYoutubeDlHelper(self.database, self.client, self.worker),
+            ChartHelper(self.database, self.client, self.worker, self, tag_manager),
             schedule_helper,
             subscription_helper
         ]

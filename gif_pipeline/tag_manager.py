@@ -1,4 +1,5 @@
 from typing import List, Optional, Union, Set
+from collections import Counter
 
 from gif_pipeline.chat import Channel, WorkshopGroup, Chat
 from gif_pipeline.chat_config import TagType
@@ -52,3 +53,15 @@ class TagManager:
             else:
                 all_values_dict[tag_name] = self.get_values_for_tag(tag_name, chats)
         return tags.incomplete_tags(dest_tags, all_values_dict)
+    
+    def tag_value_rates_for_chat(self, dest: Channel, tag_name: str) -> Counter:
+        counter = Counter()
+        tag_config = dest.config.tags[tag_name]
+        tag_key = tag_name
+        if tag_config.type == TagType.GNOSTIC:
+            tag_key = gnostic_tag_name_positive(tag_name)
+        for video in dest.messages:
+            tags = video.tags(self.database)
+            values = tags.list_values_for_tag(tag_key)
+            counter.update(values)
+        return counter
