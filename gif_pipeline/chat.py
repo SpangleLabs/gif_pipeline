@@ -42,6 +42,11 @@ workshop_new_message_count = Counter(
     "Number of new messages posted in the workshop",
     labelnames=["chat_title"]
 )
+queue_duration = Gauge(
+    "gif_pipeline_queue_est_duration_seconds",
+    "Estimated duration of queue, based on schedule and videos in queue",
+    labelnames=["chat_title"]
+)
 
 
 class Chat(ABC):
@@ -153,6 +158,11 @@ class Channel(Chat):
         self.sub_count = subscriber_count.labels(
             chat_title=self.chat_data.title
         )
+        self.queue_duration = None
+        if self.config.queue is not None and self.config.queue.schedule is not None:
+            self.queue_duration = queue_duration.labels(
+                chat_title=self.chat_data.title
+            ).set_function(lambda: self.config.queue.schedule.avg_time.total_seconds() * self.queue.count_videos())
         asyncio.ensure_future(self.periodically_update_sub_count())
 
     async def periodically_update_sub_count(self) -> None:

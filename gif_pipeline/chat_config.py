@@ -48,6 +48,12 @@ class ScheduleConfig:
         self.max_time = max_time
         self.order = order or ScheduleOrder.RANDOM
 
+    @property
+    def avg_time(self) -> timedelta:
+        if self.max_time is None:
+            return self.min_time
+        return (self.max_time + self.min_time) / 2
+
     @staticmethod
     def from_json(json_dict: Dict[str, Any]) -> 'ScheduleConfig':
         min_time_str = json_dict["min_time"]
