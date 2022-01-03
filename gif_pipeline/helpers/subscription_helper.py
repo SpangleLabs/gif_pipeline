@@ -15,6 +15,7 @@ from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.helpers.duplicate_helper import hash_image
 from gif_pipeline.helpers.subscriptions.imgur_subscription import ImgurSearchSubscription
+from gif_pipeline.helpers.subscriptions.instagram_subscription import InstagramSubscription
 from gif_pipeline.helpers.subscriptions.reddit_subscription import RedditSubscription
 from gif_pipeline.helpers.subscriptions.rss_subscription import RSSSubscription
 from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item
@@ -89,6 +90,8 @@ class SubscriptionHelper(Helper):
             self.sub_classes.append(RedditSubscription)
         if "twitter" in self.api_keys:
             self.sub_classes.append(TwitterSubscription)
+        if "instagram" in self.api_keys:
+            self.sub_classes.append(InstagramSubscription)
         self.sub_classes.append(RSSSubscription)
         self.sub_classes.append(YoutubeDLSubscription)
         # Initialise counters
