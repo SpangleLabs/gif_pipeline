@@ -13,9 +13,9 @@ if TYPE_CHECKING:
 class TwitterSubscription(Subscription):
     SEARCH_PATTERN = re.compile(r"twitter.com/([^\\&#\n]+(?:/media|/with_replies|))", re.IGNORECASE)
 
-    def __init__(self, feed_url: str, chat_id: int, helper: "SubscriptionHelper"):
-        super().__init__(feed_url, chat_id, helper)
-        self.nitter_url = helper.api_keys["twitter"]["nitter_url"]
+    @property
+    def nitter_url(self) -> str:
+        return self.helper.api_keys["twitter"]["nitter_url"]
 
     def link_to_twitter_link(self, link: str) -> str:
         return link.replace(self.nitter_url, "https://twitter.com")

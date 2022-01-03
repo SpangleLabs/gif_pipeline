@@ -13,9 +13,9 @@ if TYPE_CHECKING:
 class InstagramSubscription(Subscription):
     SEARCH_PATTERN = re.compile(r"instagram.com/([^\\&#\n]+)", re.IGNORECASE)
 
-    def __init__(self, feed_url: str, chat_id: int, helper: "SubscriptionHelper"):
-        super().__init__(feed_url, chat_id, helper)
-        self.bibliogram_url = helper.api_keys["instagram"]["bibliogram_url"]
+    @property
+    def bibliogram_url(self) -> str:
+        return self.helper.api_keys["instagram"]["bibliogram_url"]
 
     def link_to_insta_link(self, link: str) -> str:
         return link.replace(self.bibliogram_url, "https://www.instagram.com")
