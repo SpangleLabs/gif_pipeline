@@ -18,6 +18,7 @@ from gif_pipeline.helpers.subscriptions.imgur_subscription import ImgurSearchSub
 from gif_pipeline.helpers.subscriptions.reddit_subscription import RedditSubscription
 from gif_pipeline.helpers.subscriptions.rss_subscription import RSSSubscription
 from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item
+from gif_pipeline.helpers.subscriptions.twitter_subscription import TwitterSubscription
 from gif_pipeline.helpers.subscriptions.youtube_dl_subscription import YoutubeDLSubscription
 from gif_pipeline.helpers.video_helper import video_to_video
 from gif_pipeline.message import Message
@@ -86,6 +87,8 @@ class SubscriptionHelper(Helper):
             self.sub_classes.append(ImgurSearchSubscription)
         if "reddit" in self.api_keys:
             self.sub_classes.append(RedditSubscription)
+        if "twitter" in self.api_keys:
+            self.sub_classes.append(TwitterSubscription)
         self.sub_classes.append(RSSSubscription)
         self.sub_classes.append(YoutubeDLSubscription)
         # Initialise counters
