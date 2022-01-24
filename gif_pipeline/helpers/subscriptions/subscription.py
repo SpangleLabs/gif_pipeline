@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Optional, List, TYPE_CHECKING
+from typing import Optional, List, TYPE_CHECKING, Type
 
 import isodate
 
@@ -62,6 +62,9 @@ class Subscription(ABC):
             self.enabled
         )
 
+    def is_subscription_type(self, cls: Type["Subscription"]):
+        return isinstance(self, cls)
+
 
 @dataclass
 class Item:
@@ -69,3 +72,36 @@ class Item:
     download_link: str
     source_link: str
     title: Optional[str]
+
+
+async def create_sub_for_link(
+        feed_link: str,
+        chat_id: int,
+        helper: SubscriptionHelper,
+        sub_classes: List[Type["Subscription"]],
+        *,
+        subscription_id: int = None,
+        last_check_time: Optional[datetime] = None,
+        check_rate: Optional[timedelta] = None,
+        enabled: bool = True,
+        seen_item_ids: Optional[List[str]] = None
+) -> Optional["Subscription"]:
+    for sub_class in sub_classes:
+        try:
+            can_handle_link = await sub_class.can_handle_link(feed_link, helper)
+        except:
+            continue
+        else:
+            if not can_handle_link:
+                continue
+            return sub_class(
+                feed_link,
+                chat_id,
+                helper,
+                subscription_id=subscription_id,
+                last_check_time=last_check_time,
+                check_rate=check_rate,
+                enabled=enabled,
+                seen_item_ids=seen_item_ids
+            )
+    return None
