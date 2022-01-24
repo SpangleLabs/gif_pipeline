@@ -77,7 +77,7 @@ class Item:
 async def create_sub_for_link(
         feed_link: str,
         chat_id: int,
-        helper: SubscriptionHelper,
+        helper: "SubscriptionHelper",
         sub_classes: List[Type["Subscription"]],
         *,
         subscription_id: int = None,
