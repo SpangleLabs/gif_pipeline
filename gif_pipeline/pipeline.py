@@ -398,9 +398,9 @@ class Pipeline:
         # Get the menu
         menu = self.menu_cache.get_menu_by_message_id(event.chat_id, event.message_id)
         if not menu:
-            logger.warning("Received a callback for a menu missing from cache")
-            await event.answer("That menu is unrecognised.")
-            return
+            # Handle stateless menu callbacks
+            logger.debug("Received a callback for a stateless menu")
+            return await self.on_stateless_callback(event, chat)
         # Check button was pressed by someone who was allowed to press it
         if not menu.menu.allows_sender(event.sender_id):
             logger.info("User tried to press a button on a menu that wasn't theirs")
@@ -422,6 +422,28 @@ class Pipeline:
             if isinstance(result, BaseException):
                 logger.error(
                     f"Helper {helper} threw an exception trying to handle callback query {event}.",
+                    exc_info=result
+                )
+            elif result:
+                for reply_message in result:
+                    await self.pass_message_to_handlers(reply_message)
+            # Check for result is None because empty list would be an answer, None is not
+            if result is not None and not answered:
+                await event.answer()
+
+    async def on_stateless_callback(self, event: events.CallbackQuery.Event, chat: Chat) -> None:
+        # Get message
+        msg = chat.message_by_id(event.message_id)
+        # Handle callback query
+        helper_results: Iterable[Union[BaseException, Optional[List[Message]]]] = await asyncio.gather(
+            *(helper.on_stateless_callback(event.data, chat, msg, event.sender_id) for helper in self.helpers.values()),
+            return_exceptions=True
+        )
+        answered = False
+        for helper, result in zip(self.helpers.keys(), helper_results):
+            if isinstance(result, BaseException):
+                logger.error(
+                    f"Helper {helper} threw an exception trying to handle stateless callback query: {event}.",
                     exc_info=result
                 )
             elif result:

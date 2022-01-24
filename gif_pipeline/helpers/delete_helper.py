@@ -72,3 +72,15 @@ class DeleteHelper(Helper):
         message = menu.menu.chat.message_by_id(message_id)
         resp = await self.delete_family(menu.menu.chat, message)
         return resp
+
+    async def on_stateless_callback(
+            self,
+            callback_query: bytes,
+            chat: Chat,
+            message: Message,
+            sender_id: int,
+    ) -> Optional[List[Message]]:
+        if callback_query.decode() != "delete_me":
+            return None
+        resp = await self.delete_msg(chat, message.message_data)
+        return resp

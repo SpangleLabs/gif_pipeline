@@ -10,6 +10,7 @@ from typing import List, Optional, TYPE_CHECKING, Type, Dict, Set
 import isodate
 from PIL import Image
 from prometheus_client import Counter, Gauge
+from telethon import Button
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
@@ -134,7 +135,11 @@ class SubscriptionHelper(Helper):
                 new_items = await subscription.check_for_new_items()
             except Exception as e:
                 logger.error(f"Subscription to {subscription.feed_url} failed due to: {e}")
-                await self.send_message(chat, text=f"Subscription to {subscription.feed_url} failed due to: {e}")
+                await self.send_message(
+                    chat,
+                    text=f"Subscription to {subscription.feed_url} failed due to: {e}",
+                    buttons=[[Button.inline("Delete error", "delete_me")]]
+                )
             else:
                 for item in new_items:
                     try:
