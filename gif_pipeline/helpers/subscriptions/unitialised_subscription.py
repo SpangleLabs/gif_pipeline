@@ -25,7 +25,7 @@ class UninitialisedSubscription(Subscription):
         self.found_sub = None
 
     async def check_for_new_items(self) -> List["Item"]:
-        if self.found_sub:
+        if self.found_sub is not None:
             return await self.found_sub.check_for_new_items()
         # Try and load in various
         classes = self.helper.sub_classes
@@ -40,6 +40,8 @@ class UninitialisedSubscription(Subscription):
             enabled=self.enabled,
             seen_item_ids=self.seen_item_ids
         )
+        if self.found_sub is None:
+            raise ValueError(f"Could not initialise subscription: {self.feed_url}")
         return await self.found_sub.check_for_new_items()
 
     @classmethod
@@ -47,7 +49,7 @@ class UninitialisedSubscription(Subscription):
         return True
 
     async def download_item(self, item: "Item") -> str:
-        if self.found_sub:
+        if self.found_sub is not None:
             return await self.found_sub.download_item(item)
         raise ValueError("Could not download new item, as this subscription is uninitialised")
 
