@@ -182,6 +182,10 @@ class Channel(Chat):
         return self.config.queue is not None
 
     @property
+    def has_twitter(self) -> bool:
+        return self.config.twitter_config is not None
+
+    @property
     def schedule_config(self) -> Optional[ScheduleConfig]:
         if self.config.queue is None:
             return None

@@ -23,6 +23,7 @@ asyncpraw = "^7.5.0"
 feedparser = "^6.0.8"
 bleach = "^4.1.0"
 matplotlib = "^3.5.0"
+tweepy = "^4.5.0"
 
 [tool.poetry.dev-dependencies]
 

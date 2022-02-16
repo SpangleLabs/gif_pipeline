@@ -5,6 +5,8 @@ from typing import Union, Dict, Any, Optional
 
 import isodate
 
+from gif_pipeline.text_formatter import TextFormatter
+
 
 class TagType(Enum):
     NORMAL = "normal"  # Store a list of values for this tag
@@ -76,6 +78,56 @@ class ScheduleConfig:
         )
 
 
+class TwitterAccountConfig:
+
+    def __init__(self, access_token: str, access_secret: str):
+        self.access_token = access_token
+        self.access_secret = access_secret
+
+    @classmethod
+    def from_json(cls, json_dict: Dict) -> "TwitterAccountConfig":
+        return cls(
+            json_dict["access_token"],
+            json_dict["access_secret"]
+        )
+
+
+class TwitterReplyConfig:
+
+    def __init__(self, text: str, reply: Optional["TwitterReplyConfig"] = None):
+        self.text_format = TextFormatter(text)
+        self.reply = reply
+
+    @classmethod
+    def from_json(cls, json_dict: Dict) -> "TwitterReplyConfig":
+        reply = None
+        if "reply" in json_dict:
+            reply = TwitterReplyConfig.from_json(json_dict["reply"])
+        return cls(
+            json_dict["text"],
+            reply
+        )
+
+
+class TwitterConfig:
+
+    def __init__(self, account: TwitterAccountConfig, text: str, reply: Optional[TwitterReplyConfig] = None):
+        self.account = account
+        self.text_format = TextFormatter(text)
+        self.reply = reply
+
+    @classmethod
+    def from_json(cls, json_dict: Dict) -> "TwitterConfig":
+        reply = None
+        if "reply" in json_dict:
+            reply = TwitterReplyConfig.from_json(json_dict["reply"])
+        return cls(
+            TwitterAccountConfig.from_json(json_dict["account"]),
+            json_dict.get("text", ""),
+            reply
+        )
+
+
 class ChatConfig(ABC):
     def __init__(
             self,
@@ -107,6 +159,7 @@ class ChannelConfig(ChatConfig):
             send_folder: Optional[str] = None,
             note_time: bool = False,
             tags: Optional[Dict[str, TagConfig]] = None,
+            twitter_config: Optional[TwitterConfig] = None
     ):
         super().__init__(handle)
         self.queue = queue
@@ -114,6 +167,7 @@ class ChannelConfig(ChatConfig):
         self.send_folder = send_folder
         self.note_time = note_time
         self.tags = tags or {}
+        self.twitter_config = twitter_config
 
     @staticmethod
     def from_json(json_dict) -> 'ChannelConfig':
