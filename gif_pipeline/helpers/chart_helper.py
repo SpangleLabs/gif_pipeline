@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from gif_pipeline.pipeline import Pipeline
     from gif_pipeline.tag_manager import TagManager
     from gif_pipeline.tasks.task_worker import TaskWorker
-    from telethon import TelegramClient
+    from gif_pipeline.telegram_client import TelegramClient
 
 
 class ChartHelper(Helper):
