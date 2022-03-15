@@ -21,17 +21,14 @@ class DeleteHelper(Helper):
         if not text_clean.startswith("delete"):
             return None
         self.usage_counter.inc()
-        admin_ids = await self.client.list_authorized_to_delete(chat.chat_data)
+        if not await self.client.user_can_delete_in_chat(message.message_data.sender_id, chat.chat_data):
+            return None
         if text_clean == "delete family":
-            if message.message_data.sender_id not in admin_ids:
-                return None
             if message.message_data.reply_to is None:
                 error_text = "You need to reply to the message you want to delete."
                 return [await self.send_text_reply(chat, message, error_text)]
             return await self.delete_family(chat, message)
         if text_clean == "delete branch":
-            if message.message_data.sender_id not in admin_ids:
-                return None
             if message.message_data.reply_to is None:
                 error_text = "You need to reply to the message you want to delete."
                 return [await self.send_text_reply(chat, message, error_text)]
@@ -65,8 +62,7 @@ class DeleteHelper(Helper):
         query_split = callback_query.decode().split(":")
         if query_split[0] != "delete":
             return None
-        admin_ids = await self.client.list_authorized_to_delete(menu.msg.chat_data)
-        if sender_id not in admin_ids:
+        if not await self.client.user_can_delete_in_chat(sender_id, menu.msg.chat_data):
             return None
         message_id = int(query_split[1])
         message = menu.menu.chat.message_by_id(message_id)

@@ -269,15 +269,9 @@ class TelegramClient:
         permissions = await self.client.get_permissions(chat_data.chat_id, user_id)
         return permissions.post_messages
 
-    async def list_authorized_to_delete(self, chat_data: ChatData) -> List[int]:
-        allowed_ids = []
-        async for admin in self.client.iter_participants(chat_data.chat_id, filter=ChannelParticipantsAdmins()):
-            if (
-                    isinstance(admin.participant, ChannelParticipantCreator)
-                    or admin.participant.admin_rights.delete_messages
-            ):
-                allowed_ids.append(admin.id)
-        return allowed_ids
+    async def user_can_delete_in_chat(self, user_id: int, chat_data: ChatData) -> bool:
+        permissions = await self.client.get_permissions(chat_data.chat_id, user_id)
+        return permissions.delete_messages
 
     async def get_subscriber_count(self, chat_data: ChatData) -> int:
         entity = await self.client.get_entity(chat_data.chat_id)

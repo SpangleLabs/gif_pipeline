@@ -260,8 +260,8 @@ class MenuHelper(Helper):
             video: Message,
             text: str,
     ) -> Optional[Message]:
-        admin_ids = await self.client.list_authorized_to_delete(chat.chat_data)
-        if cmd is not None and cmd.message_data.sender_id not in admin_ids:
+        sender_id = cmd.message_data.sender_id
+        if cmd is not None and not await self.client.user_can_delete_in_chat(sender_id, chat.chat_data):
             await self.delete_menu_for_video(chat, video)
             return None
         menu = DeleteMenu(self, chat, cmd, video, text)
