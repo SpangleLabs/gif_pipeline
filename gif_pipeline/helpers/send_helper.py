@@ -89,15 +89,11 @@ class GifSendHelper(Helper):
     async def available_channels_for_user(self, user_id: int) -> List[Channel]:
         all_channels = self.writable_channels
         user_is_admin = await asyncio.gather(
-            *(self.user_admin_in_channel(user_id, channel) for channel in all_channels)
+            *(self.client.user_can_post_in_chat(user_id, channel.chat_data) for channel in all_channels)
         )
         return [
             channel for channel, is_admin in zip(all_channels, user_is_admin) if is_admin
         ]
-
-    async def user_admin_in_channel(self, user_id: int, channel: Channel) -> bool:
-        admin_ids = await self.client.list_authorized_channel_posters(channel.chat_data)
-        return user_id in admin_ids
 
     async def send_two_way_forward(
             self,
@@ -131,9 +127,10 @@ class GifSendHelper(Helper):
             await self.menu_helper.delete_menu_for_video(chat, video)
             return [await self.send_text_reply(chat, cmd_msg, f"Unrecognised destination to: {destination_to}")]
         # Check permissions in both groups
-        from_admin_ids = await self.client.list_authorized_channel_posters(chat_from.chat_data)
-        to_admin_ids = await self.client.list_authorized_channel_posters(chat_to.chat_data)
-        if sender_id not in from_admin_ids or sender_id not in to_admin_ids:
+        if not (
+                await self.client.user_can_post_in_chat(sender_id, chat_from.chat_data)
+                and await self.client.user_can_post_in_chat(sender_id, chat_to.chat_data)
+        ):
             await self.menu_helper.delete_menu_for_video(chat, video)
             error_text = "You need to be an admin of both channels to send a forwarded video."
             return [await self.send_text_reply(chat, cmd_msg, error_text)]
@@ -163,8 +160,7 @@ class GifSendHelper(Helper):
             destination: Chat,
             sender_id: int
     ) -> List[Message]:
-        dest_admin_ids = await self.client.list_authorized_channel_posters(destination.chat_data)
-        if sender_id not in dest_admin_ids:
+        if not await self.client.user_can_post_in_chat(sender_id, destination.chat_data):
             await self.menu_helper.delete_menu_for_video(chat, video)
             return [await self.send_text_reply(chat, cmd, "You do not have permission to post in that channel.")]
         tags = video.tags(self.database)
