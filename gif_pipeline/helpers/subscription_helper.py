@@ -10,6 +10,7 @@ from typing import List, Optional, TYPE_CHECKING, Type, Dict, Set
 import isodate
 from PIL import Image
 from prometheus_client import Counter, Gauge
+from telethon import Button
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
@@ -143,9 +144,11 @@ class SubscriptionHelper(Helper):
                         logger.error(
                             f"Failed to post item {item.source_link} from {subscription.feed_url} feed due to: {e}"
                         )
+                        feed_url = subscription.feed_url
                         await self.send_message(
                             chat,
-                            text=f"Failed to post item {item.source_link} from {subscription.feed_url} feed due to: {e}"
+                            text=f"Failed to post item {item.source_link} from {feed_url} feed due to: {e}",
+                            buttons=[[Button.inline("Delete error", "delete_me")]]
                         )
             subscription.last_check_time = datetime.now()
             if subscription.feed_url in [sub.feed_url for sub in self.subscriptions[:]]:
