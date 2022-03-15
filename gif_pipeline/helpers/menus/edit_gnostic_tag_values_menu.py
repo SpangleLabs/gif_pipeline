@@ -1,6 +1,6 @@
 from typing import List, TYPE_CHECKING, Optional, Dict
 
-from telethon import Button
+from telethon.types import Button
 
 from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.helpers.menus.edit_tag_values_menu import EditTagValuesMenu

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
 
-from telethon.tl.types import Message
+from telethon._tl import Message
 
 from gif_pipeline.database import Database
 from gif_pipeline.message import MessageData

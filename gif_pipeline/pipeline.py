@@ -280,15 +280,15 @@ class Pipeline:
         self.client.add_callback_query_handler(self.on_callback_query)
         self.client.client.run_until_disconnected()
 
-    async def on_edit_message(self, event: events.MessageEdited.Event):
+    async def on_edit_message(self, event: events.MessageEdited):
         # Get chat, check it's one we know
-        chat = self.chat_by_id(chat_id_from_telegram(event.message))
+        chat = self.chat_by_id(chat_id_from_telegram(event))
         if chat is None:
             logger.debug("Ignoring edited message in other chat, which must have slipped through")
             return
         # Convert to our custom Message object. This will update message data, but not the video, for edited messages
         logger.info(f"Edited message in chat: {chat}")
-        message_data = message_data_from_telegram(event.message)
+        message_data = message_data_from_telegram(event)
         new_message = await self.download_bottleneck.await_run(
             Message.from_message_data(message_data, chat.chat_data, self.client)
         )
@@ -297,16 +297,16 @@ class Pipeline:
         self.database.save_message(new_message.message_data)
         logger.info(f"Edited message initialised: {new_message}")
 
-    async def on_new_message(self, event: events.NewMessage.Event) -> None:
+    async def on_new_message(self, event: events.NewMessage) -> None:
         # This is called just for new messages
         # Get chat, check it's one we know
-        chat = self.chat_by_id(chat_id_from_telegram(event.message))
+        chat = self.chat_by_id(chat_id_from_telegram(event))
         if chat is None:
             logger.debug("Ignoring new message in other chat, which must have slipped through")
             return
         # Convert to our custom Message object. This will update message data, but not the video, for edited messages
         logger.info(f"New message in chat: {chat}")
-        message_data = message_data_from_telegram(event.message)
+        message_data = message_data_from_telegram(event)
         new_message = await self.download_bottleneck.await_run(
             Message.from_message_data(message_data, chat.chat_data, self.client)
         )
@@ -338,10 +338,10 @@ class Pipeline:
                 for reply_message in result:
                     await self.pass_message_to_handlers(reply_message)
 
-    async def pass_message_to_public_handlers(self, event: events.NewMessage.Event):
+    async def pass_message_to_public_handlers(self, event: events.NewMessage):
         logger.info(f"New public message: {event}")
         helper_results: Iterable[Union[BaseException, Optional[List[MessageData]]]] = await asyncio.gather(
-            *(helper.on_new_message(event.message) for helper in self.public_helpers.values()),
+            *(helper.on_new_message(event) for helper in self.public_helpers.values()),
             return_exceptions=True
         )
         for helper, result in zip(self.public_helpers.keys(), helper_results):
@@ -351,7 +351,7 @@ class Pipeline:
                     exc_info=result
                 )
 
-    async def on_deleted_message(self, event: events.MessageDeleted.Event):
+    async def on_deleted_message(self, event: events.MessageDeleted):
         # Get messages
         chat = self.chat_by_id(event.chat_id)
         messages = self.get_messages_for_delete_event(event)
@@ -375,7 +375,7 @@ class Pipeline:
             message.delete(self.database)
             chat.remove_message(message.message_data)
 
-    def get_messages_for_delete_event(self, event: events.MessageDeleted.Event) -> Iterator[Message]:
+    def get_messages_for_delete_event(self, event: events.MessageDeleted) -> Iterator[Message]:
         deleted_ids = event.deleted_ids
         if event.chat_id is None:
             return [
@@ -389,7 +389,7 @@ class Pipeline:
             return []
         return [message for message in chat.messages if message.message_data.message_id in deleted_ids]
 
-    async def on_callback_query(self, event: events.CallbackQuery.Event):
+    async def on_callback_query(self, event: events.CallbackQuery):
         # Get chat, check it's one we know
         chat = self.chat_by_id(chat_id_from_telegram(event))
         if chat is None:

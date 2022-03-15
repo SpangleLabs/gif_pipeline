@@ -3,7 +3,7 @@ import random
 from typing import Dict, TYPE_CHECKING, Optional, List, Set
 
 import dateutil.parser
-from telethon import Button
+from telethon.types import Button
 
 from gif_pipeline.helpers.menus.menu import Menu
 

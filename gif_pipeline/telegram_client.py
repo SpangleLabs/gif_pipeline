@@ -1,14 +1,15 @@
+import asyncio
 import logging
 from asyncio import Future
 from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any, List
 
 import telethon
-from telethon import events, Button
-from telethon.tl.custom import message
-from telethon.tl.functions.channels import EditAdminRequest, GetFullChannelRequest
-from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
-from telethon.tl.types import ChatAdminRights, ChannelParticipantsAdmins, ChannelParticipantCreator, ChannelForbidden, \
+from telethon import events
+from telethon._tl.fn.channels import EditAdmin, GetFullChannel
+from telethon._tl.fn.messages import MigrateChat, GetScheduledHistory
+from telethon._tl import ChatAdminRights, ChannelParticipantsAdmins, ChannelParticipantCreator, ChannelForbidden, \
     DocumentAttributeFilename
+from telethon.types import Button
 
 from gif_pipeline.chat_data import ChatData, ChannelData, WorkshopData
 from gif_pipeline.message import MessageData
@@ -19,7 +20,7 @@ R = TypeVar("R")
 logger = logging.getLogger(__name__)
 
 
-def message_data_from_telegram(msg: telethon.tl.custom.message.Message, scheduled: bool = False) -> MessageData:
+def message_data_from_telegram(msg: telethon.types.Message, scheduled: bool = False) -> MessageData:
     chat_id = chat_id_from_telegram(msg)
     sender_id = sender_id_from_telegram(msg)
     has_file = msg.file is not None and msg.web_preview is None
@@ -44,27 +45,27 @@ def message_data_from_telegram(msg: telethon.tl.custom.message.Message, schedule
     )
 
 
-def chat_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
+def chat_id_from_telegram(msg: telethon.types.Message) -> int:
     return msg.chat_id
 
 
-def sender_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
+def sender_id_from_telegram(msg: telethon.types.Message) -> int:
     return msg.sender_id
 
 
 class TelegramClient:
     def __init__(self, api_id: int, api_hash: str, pipeline_bot_token: str = None, public_bot_token: str = None):
         self.client = telethon.TelegramClient('duplicate_checker', api_id, api_hash)
-        self.client.start()
+        self.synchronise_async(self.client.start())
         self.pipeline_bot_id = None
         self.pipeline_bot_client = self.client
         if pipeline_bot_token:
             self.pipeline_bot_client = telethon.TelegramClient("duplicate_checker_pipeline_bot", api_id, api_hash)
-            self.pipeline_bot_client.start(bot_token=pipeline_bot_token)
+            self.synchronise_async(self.pipeline_bot_client.start(bot_token=pipeline_bot_token))
         self.public_bot_client = self.client
         if public_bot_token:
             self.public_bot_client = telethon.TelegramClient('duplicate_checker_public_bot', api_id, api_hash)
-            self.public_bot_client.start(bot_token=public_bot_token)
+            self.synchronise_async(self.public_bot_client.start(bot_token=public_bot_token))
         self.message_cache = {}
 
     async def initialise(self) -> None:
@@ -73,7 +74,7 @@ class TelegramClient:
         pipeline_bot_user = await self.pipeline_bot_client.get_me()
         self.pipeline_bot_id = pipeline_bot_user.id
 
-    def _save_message(self, msg: telethon.tl.custom.message.Message):
+    def _save_message(self, msg: telethon.types.Message):
         # UpdateShortMessage events do not contain a populated msg.chat, so use msg.chat_id sometimes.
         chat_id = chat_id_from_telegram(msg)
         message_id = msg.id
@@ -81,27 +82,25 @@ class TelegramClient:
             self.message_cache[chat_id] = {}
         self.message_cache[chat_id][message_id] = msg
 
-    def _get_message(self, chat_id: int, message_id: int) -> Optional[telethon.tl.custom.message.Message]:
+    def _get_message(self, chat_id: int, message_id: int) -> Optional[telethon.types.Message]:
         if chat_id not in self.message_cache:
             return None
         return self.message_cache[chat_id].get(message_id)
 
     async def get_channel_data(self, handle: str) -> ChannelData:
-        entity = await self.client.get_entity(handle)
-        peer_id = telethon.utils.get_peer_id(entity)
-        return ChannelData(peer_id, entity.username, entity.title)
+        entity = await self.client.get_profile(handle)
+        return ChannelData(entity.id, entity.username, entity.title)
 
     async def get_workshop_data(self, handle: str) -> WorkshopData:
-        entity = await self.client.get_entity(handle)
-        peer_id = telethon.utils.get_peer_id(entity)
-        return WorkshopData(peer_id, entity.username, entity.title)
+        entity = await self.client.get_profile(handle)
+        return WorkshopData(entity.id, entity.username, entity.title)
 
     async def iter_channel_messages(
             self,
             chat_data: ChatData,
             and_scheduled: bool = True
     ) -> Generator[MessageData, None, None]:
-        async for msg in self.client.iter_messages(chat_data.chat_id):
+        async for msg in self.client.get_messages(chat_data.chat_id):
             # Skip edit photo events.
             if msg.action.__class__.__name__ in ['MessageActionChatEditPhoto']:
                 continue
@@ -114,7 +113,7 @@ class TelegramClient:
 
     async def iter_scheduled_channel_messages(self, chat_data: ChatData) -> Generator[MessageData, None, None]:
         # noinspection PyTypeChecker
-        messages = await self.client(GetScheduledHistoryRequest(
+        messages = await self.client(GetScheduledHistory(
             peer=chat_data.chat_id,
             hash=0
         ))
@@ -182,7 +181,7 @@ class TelegramClient:
             *,
             reply_to_msg_id: Optional[int] = None,
             buttons: Optional[List[List[Button]]] = None
-    ) -> telethon.tl.custom.message.Message:
+    ) -> telethon.types.Message:
         return await self.pipeline_bot_client.send_message(
             chat.chat_id,
             text,
@@ -200,7 +199,7 @@ class TelegramClient:
             reply_to_msg_id: int = None,
             buttons: Optional[List[List[Button]]] = None,
             filename: Optional[str] = None
-    ) -> telethon.tl.custom.message.Message:
+    ) -> telethon.types.Message:
         attributes = None
         if filename:
             attributes = [DocumentAttributeFilename(filename)]
@@ -218,7 +217,7 @@ class TelegramClient:
     async def delete_message(self, message_data: MessageData) -> None:
         await self.client.delete_messages(message_data.chat_id, message_data.message_id)
 
-    async def forward_message(self, chat: ChatData, message_data: MessageData) -> telethon.tl.custom.message.Message:
+    async def forward_message(self, chat: ChatData, message_data: MessageData) -> telethon.types.Message:
         return await self.pipeline_bot_client.forward_messages(
             chat.chat_id,
             message_data.message_id,
@@ -241,10 +240,11 @@ class TelegramClient:
         )
 
     def synchronise_async(self, future: Union[Future, Coroutine]) -> Any:
-        return self.client.loop.run_until_complete(future)
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(future)
 
     async def upgrade_chat_to_supergroup(self, chat_id: int) -> None:
-        await self.client(MigrateChatRequest(chat_id=chat_id))
+        await self.client(MigrateChat(chat_id=chat_id))
 
     async def invite_pipeline_bot_to_chat(self, chat_data: ChatData) -> None:
         if self.pipeline_bot_client == self.client:
@@ -254,7 +254,7 @@ class TelegramClient:
         if self.pipeline_bot_id in user_ids:
             return
         pipeline_bot_entity = await self.pipeline_bot_client.get_me()
-        await self.client(EditAdminRequest(
+        await self.client(EditAdmin(
             chat_data.chat_id,
             pipeline_bot_entity.username,
             ChatAdminRights(
@@ -284,5 +284,5 @@ class TelegramClient:
 
     async def get_subscriber_count(self, chat_data: ChatData) -> int:
         entity = await self.client.get_entity(chat_data.chat_id)
-        channel_full_info = await self.client(GetFullChannelRequest(channel=entity))
+        channel_full_info = await self.client(GetFullChannel(channel=entity))
         return channel_full_info.full_chat.participants_count

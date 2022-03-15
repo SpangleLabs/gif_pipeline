@@ -6,7 +6,7 @@ from typing import Optional, List, Set
 
 from async_generator import asynccontextmanager
 from prometheus_client import Counter
-from telethon import Button
+from telethon.types import Button
 
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat

@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from telethon import Button
+from telethon.types import Button
 
 from gif_pipeline.helpers.menus.edit_tag_values_menu import EditTagValuesMenu
 from gif_pipeline.message import Message

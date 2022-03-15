@@ -1,7 +1,7 @@
 from datetime import timezone, datetime
 from typing import Optional, List, TYPE_CHECKING, Dict
 
-from telethon import Button
+from telethon.types import Button
 
 from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.helpers.menus.menu import Menu, delta_to_string

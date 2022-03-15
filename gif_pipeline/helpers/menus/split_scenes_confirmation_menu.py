@@ -1,7 +1,7 @@
 from typing import List, Tuple, Optional, TYPE_CHECKING, Dict
 
 from scenedetect import FrameTimecode
-from telethon import Button
+from telethon.types import Button
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.menus.menu import Menu
