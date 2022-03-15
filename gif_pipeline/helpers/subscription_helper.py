@@ -4,8 +4,8 @@ import html
 import logging
 import os
 import shutil
-from datetime import datetime, timedelta
-from typing import List, Optional, TYPE_CHECKING, Type, Dict, Set
+from datetime import datetime
+from typing import List, Optional, TYPE_CHECKING, Dict, Set, Type
 
 import isodate
 from PIL import Image
@@ -19,8 +19,9 @@ from gif_pipeline.helpers.subscriptions.imgur_subscription import ImgurSearchSub
 from gif_pipeline.helpers.subscriptions.instagram_subscription import InstagramSubscription
 from gif_pipeline.helpers.subscriptions.reddit_subscription import RedditSubscription
 from gif_pipeline.helpers.subscriptions.rss_subscription import RSSSubscription
-from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item
+from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item, create_sub_for_link
 from gif_pipeline.helpers.subscriptions.twitter_subscription import TwitterSubscription
+from gif_pipeline.helpers.subscriptions.unitialised_subscription import UninitialisedSubscription
 from gif_pipeline.helpers.subscriptions.youtube_dl_subscription import YoutubeDLSubscription
 from gif_pipeline.helpers.video_helper import video_to_video
 from gif_pipeline.message import Message
@@ -84,7 +85,7 @@ class SubscriptionHelper(Helper):
         self.download_helper = download_helper
         self.api_keys = api_keys
         self.subscriptions: List[Subscription] = []
-        self.sub_classes = []
+        self.sub_classes: List[Type[Subscription]] = []
         if "imgur" in self.api_keys:
             self.sub_classes.append(ImgurSearchSubscription)
         if "reddit" in self.api_keys:
@@ -96,7 +97,8 @@ class SubscriptionHelper(Helper):
         self.sub_classes.append(RSSSubscription)
         self.sub_classes.append(YoutubeDLSubscription)
         # Initialise counters
-        for sub_class in self.sub_classes:
+        all_classes = self.sub_classes + [UninitialisedSubscription]
+        for sub_class in all_classes:
             for workshop in self.pipeline.workshops:
                 subscription_posts.labels(
                     subscription_class_name=sub_class.__name__,
@@ -108,7 +110,7 @@ class SubscriptionHelper(Helper):
                 ).set_function(
                     lambda cls=sub_class, chat_id=workshop.chat_data.chat_id: len([
                         s for s in self.subscriptions
-                        if isinstance(s, cls) and s.chat_id == chat_id
+                        if s.is_subscription_type(cls) and s.chat_id == chat_id
                     ])
                 )
 
@@ -135,7 +137,11 @@ class SubscriptionHelper(Helper):
                 new_items = await subscription.check_for_new_items()
             except Exception as e:
                 logger.error(f"Subscription to {subscription.feed_url} failed due to: {e}")
-                await self.send_message(chat, text=f"Subscription to {subscription.feed_url} failed due to: {e}")
+                await self.send_message(
+                    chat,
+                    text=f"Subscription to {subscription.feed_url} failed due to: {e}",
+                    buttons=[[Button.inline("Delete error", "delete_me")]]
+                )
             else:
                 for item in new_items:
                     try:
@@ -294,7 +300,7 @@ async def load_subs_from_database(database: "Database", helper: SubscriptionHelp
             sub_entry.feed_link,
             sub_entry.chat_id,
             helper,
-            helper.sub_classes,
+            helper.sub_classes + [UninitialisedSubscription],
             subscription_id=sub_entry.subscription_id,
             last_check_time=datetime.fromisoformat(sub_entry.last_check_time) if sub_entry.last_check_time else None,
             check_rate=isodate.parse_duration(sub_entry.check_rate),
@@ -305,36 +311,3 @@ async def load_subs_from_database(database: "Database", helper: SubscriptionHelp
             raise SubscriptionException(f"Failed to load subscription from database for: {sub_entry.feed_link}")
         subscriptions.append(subscription)
     return subscriptions
-
-
-async def create_sub_for_link(
-        feed_link: str,
-        chat_id: int,
-        helper: SubscriptionHelper,
-        sub_classes: List[Type["Subscription"]],
-        *,
-        subscription_id: int = None,
-        last_check_time: Optional[datetime] = None,
-        check_rate: Optional[timedelta] = None,
-        enabled: bool = True,
-        seen_item_ids: Optional[List[str]] = None
-) -> Optional["Subscription"]:
-    for sub_class in sub_classes:
-        try:
-            can_handle_link = await sub_class.can_handle_link(feed_link, helper)
-        except:
-            continue
-        else:
-            if not can_handle_link:
-                continue
-            return sub_class(
-                feed_link,
-                chat_id,
-                helper,
-                subscription_id=subscription_id,
-                last_check_time=last_check_time,
-                check_rate=check_rate,
-                enabled=enabled,
-                seen_item_ids=seen_item_ids
-            )
-    return None

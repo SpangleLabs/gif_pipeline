@@ -180,6 +180,15 @@ class Helper(ABC):
     ) -> Optional[List[Message]]:
         pass
 
+    async def on_stateless_callback(
+            self,
+            callback_query: bytes,
+            chat: Chat,
+            message: Message,
+            sender_id: int,
+    ) -> Optional[List[Message]]:
+        pass
+
     def is_priority(self, chat: Chat, message: Message) -> bool:
         return False
 
