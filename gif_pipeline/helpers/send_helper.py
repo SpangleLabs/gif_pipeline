@@ -128,8 +128,8 @@ class GifSendHelper(Helper):
             return [await self.send_text_reply(chat, cmd_msg, f"Unrecognised destination to: {destination_to}")]
         # Check permissions in both groups
         if not (
-                self.client.user_can_post_in_chat(sender_id, chat_from.chat_data)
-                and self.client.user_can_post_in_chat(sender_id, chat_to.chat_data)
+                await self.client.user_can_post_in_chat(sender_id, chat_from.chat_data)
+                and await self.client.user_can_post_in_chat(sender_id, chat_to.chat_data)
         ):
             await self.menu_helper.delete_menu_for_video(chat, video)
             error_text = "You need to be an admin of both channels to send a forwarded video."
@@ -160,7 +160,7 @@ class GifSendHelper(Helper):
             destination: Chat,
             sender_id: int
     ) -> List[Message]:
-        if not self.client.user_can_post_in_chat(sender_id, destination.chat_data):
+        if not await self.client.user_can_post_in_chat(sender_id, destination.chat_data):
             await self.menu_helper.delete_menu_for_video(chat, video)
             return [await self.send_text_reply(chat, cmd, "You do not have permission to post in that channel.")]
         tags = video.tags(self.database)
