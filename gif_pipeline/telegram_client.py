@@ -272,6 +272,10 @@ class TelegramClient:
                 allowed_ids.append(admin.id)
         return allowed_ids
 
+    async def user_can_post_in_chat(self, user_id: int, chat_data: ChatData) -> bool:
+        admin_ids = await self.list_authorized_channel_posters(chat_data)
+        return user_id in admin_ids
+
     async def list_authorized_to_delete(self, chat_data: ChatData) -> List[int]:
         allowed_ids = []
         async for admin in self.client.iter_participants(chat_data.chat_id, filter=ChannelParticipantsAdmins()):
