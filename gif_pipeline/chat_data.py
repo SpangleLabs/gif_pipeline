@@ -27,8 +27,9 @@ def chat_username_matches(username1: Optional[str], username2: Optional[str]) ->
 
 
 class ChatData(ABC):
-    def __init__(self, chat_id: int, username: Optional[str], title: str) -> None:
+    def __init__(self, chat_id: int, access_hash: int, username: Optional[str], title: str) -> None:
         self.chat_id = chat_id
+        self.access_hash = access_hash
         self.username = username
         self.title = title
 

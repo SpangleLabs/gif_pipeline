@@ -4,6 +4,7 @@ create table if not exists chats
     chat_id  int not null
         constraint chats_pk
             primary key,
+    access_hash int,
     username text,
     title    text,
     chat_type text not null
