@@ -252,11 +252,11 @@ class TelegramClient:
             return
         # Check permissions
         permissions = await self._user_permissions_in_chat(self.pipeline_bot_id, chat_data)
-        if all(
+        if all([
             permissions.post_messages,
             permissions.edit_messages,
             permissions.delete_messages
-        ):
+        ]):
             return
         # Add bot as an admin
         pipeline_bot_entity = await self.pipeline_bot_client.get_me()
