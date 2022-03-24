@@ -249,10 +249,20 @@ class TelegramClient:
     async def invite_pipeline_bot_to_chat(self, chat_data: ChatData) -> None:
         if self.pipeline_bot_client == self.client:
             return
+        # Check permissions
+        permissions = self._user_permissions_in_chat(self.pipeline_bot_id, chat_data)
+        if all(
+            permissions.post_messages,
+            permissions.edit_messages,
+            permissions.delete_messages
+        ):
+            return
+        # Check membership (might be broken?)
         users = await self.client.get_participants(chat_data.chat_id)
         user_ids = [user.id for user in users if user.username is not None]
         if self.pipeline_bot_id in user_ids:
             return
+        # Add bot as an admin
         pipeline_bot_entity = await self.pipeline_bot_client.get_me()
         await self.client(EditAdminRequest(
             chat_data.chat_id,
@@ -264,13 +274,16 @@ class TelegramClient:
             ),
             "Helpful bot"
         ))
+    
+    async def _user_permissions_in_chat(self, user_id: int, chat_data: ChatData) -> ParticipantPermissions:
+        return await self.client.get_permissions(chat_data.chat_id, user_id)
 
     async def user_can_post_in_chat(self, user_id: int, chat_data: ChatData) -> bool:
-        permissions = await self.client.get_permissions(chat_data.chat_id, user_id)
+        permissions = await self._user_permissions_in_chat(user_id, chat_data)
         return permissions.post_messages
 
     async def user_can_delete_in_chat(self, user_id: int, chat_data: ChatData) -> bool:
-        permissions = await self.client.get_permissions(chat_data.chat_id, user_id)
+        permissions = await self._user_permissions_in_chat(user_id, chat_data)
         return permissions.delete_messages
 
     async def get_subscriber_count(self, chat_data: ChatData) -> int:
