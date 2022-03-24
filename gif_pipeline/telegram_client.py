@@ -249,6 +249,7 @@ class TelegramClient:
 
     async def invite_pipeline_bot_to_chat(self, chat_data: ChatData) -> None:
         if self.pipeline_bot_client == self.client:
+            logger.debug("Bot client is user client, skipping invite to %s", chat_data)
             return
         # Check permissions
         permissions = await self._user_permissions_in_chat(self.pipeline_bot_id, chat_data)
@@ -257,9 +258,11 @@ class TelegramClient:
             permissions.edit_messages,
             permissions.delete_messages
         ]):
+            logger.debug("Bot has all required permissions in %s chat, skipping invite", chat_data)
             return
         # Add bot as an admin
         pipeline_bot_entity = await self.pipeline_bot_client.get_me()
+        logger.debug("Inviting bot to chat: %s", chat_data)
         await self.client(EditAdminRequest(
             chat_data.chat_id,
             pipeline_bot_entity.username,
@@ -272,6 +275,7 @@ class TelegramClient:
         ))
     
     async def _user_permissions_in_chat(self, user_id: int, chat_data: ChatData) -> ParticipantPermissions:
+        logger.debug("Checking permissions for user %s in chat %s", user_id, chat_data)
         return await self.client.get_permissions(chat_data.chat_id, user_id)
 
     async def user_can_post_in_chat(self, user_id: int, chat_data: ChatData) -> bool:
