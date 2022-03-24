@@ -251,17 +251,12 @@ class TelegramClient:
         if self.pipeline_bot_client == self.client:
             return
         # Check permissions
-        permissions = self._user_permissions_in_chat(self.pipeline_bot_id, chat_data)
+        permissions = await self._user_permissions_in_chat(self.pipeline_bot_id, chat_data)
         if all(
             permissions.post_messages,
             permissions.edit_messages,
             permissions.delete_messages
         ):
-            return
-        # Check membership (might be broken?)
-        users = await self.client.get_participants(chat_data.chat_id)
-        user_ids = [user.id for user in users if user.username is not None]
-        if self.pipeline_bot_id in user_ids:
             return
         # Add bot as an admin
         pipeline_bot_entity = await self.pipeline_bot_client.get_me()
