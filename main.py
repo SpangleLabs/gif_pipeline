@@ -36,7 +36,7 @@ def setup_logging() -> None:
     pipeline_logger.addHandler(file_handler)
     
     debug_logger = logging.getLogger()
-    debug_logger = setLevel(logging.DEBUG)
+    debug_logger.setLevel(logging.DEBUG)
     debug_file_handler = TimedRotatingFileHandler("logs/debug.log", when="midnight")
     debug_file_handler.setFormatter(formatter)
     debug_logger.addHandler(debug_file_handler)
