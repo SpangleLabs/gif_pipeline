@@ -5,6 +5,7 @@ from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any
 import telethon
 from telethon import events, Button
 from telethon.tl.custom import message
+from telethon.tl.custom.participantpermissions import ParticipantPermissions
 from telethon.tl.functions.channels import EditAdminRequest, GetFullChannelRequest
 from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
 from telethon.tl.types import ChatAdminRights, ChannelParticipantsAdmins, ChannelParticipantCreator, ChannelForbidden, \
