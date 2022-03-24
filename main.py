@@ -24,14 +24,23 @@ class TqdmLoggingHandler(logging.Handler):
 
 
 def setup_logging() -> None:
+    os.makedirs("logs", exist_ok=True)
     formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+
+    pipeline_logger = logging.getLogger("gif_pipeline")
+    pipeline_logger.setLevel(logging.DEBUG)
+    file_handler = TimedRotatingFileHandler("logs/pipeline.log", when="midnight")
+    file_handler.setFormatter(formatter)
+    pipeline_logger.addHandler(file_handler)
+    
+    debug_logger = logging.getLogger()
+    debug_logger = setLevel(logging.DEBUG)
+    debug_file_handler = TimedRotatingFileHandler("logs/debug.log", when="midnight")
+    debug_file_handler.setFormatter(formatter)
+    debug_logger.addHandler(debug_file_handler)
+
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-
-    file_handler = logging.FileHandler("pipeline.log")
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
     console_handler = TqdmLoggingHandler()
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
