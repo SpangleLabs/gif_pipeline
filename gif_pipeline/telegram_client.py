@@ -276,7 +276,12 @@ class TelegramClient:
     
     async def _user_permissions_in_chat(self, user_id: int, chat_data: ChatData) -> ParticipantPermissions:
         logger.debug("Checking permissions for user %s in chat %s", user_id, chat_data)
-        return await self.client.get_permissions(chat_data.chat_id, user_id)
+        perms = await self.client.get_permissions(chat_data.chat_id, user_id)
+        logger.debug(
+            "User permissions: is_creator=%s, is_admin=%s, can_post=%s, can_edit=%s, can_delete=%s",
+            perms.is_creator, perms.is_admin, perms.post_messages, perms.edit_messages, perms.delete_messages
+        )
+        return perms
 
     async def user_can_post_in_chat(self, user_id: int, chat_data: ChatData) -> bool:
         permissions = await self._user_permissions_in_chat(user_id, chat_data)
