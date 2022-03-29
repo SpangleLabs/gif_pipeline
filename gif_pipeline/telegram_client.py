@@ -267,11 +267,15 @@ class TelegramClient:
             return
         # Check permissions
         permissions = await self._user_permissions_in_chat(self.pipeline_bot_id, chat_data)
-        if all([
-            permissions.post_messages,
-            permissions.edit_messages,
+        required_perms = [
             permissions.delete_messages
-        ]):
+        ]
+        if chat_data.broadcast:
+            required_perms.extend([
+                permissions.post_messages,
+                permissions.edit_messages
+            ])
+        if all(required_perms):
             logger.debug("Bot has all required permissions in %s chat, skipping invite", chat_data)
             return
         # Add bot as an admin
