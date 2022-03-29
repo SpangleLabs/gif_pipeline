@@ -55,13 +55,14 @@ class ChatBuilder(ABC, Generic[Conf, Data]):
                 None
             )
             if matching_chat_data:
-                chat_data_list.append(matching_chat_data)
                 db_data.remove(matching_chat_data)
-            else:
-                chat_data = await self.create_chat_data(conf)
-                chat_data_list.append(chat_data)
-                self.database.save_chat(chat_data)
-                os.makedirs(chat_data.directory, exist_ok=True)
+                if matching_chat_data.is_complete():
+                    chat_data_list.append(matching_chat_data)
+                    continue
+            chat_data = await self.create_chat_data(conf)
+            chat_data_list.append(chat_data)
+            self.database.save_chat(chat_data)
+            os.makedirs(chat_data.directory, exist_ok=True)
         logger.info(f"Deleting {self.chat_type}s")
         self.delete_chats(db_data)
         return chat_data_list
