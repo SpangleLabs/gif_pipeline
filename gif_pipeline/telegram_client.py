@@ -89,12 +89,26 @@ class TelegramClient:
     async def get_channel_data(self, handle: str) -> ChannelData:
         entity = await self.client.get_entity(handle)
         peer_id = telethon.utils.get_peer_id(entity)
-        return ChannelData(peer_id, entity.access_hash, entity.username, entity.title)
+        return ChannelData(
+            peer_id,
+            entity.access_hash,
+            entity.username,
+            entity.title,
+            entity.broadcast,
+            entity.megagroup
+        )
 
     async def get_workshop_data(self, handle: str) -> WorkshopData:
         entity = await self.client.get_entity(handle)
         peer_id = telethon.utils.get_peer_id(entity)
-        return WorkshopData(peer_id, entity.access_hash, entity.username, entity.title)
+        return WorkshopData(
+            peer_id,
+            entity.access_hash,
+            entity.username,
+            entity.title,
+            entity.broadcast,
+            entity.megagroup
+        )
 
     async def iter_channel_messages(
             self,

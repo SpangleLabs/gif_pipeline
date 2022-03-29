@@ -39,6 +39,12 @@ def message_data_from_row(row: sqlite3.Row) -> MessageData:
     )
 
 
+def parse_bool(db_bool: Optional[int]) -> Optional[int]:
+    if db_bool is None:
+        return None
+    return bool(db_bool)
+
+
 @dataclass
 class MenuData:
     chat_id: int
@@ -96,10 +102,15 @@ class Database:
     def save_chat(self, chat_data: ChatData):
         chat_type = chat_types_inv[chat_data.__class__]
         self._just_execute(
-            "INSERT INTO chats (chat_id, access_hash, username, title, chat_type) VALUES(?, ?, ?, ?, ?) "
+            "INSERT INTO chats (chat_id, access_hash, username, title, chat_type, broadcast, megagroup) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?) "
             "ON CONFLICT(chat_id) "
-            "DO UPDATE SET access_hash=excluded.access_hash, username=excluded.username, title=excluded.title;",
-            (chat_data.chat_id, chat_data.access_hash, chat_data.username, chat_data.title, chat_type)
+            "DO UPDATE SET access_hash=excluded.access_hash, username=excluded.username, title=excluded.title, "
+            "broadcast=excluded.broadcast, megagroup=excluded.megagroup;",
+            (
+                chat_data.chat_id, chat_data.access_hash, chat_data.username, chat_data.title, chat_type,
+                chat_data.broadcast, chat_data.megagroup
+            )
         )
 
     def remove_chat(self, chat_data: ChatData):
@@ -114,7 +125,7 @@ class Database:
     def list_chats(self, chat_type: Type[T]) -> List[T]:
         chats = []
         with self._execute(
-            "SELECT chat_id, access_hash, username, title FROM chats WHERE chat_type = ?",
+            "SELECT chat_id, access_hash, username, title, broadcast, megagroup FROM chats WHERE chat_type = ?",
             (chat_types_inv[chat_type],)
         ) as result:
             for row in result:
@@ -122,7 +133,9 @@ class Database:
                     row["chat_id"],
                     row["access_hash"],
                     row["username"],
-                    row["title"]
+                    row["title"],
+                    parse_bool(row["broadcast"]),
+                    parse_bool(row["megagroup"])
                 ))
         return chats
 
@@ -134,7 +147,8 @@ class Database:
 
     def get_chat_by_id(self, chat_id: int) -> Optional[ChatData]:
         with self._execute(
-                "SELECT chat_id, access_hash, username, title, chat_type FROM chats WHERE chat_id = ?",
+                "SELECT chat_id, access_hash, username, title, chat_type, broadcast, megagroup "
+                "FROM chats WHERE chat_id = ?",
                 (chat_id,)
         ) as result:
             chat_row = next(result, None)
@@ -145,7 +159,9 @@ class Database:
                 chat_row["chat_id"],
                 chat_row["access_hash"],
                 chat_row["username"],
-                chat_row["title"]
+                chat_row["title"],
+                parse_bool(chat_row["broadcast"]),
+                parse_bool(chat_row["megagroup"])
             )
 
     def list_messages_for_chat(self, chat_data: ChatData) -> List[MessageData]:

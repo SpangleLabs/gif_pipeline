@@ -7,7 +7,9 @@ create table if not exists chats
     access_hash integer,
     username text,
     title    text,
-    chat_type text not null
+    chat_type text not null,
+    broadcast boolean,
+    megagroup boolean
 );
 
 create unique index if not exists chats_chat_id_uindex
