@@ -5,6 +5,7 @@ from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any
 import telethon
 from telethon import events, Button
 from telethon.tl.custom import message
+from telethon.tl.custom.participantpermissions import ParticipantPermissions
 from telethon.tl.functions.channels import EditAdminRequest, GetFullChannelRequest
 from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
 from telethon.tl.types import ChatAdminRights, ChannelParticipantsAdmins, ChannelParticipantCreator, ChannelForbidden, \
@@ -262,12 +263,20 @@ class TelegramClient:
 
     async def invite_pipeline_bot_to_chat(self, chat_data: ChatData) -> None:
         if self.pipeline_bot_client == self.client:
+            logger.debug("Bot client is user client, skipping invite to %s", chat_data)
             return
-        users = await self.client.get_participants(chat_data.chat_id)
-        user_ids = [user.id for user in users if user.username is not None]
-        if self.pipeline_bot_id in user_ids:
+        # Check permissions
+        permissions = await self._user_permissions_in_chat(self.pipeline_bot_id, chat_data)
+        if all([
+            permissions.post_messages,
+            permissions.edit_messages,
+            permissions.delete_messages
+        ]):
+            logger.debug("Bot has all required permissions in %s chat, skipping invite", chat_data)
             return
+        # Add bot as an admin
         pipeline_bot_entity = await self.pipeline_bot_client.get_me()
+        logger.debug("Inviting bot to chat: %s", chat_data)
         await self.client(EditAdminRequest(
             chat_data.chat_id,
             pipeline_bot_entity.username,
@@ -278,13 +287,22 @@ class TelegramClient:
             ),
             "Helpful bot"
         ))
+    
+    async def _user_permissions_in_chat(self, user_id: int, chat_data: ChatData) -> ParticipantPermissions:
+        logger.debug("Checking permissions for user %s in chat %s", user_id, chat_data)
+        perms = await self.client.get_permissions(chat_data.chat_id, user_id)
+        logger.debug(
+            "User permissions: is_creator=%s, is_admin=%s, can_post=%s, can_edit=%s, can_delete=%s",
+            perms.is_creator, perms.is_admin, perms.post_messages, perms.edit_messages, perms.delete_messages
+        )
+        return perms
 
     async def user_can_post_in_chat(self, user_id: int, chat_data: ChatData) -> bool:
-        permissions = await self.client.get_permissions(chat_data.chat_id, user_id)
+        permissions = await self._user_permissions_in_chat(user_id, chat_data)
         return permissions.post_messages
 
     async def user_can_delete_in_chat(self, user_id: int, chat_data: ChatData) -> bool:
-        permissions = await self.client.get_permissions(chat_data.chat_id, user_id)
+        permissions = await self._user_permissions_in_chat(user_id, chat_data)
         return permissions.delete_messages
 
     async def get_subscriber_count(self, chat_data: ChatData) -> int:

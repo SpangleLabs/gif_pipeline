@@ -60,6 +60,9 @@ class ChatData(ABC):
 
     def matches_handle(self, handle: str) -> bool:
         return chat_username_matches(self.username, handle) or chat_id_matches(self.chat_id, handle)
+    
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(id={self.chat_id},username={self.username},title=\"{self.title}\")"
 
     def is_complete(self) -> bool:
         return self.access_hash is not None and self.broadcast is not None and self.megagroup is not None
