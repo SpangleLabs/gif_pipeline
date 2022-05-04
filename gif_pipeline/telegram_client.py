@@ -20,10 +20,14 @@ R = TypeVar("R")
 logger = logging.getLogger(__name__)
 
 
+def message_has_file(msg: telethon.tl.custom.message.Message) -> bool:
+    return msg.file is not None and msg.web_preview is None
+
+
 def message_data_from_telegram(msg: telethon.tl.custom.message.Message, scheduled: bool = False) -> MessageData:
     chat_id = chat_id_from_telegram(msg)
     sender_id = sender_id_from_telegram(msg)
-    has_file = msg.file is not None and msg.web_preview is None
+    has_file = message_has_file(msg)
     forward_link = None
     if msg.forward and msg.forward.is_channel:
         if not isinstance(msg.forward.chat, ChannelForbidden):
@@ -110,6 +114,24 @@ class TelegramClient:
             entity.broadcast,
             entity.megagroup
         )
+
+    async def list_messages_since(
+            self,
+            chat_handle: str,
+            min_id: Optional[int] = None,
+            limit: Optional[int] = None,
+    ) -> Generator[MessageData, None, None]:
+        entity = await self.client.get_entity(chat_handle)
+        async for msg in self.client.iter_messages(
+            entity,
+            limit=limit,
+            min_id=min_id,
+        ):
+            # Skip edit photo events.
+            if msg.action.__class__.__name__ in ['MessageActionChatEditPhoto']:
+                continue
+            # Save message and yield
+            yield message_data_from_telegram(msg)
 
     async def iter_channel_messages(
             self,
