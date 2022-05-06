@@ -1,5 +1,5 @@
 import re
-from typing import List, TYPE_CHECKING, Optional
+from typing import List, TYPE_CHECKING, Optional, Union
 
 from gif_pipeline.helpers.download_helper import DownloadHelper
 from gif_pipeline.helpers.helpers import random_sandbox_video_path
@@ -10,9 +10,12 @@ if TYPE_CHECKING:
     from gif_pipeline.message import MessageData
 
 
-def message_to_items(msg: MessageData, handle: str) -> List[Item]:
+def message_to_items(msg: "MessageData", handle: Union[str, int]) -> List[Item]:
+    chat_id = str(msg.chat_id)
+    if chat_id.startswith("-100"):
+        chat_id = chat_id[4:]
     raw_msg_link = f"https://t.me/c/{msg.chat_id}/{msg.message_id}"
-    msg_link = raw_msg_link
+    msg_link = f"https://t.me/c/{chat_id}/{msg.message_id}"
     try:
         int(handle)
     except ValueError:
@@ -43,11 +46,15 @@ class TelegramSubscription(Subscription):
     SEARCH_PATTERN = re.compile(r"t.me/(?:c/)?([^\\&#\n/]+)", re.IGNORECASE)
 
     async def check_for_new_items(self) -> List["Item"]:
-        search_term = self.SEARCH_PATTERN.search(self.feed_url)
-        telegram_handle = search_term.group(1)
-        max_msg_id = max([int(i) for i in self.seen_item_ids])
+        telegram_handle = self.parse_feed_url(self.feed_url)
+        if self.seen_item_ids:
+            max_msg_id = max([int(i) for i in self.seen_item_ids])
+            limit = None
+        else:
+            max_msg_id = 0
+            limit = 10
         new_items = []
-        async for msg in self.helper.client.list_messages_since(telegram_handle, min_id=max_msg_id):
+        async for msg in self.helper.client.list_messages_since(telegram_handle, min_id=max_msg_id, limit=limit):
             items = message_to_items(msg, telegram_handle)
             new_items += items
             self.seen_item_ids.append(str(msg.message_id))
@@ -59,16 +66,24 @@ class TelegramSubscription(Subscription):
             link_split = item.download_link.strip("/").split("/")
             msg_id = int(link_split[-1])
             chat_id = int(link_split[-2])
-            output_path = random_sandbox_video_path("")
-            await self.helper.client.download_media(chat_id, msg_id, output_path)
-            return output_path
+            output_path = random_sandbox_video_path()
+            return await self.helper.client.download_media(chat_id, msg_id, output_path)
         else:
             return await super().download_item(item)
 
     @classmethod
-    async def can_handle_link(cls, feed_link: str, helper: "SubscriptionHelper") -> bool:
+    def parse_feed_url(cls, feed_link: str) -> Union[int, str]:
         search_term = cls.SEARCH_PATTERN.search(feed_link)
         telegram_handle = search_term.group(1)
+        try:
+            telegram_handle = int(telegram_handle)
+        except ValueError:
+            pass
+        return telegram_handle
+
+    @classmethod
+    async def can_handle_link(cls, feed_link: str, helper: "SubscriptionHelper") -> bool:
+        telegram_handle = cls.parse_feed_url(feed_link)
         async for msg in helper.client.list_messages_since(telegram_handle, limit=10):
             message_to_items(msg, telegram_handle)
         return True
