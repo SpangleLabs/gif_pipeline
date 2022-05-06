@@ -27,6 +27,8 @@ def message_to_items(msg: "MessageData", handle: Union[str, int]) -> List[Item]:
             msg_link,
             msg.text
         )]
+    if not msg.text:
+        return []
     links = [match.group(0) for match in re.finditer(DownloadHelper.LINK_REGEX, msg.text, re.IGNORECASE)]
     if not links:
         return []
