@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -9,6 +10,8 @@ from gif_pipeline.database import SubscriptionData
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.subscription_helper import SubscriptionHelper
+
+logger = logging.getLogger(__name__)
 
 
 class Subscription(ABC):
@@ -89,7 +92,13 @@ async def create_sub_for_link(
     for sub_class in sub_classes:
         try:
             can_handle_link = await sub_class.can_handle_link(feed_link, helper)
-        except:
+        except Exception as e:
+            logger.warning(
+                "Sub class %s raised exception while trying to handle link: %s",
+                sub_class.__name__,
+                feed_link,
+                exc_info=e
+            )
             continue
         else:
             if not can_handle_link:
