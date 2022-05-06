@@ -96,8 +96,8 @@ class SubscriptionHelper(Helper):
         if "instagram" in self.api_keys:
             self.sub_classes.append(InstagramSubscription)
         self.sub_classes.append(RSSSubscription)
-        self.sub_classes.append(YoutubeDLSubscription)
         self.sub_classes.append(TelegramSubscription)
+        self.sub_classes.append(YoutubeDLSubscription)  # This subscription type will try anything. Always put it last.
         # Initialise counters
         all_classes = self.sub_classes + [UninitialisedSubscription]
         for sub_class in all_classes:
