@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import List, TYPE_CHECKING, Optional, Union
 
@@ -8,6 +9,9 @@ from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item
 if TYPE_CHECKING:
     from gif_pipeline.helpers.subscription_helper import SubscriptionHelper
     from gif_pipeline.message import MessageData
+
+
+logger = logging.getLogger(__name__)
 
 
 def message_to_items(msg: "MessageData", handle: Union[str, int]) -> List[Item]:
@@ -63,7 +67,7 @@ class TelegramSubscription(Subscription):
         self.seen_item_ids = [max([int(i) for i in self.seen_item_ids])]
         return new_items
 
-    async def download_item(self, item: "Item") -> str:
+    async def download_item(self, item: "Item") -> Optional[str]:
         if item.download_link.startswith("https://t.me/"):
             link_split = item.download_link.strip("/").split("/")
             msg_id = int(link_split[-1])
@@ -71,7 +75,15 @@ class TelegramSubscription(Subscription):
             output_path = random_sandbox_video_path()
             return await self.helper.client.download_media(chat_id, msg_id, output_path)
         else:
-            return await super().download_item(item)
+            try:
+                return await super().download_item(item)
+            except Exception as e:
+                logger.warning(
+                    "Telegram subscription failed to download link: %s",
+                    item.download_link,
+                    exc_info=e
+                )
+                return None
 
     @classmethod
     def parse_feed_url(cls, feed_link: str) -> Union[int, str]:

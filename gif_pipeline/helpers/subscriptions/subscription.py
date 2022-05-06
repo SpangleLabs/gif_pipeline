@@ -51,7 +51,7 @@ class Subscription(ABC):
     async def can_handle_link(cls, feed_link: str, helper: "SubscriptionHelper") -> bool:
         pass
 
-    async def download_item(self, item: "Item") -> str:
+    async def download_item(self, item: "Item") -> Optional[str]:
         video_path = await self.helper.download_helper.download_link(item.download_link)
         return video_path
 
