@@ -138,6 +138,7 @@ class ChatConfig(ABC):
         self.handle = handle
         self.duplicate_detection = duplicate_detection
         self.read_only = False
+        self.twitter_config: Optional[TwitterConfig] = None
 
     @staticmethod
     @abstractmethod
@@ -180,13 +181,18 @@ class ChannelConfig(ChatConfig):
         tags_val = json_dict.get("tags")
         if tags_val:
             tags = {key: TagConfig.from_json(val) for key, val in tags_val.items()}
+        twitter_config = None
+        twitter_val = json_dict.get("twitter")
+        if twitter_val:
+            twitter_config = TwitterConfig.from_json(twitter_val)
         return ChannelConfig(
             handle,
             queue=queue,
             read_only=json_dict.get("read_only", False),
             send_folder=json_dict.get("send_folder"),
             note_time=json_dict.get("note_time", False),
-            tags=tags
+            tags=tags,
+            twitter_config=twitter_config
         )
 
 

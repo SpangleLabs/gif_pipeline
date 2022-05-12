@@ -141,6 +141,10 @@ class Chat(ABC):
     def latest_message(self) -> Optional[Message]:
         return next(iter(sorted(self.messages, key=lambda msg: msg.message_data.datetime, reverse=True)))
 
+    @property
+    def has_twitter(self) -> bool:
+        return False
+
 
 class Channel(Chat):
 
