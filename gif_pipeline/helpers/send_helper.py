@@ -1,7 +1,10 @@
 from __future__ import annotations
 import asyncio
+import logging
 import shutil
-from typing import Optional, List, Union, TYPE_CHECKING, Set
+from typing import Optional, List, Union, TYPE_CHECKING, Set, Dict
+
+import tweepy
 
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat, Channel
@@ -14,6 +17,12 @@ from gif_pipeline.video_tags import VideoTags
 if TYPE_CHECKING:
     from gif_pipeline.helpers.menu_helper import MenuHelper
 
+logger = logging.getLogger(__name__)
+
+
+class TwitterException(Exception):
+    pass
+
 
 class GifSendHelper(Helper):
 
@@ -23,11 +32,13 @@ class GifSendHelper(Helper):
             client: TelegramClient,
             worker: TaskWorker,
             channels: List[Channel],
-            menu_helper: MenuHelper
+            menu_helper: MenuHelper,
+            twitter_keys: Optional[Dict[str, str]] = None
     ):
         super().__init__(database, client, worker)
         self.channels = channels
         self.menu_helper = menu_helper
+        self.twitter_keys = twitter_keys or {}
 
     @property
     def writable_channels(self) -> List[Channel]:
@@ -142,10 +153,12 @@ class GifSendHelper(Helper):
         )
         # Forward message
         new_message = await self.forward_message(chat_to, initial_message, tags, hashes)
+        tweet_confirm_text = self.send_tweet_if_applicable(chat_to, video.message_data.file_path, tags)
         # Delete initial message
         await self.client.delete_message(initial_message.message_data)
         initial_message.delete(self.database)
-        confirm_text = f"This gif has been sent to {chat_to.chat_data.title} via {chat_from.chat_data.title}"
+        confirm_text = f"This gif has been sent to {chat_to.chat_data.title} via {chat_from.chat_data.title}."
+        confirm_text += tweet_confirm_text
         confirm_message = await self.menu_helper.after_send_delete_menu(chat, cmd_msg, video, confirm_text)
         messages = [new_message]
         if confirm_message:
@@ -168,7 +181,9 @@ class GifSendHelper(Helper):
         new_message = await self.send_message(
             destination, video_path=video.message_data.file_path, tags=tags, video_hashes=hashes
         )
-        confirm_text = f"This gif has been sent to {destination.chat_data.title}."
+        # If destination has Twitter configured, send it there too
+        twitter_confirm_text = self.send_tweet_if_applicable(destination, video.message_data.file_path, tags)
+        confirm_text = f"This gif has been sent to {destination.chat_data.title}.{twitter_confirm_text}"
         confirm_message = await self.menu_helper.after_send_delete_menu(chat, cmd, video, confirm_text)
         messages = [new_message]
         if confirm_message:
@@ -204,6 +219,71 @@ class GifSendHelper(Helper):
         self.database.save_hashes(new_message.message_data, video_hashes)
         destination.add_message(new_message)
         return new_message
+
+    def send_tweet_if_applicable(self, destination: Chat, video_path: str, tags: VideoTags) -> str:
+        twitter_confirm_text = ""
+        if destination.has_twitter:
+            try:
+                tweet_link = self.send_tweet(
+                    destination, video_path, tags
+                )
+            except TwitterException as e:
+                twitter_confirm_text = f"\nError posting to twitter: {e}"
+                pass
+            except Exception as e:
+                logger.error("Send tweet suffered a failure: ", exc_info=e)
+                twitter_confirm_text = f"\nFailure posting to twitter: {e}"
+                pass
+            else:
+                twitter_confirm_text = f"\nPosted to twitter: {tweet_link}"
+        return twitter_confirm_text
+
+    def send_tweet(self, destination: Chat, video_path: str, tags: VideoTags) -> Optional[str]:
+        if destination.config.twitter_config is None:
+            return
+        twitter_config = destination.config.twitter_config
+        if "consumer_key" not in self.twitter_keys or "consumer_secret" not in self.twitter_keys:
+            raise TwitterException("Consumer key and/or consumer secret has not been configured for the bot")
+        # Check auth
+        auth = tweepy.OAuthHandler(self.twitter_keys["consumer_key"], self.twitter_keys["consumer_secret"])
+        auth.set_access_token(twitter_config.account.access_token, twitter_config.account.access_secret)
+        api = tweepy.API(auth)
+        try:
+            api.verify_credentials()
+        except Exception as e:
+            logger.error("Failed to authenticate to twitter.", exc_info=e)
+            raise TwitterException("Authorisation failed")
+        try:
+            media_upload = api.media_upload(video_path, media_category="tweet_video")
+        except Exception as e:
+            logger.error("Failed to upload gif to twitter.", exc_info=e)
+            raise TwitterException("Failed to upload video")
+        # Send tweet
+        tweet_text = twitter_config.text_format.format(tags)
+        try:
+            twitter_resp = api.update_status(status=tweet_text, media_ids=[media_upload.media_id])
+            twitter_link = f"https://twitter.com/{twitter_resp.user.name}/status/{twitter_resp.id}"
+            logger.info(f"Posted tweet: {tweet_text}")
+        except Exception as e:
+            logger.error("Failed to post tweet.", exc_info=e)
+            raise TwitterException("Failed to post tweet")
+        # Send reply, if applicable
+        reply_conf = twitter_config.reply
+        while reply_conf:
+            reply_text = reply_conf.text_format.format(tags)
+            try:
+                twitter_resp = api.update_status(
+                    status=reply_text,
+                    in_reply_to_status_id=twitter_resp.id,
+                    auto_populate_reply_metadata=True
+                )
+                reply_link = f"https://twitter.com/{twitter_resp.user.name}/status/{twitter_resp.id}"
+                logger.info(f"Posted reply: {reply_link}")
+            except Exception as e:
+                logger.error("Failed to post reply", exc_info=e)
+                raise TwitterException("Failed to post reply")
+            reply_conf = reply_conf.reply
+        return twitter_link
 
 
 def was_giffed(database: Database, video: Message) -> bool:

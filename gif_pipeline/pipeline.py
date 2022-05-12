@@ -190,7 +190,8 @@ class Pipeline:
         tag_manager = TagManager(self.channels, self.workshops, self.database)
         delete_helper = DeleteHelper(self.database, self.client, self.worker, self.menu_cache)
         menu_helper = MenuHelper(self.database, self.client, self.worker, self, delete_helper, tag_manager)
-        send_helper = GifSendHelper(self.database, self.client, self.worker, self.channels, menu_helper)
+        twitter_keys = self.api_keys.get("twitter", {})
+        send_helper = GifSendHelper(self.database, self.client, self.worker, self.channels, menu_helper, twitter_keys)
         schedule_helper = ScheduleHelper(
             self.database,
             self.client,
