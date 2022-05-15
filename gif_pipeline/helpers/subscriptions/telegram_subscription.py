@@ -53,6 +53,8 @@ class TelegramSubscription(Subscription):
 
     async def check_for_new_items(self) -> List["Item"]:
         telegram_handle = self.parse_feed_url(self.feed_url)
+        if telegram_handle is None:
+            raise ValueError("Feed is not a valid telegram handle?")
         if self.seen_item_ids:
             max_msg_id = max([int(i) for i in self.seen_item_ids])
             limit = None
@@ -86,8 +88,10 @@ class TelegramSubscription(Subscription):
                 return None
 
     @classmethod
-    def parse_feed_url(cls, feed_link: str) -> Union[int, str]:
+    def parse_feed_url(cls, feed_link: str) -> Optional[Union[int, str]]:
         search_term = cls.SEARCH_PATTERN.search(feed_link)
+        if search_term is None:
+            return None
         telegram_handle = search_term.group(1)
         try:
             telegram_handle = int(telegram_handle)
@@ -98,6 +102,8 @@ class TelegramSubscription(Subscription):
     @classmethod
     async def can_handle_link(cls, feed_link: str, helper: "SubscriptionHelper") -> bool:
         telegram_handle = cls.parse_feed_url(feed_link)
+        if telegram_handle is None:
+            return False
         async for msg in helper.client.list_messages_since(telegram_handle, limit=10):
             message_to_items(msg, telegram_handle)
         return True
