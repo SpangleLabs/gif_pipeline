@@ -2,6 +2,7 @@ from typing import List, TYPE_CHECKING
 
 import bleach
 import feedparser
+import requests
 
 from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item
 
@@ -30,7 +31,8 @@ class RSSSubscription(Subscription):
     @classmethod
     async def can_handle_link(cls, feed_link: str, helper: "SubscriptionHelper") -> bool:
         try:
-            feed = feedparser.parse(feed_link)
+            feed_data = requests.get(feed_link, timeout=10).text
+            feed = feedparser.parse(feed_data)
             if not feed.entries:
                 return False
             for entry in feed.entries:
