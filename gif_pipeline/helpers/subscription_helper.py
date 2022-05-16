@@ -20,6 +20,7 @@ from gif_pipeline.helpers.subscriptions.instagram_subscription import InstagramS
 from gif_pipeline.helpers.subscriptions.reddit_subscription import RedditSubscription
 from gif_pipeline.helpers.subscriptions.rss_subscription import RSSSubscription
 from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item, create_sub_for_link
+from gif_pipeline.helpers.subscriptions.telegram_subscription import TelegramSubscription
 from gif_pipeline.helpers.subscriptions.twitter_subscription import TwitterSubscription
 from gif_pipeline.helpers.subscriptions.unitialised_subscription import UninitialisedSubscription
 from gif_pipeline.helpers.subscriptions.youtube_dl_subscription import YoutubeDLSubscription
@@ -95,7 +96,8 @@ class SubscriptionHelper(Helper):
         if "instagram" in self.api_keys:
             self.sub_classes.append(InstagramSubscription)
         self.sub_classes.append(RSSSubscription)
-        self.sub_classes.append(YoutubeDLSubscription)
+        self.sub_classes.append(TelegramSubscription)
+        self.sub_classes.append(YoutubeDLSubscription)  # This subscription type will try anything. Always put it last.
         # Initialise counters
         all_classes = self.sub_classes + [UninitialisedSubscription]
         for sub_class in all_classes:

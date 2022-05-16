@@ -4,6 +4,7 @@ from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any
 
 import telethon
 from telethon import events, Button
+from telethon.errors import UserNotParticipantError
 from telethon.tl.custom import message
 from telethon.tl.custom.participantpermissions import ParticipantPermissions
 from telethon.tl.functions.channels import EditAdminRequest, GetFullChannelRequest
@@ -20,10 +21,14 @@ R = TypeVar("R")
 logger = logging.getLogger(__name__)
 
 
+def message_has_file(msg: telethon.tl.custom.message.Message) -> bool:
+    return msg.file is not None and msg.web_preview is None
+
+
 def message_data_from_telegram(msg: telethon.tl.custom.message.Message, scheduled: bool = False) -> MessageData:
     chat_id = chat_id_from_telegram(msg)
     sender_id = sender_id_from_telegram(msg)
-    has_file = msg.file is not None and msg.web_preview is None
+    has_file = message_has_file(msg)
     forward_link = None
     if msg.forward and msg.forward.is_channel:
         if not isinstance(msg.forward.chat, ChannelForbidden):
@@ -111,6 +116,25 @@ class TelegramClient:
             entity.megagroup
         )
 
+    async def list_messages_since(
+            self,
+            chat_handle: Union[str, int],
+            min_id: int = 0,
+            limit: Optional[int] = None,
+    ) -> Generator[MessageData, None, None]:
+        entity = await self.client.get_entity(chat_handle)
+        async for msg in self.client.iter_messages(
+            entity,
+            limit=limit,
+            min_id=min_id,
+        ):
+            # Skip edit photo events.
+            if msg.action.__class__.__name__ in ['MessageActionChatEditPhoto']:
+                continue
+            # Save message and yield
+            self._save_message(msg)
+            yield message_data_from_telegram(msg)
+
     async def iter_channel_messages(
             self,
             chat_data: ChatData,
@@ -139,6 +163,8 @@ class TelegramClient:
 
     async def download_media(self, chat_id: int, message_id: int, path: str) -> Optional[str]:
         msg = self._get_message(chat_id, message_id)
+        if msg is None:
+            raise ValueError("Could not find message")
         return await self.client.download_media(message=msg, file=path)
 
     def add_message_handler(self, function: Callable, chat_ids: List[int]) -> None:
@@ -266,18 +292,22 @@ class TelegramClient:
             logger.debug("Bot client is user client, skipping invite to %s", chat_data)
             return
         # Check permissions
-        permissions = await self._user_permissions_in_chat(self.pipeline_bot_id, chat_data)
-        required_perms = [
-            permissions.delete_messages
-        ]
-        if chat_data.broadcast:
-            required_perms.extend([
-                permissions.post_messages,
-                permissions.edit_messages
-            ])
-        if all(required_perms):
-            logger.debug("Bot has all required permissions in %s chat, skipping invite", chat_data)
-            return
+        try:
+            permissions = await self._user_permissions_in_chat(self.pipeline_bot_id, chat_data)
+        except UserNotParticipantError:
+            pass
+        else:
+            required_perms = [
+                permissions.delete_messages
+            ]
+            if chat_data.broadcast:
+                required_perms.extend([
+                    permissions.post_messages,
+                    permissions.edit_messages
+                ])
+            if all(required_perms):
+                logger.debug("Bot has all required permissions in %s chat, skipping invite", chat_data)
+                return
         # Add bot as an admin
         pipeline_bot_entity = await self.pipeline_bot_client.get_me()
         logger.debug("Inviting bot to chat: %s", chat_data)
