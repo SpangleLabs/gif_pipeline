@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import uuid
@@ -21,6 +22,8 @@ usage_counter = Counter(
     "Total usage of gif pipeline helpers",
     labelnames=["class_name"]
 )
+
+logger = logging.getLogger(__name__)
 
 
 def find_video_for_message(chat: Chat, message: Message) -> Optional[Message]:

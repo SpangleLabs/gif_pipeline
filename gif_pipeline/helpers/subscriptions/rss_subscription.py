@@ -1,3 +1,4 @@
+import logging
 from typing import List, TYPE_CHECKING
 
 import bleach
@@ -8,6 +9,9 @@ from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.subscription_helper import SubscriptionHelper
+
+
+logger = logging.getLogger(__name__)
 
 
 class RSSSubscription(Subscription):
