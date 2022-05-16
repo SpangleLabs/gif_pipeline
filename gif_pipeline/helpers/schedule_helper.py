@@ -192,6 +192,7 @@ class ScheduleHelper(Helper):
                         chan_msg = [await self.send_message(
                             channel, video_path=menu.video.message_data.file_path, tags=tags, video_hashes=hashes
                         )]
+                        self.send_helper.send_tweet_if_applicable(channel, menu.video.message_data.file_path, tags)
                         await self.delete_helper.delete_family(channel.queue, menu.video)
                         return chan_msg
                     return await self.menu_helper.confirmation_menu(
