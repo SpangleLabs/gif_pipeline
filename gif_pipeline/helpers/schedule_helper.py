@@ -162,7 +162,8 @@ class ScheduleHelper(Helper):
             channel.queue,
             video,
             next_post_time,
-            channel
+            channel,
+            self.send_helper
         )
 
     async def scheduler(self):
