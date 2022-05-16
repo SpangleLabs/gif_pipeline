@@ -33,12 +33,13 @@ async def log_stream(stream: StreamReader, timeout: int = DEFAULT_TIMEOUT, prefi
             line_bytes = await asyncio.wait_for(stream.readline(), timeout)
             if line_bytes == b"":
                 # EOF reached
+                logger.debug("Stream ended %s", prefix)
                 break
             line = line_bytes.decode().strip()
             logger.info(prefix + line)
             lines.append(line)
     except asyncio.TimeoutError:
-        logger.info(f"STREAM ENDING {prefix}")
+        logger.error("STREAM TIMEOUT %s", prefix)
     return "\n".join(lines)
 
 
@@ -49,18 +50,21 @@ async def run_subprocess(args, timeout: int = DEFAULT_TIMEOUT) -> str:
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
+    logger.debug("Running subprocess: %s", args)
     try:
         stdout, stderr = await asyncio.wait_for(log_output(proc), timeout=timeout)
         # A short timeout to close the subprocess, because the above should have ran it to completion.
         await asyncio.wait_for(proc.communicate(), timeout=CLOSE_TIMEOUT)
         return_code = proc.returncode
     except asyncio.TimeoutError:
+        logger.error("Subprocess timed out, killing: %s", args)
         try:
             proc.kill()
         except OSError:
             pass
         raise TaskException("Task timed out")
     if return_code != 0:
+        logger.warning("Subprocess returned exit code %s: %s", return_code, args)
         raise TaskException(f"Task returned exit code {return_code}. stderr: {stderr}")
     return stdout
 

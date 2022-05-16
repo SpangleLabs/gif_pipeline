@@ -43,5 +43,6 @@ class RSSSubscription(Subscription):
                     bleach.clean(entry.title, tags=[], strip=True)
                 )
             return True
-        except:
+        except Exception as e:
+            logger.info("RSS Parser could not read feed %s", feed_link, exc_info=e)
             return False

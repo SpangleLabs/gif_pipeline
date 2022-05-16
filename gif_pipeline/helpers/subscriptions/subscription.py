@@ -92,6 +92,12 @@ async def create_sub_for_link(
     for sub_class in sub_classes:
         try:
             can_handle_link = await sub_class.can_handle_link(feed_link, helper)
+            logger.debug(
+                "Subscription class %s has checked feed %s, can handle link: %s",
+                sub_class.__name__,
+                feed_link,
+                can_handle_link
+            )
         except Exception as e:
             logger.warning(
                 "Sub class %s raised exception while trying to handle link: %s",
@@ -103,6 +109,7 @@ async def create_sub_for_link(
         else:
             if not can_handle_link:
                 continue
+            logger.debug("Creating subscription for %s as %s", feed_link, sub_class.__name__)
             return sub_class(
                 feed_link,
                 chat_id,

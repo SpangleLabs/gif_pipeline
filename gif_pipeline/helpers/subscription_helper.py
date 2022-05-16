@@ -117,15 +117,18 @@ class SubscriptionHelper(Helper):
                 )
 
     async def initialise(self) -> None:
+        logger.debug("Loading subscriptions")
         self.subscriptions = await load_subs_from_database(self.database, self)
+        logger.debug("Loaded all subscriptions")
         asyncio.get_event_loop().create_task(self.sub_checker())
+        logger.debug("Started subscription checker task")
 
     async def sub_checker(self) -> None:
         while True:
             try:
                 await self.check_subscriptions()
             except Exception as e:
-                logger.error(f"Failed to check subscriptions, due to exception: {e}")
+                logger.error("Failed to check subscriptions, due to exception: ", exc_info=e)
             await asyncio.sleep(self.CHECK_DELAY)
 
     async def check_subscriptions(self) -> None:
@@ -138,7 +141,7 @@ class SubscriptionHelper(Helper):
             try:
                 new_items = await subscription.check_for_new_items()
             except Exception as e:
-                logger.error(f"Subscription to {subscription.feed_url} failed due to: {e}")
+                logger.error("Subscription to %s failed due to:", subscription.feed_url, exc_info=e)
                 await self.send_message(
                     chat,
                     text=f"Subscription to {subscription.feed_url} failed due to: {e}",
@@ -150,7 +153,10 @@ class SubscriptionHelper(Helper):
                         await self.post_item(item, subscription)
                     except Exception as e:
                         logger.error(
-                            f"Failed to post item {item.source_link} from {subscription.feed_url} feed due to: {e}"
+                            "Failed to post item %s from %s feed due to:",
+                            item.source_link,
+                            subscription.feed_url,
+                            exc_info=e
                         )
                         feed_url = subscription.feed_url
                         await self.send_message(
@@ -270,7 +276,7 @@ class SubscriptionHelper(Helper):
                 self.save_subscriptions()
                 return [await self.send_text_reply(chat, message, f"Added subscription for {feed_link_out}")]
         except Exception as e:
-            logger.error(f"Failed to create subscription to {feed_link_out}", exc_info=e)
+            logger.error("Failed to create subscription to %s", feed_link_out, exc_info=e)
             return [await self.send_text_reply(
                 chat, message,
                 f"Could not add subscription to {feed_link_out}. Encountered error: {repr(e)}"
@@ -298,6 +304,7 @@ async def load_subs_from_database(database: "Database", helper: SubscriptionHelp
     subscriptions = []
     for sub_entry in sub_data:
         seen_items = database.list_item_ids_for_subscription(sub_entry)
+        logger.debug("Loading subscription %s with %s seen items", sub_entry.feed_link, len(seen_items))
         subscription = await create_sub_for_link(
             sub_entry.feed_link,
             sub_entry.chat_id,

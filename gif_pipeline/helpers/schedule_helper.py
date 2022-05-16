@@ -170,7 +170,7 @@ class ScheduleHelper(Helper):
             try:
                 await self.check_channels()
             except Exception as e:
-                logger.error(f"Failed to check channels, due to exception: {e}")
+                logger.error("Failed to check channels, due to exception: ", exc_info=e)
             await asyncio.sleep(self.CHECK_DELAY)
 
     async def check_channels(self) -> Optional[List['Message']]:
@@ -198,4 +198,4 @@ class ScheduleHelper(Helper):
                         menu.chat, None, menu.video, self.send_helper, channel
                     )
             except Exception as e:
-                logger.error(f"Failed to check channel: {channel} due to exception: {e}")
+                logger.error("Failed to check channel: %s due to exception: ", channel, exc_info=e)
