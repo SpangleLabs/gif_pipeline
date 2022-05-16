@@ -243,6 +243,8 @@ class Pipeline:
                 ImgurGalleryHelper(self.database, self.client, self.worker, self.api_keys["imgur"]["client_id"]))
         for helper in helpers:
             self.helpers[helper.name] = helper
+        # Check yt-dl install
+        self.client.synchronise_async(download_helper.check_yt_dl())
         # Load menus from database
         self.client.synchronise_async(menu_helper.refresh_from_database())
         # Load schedule helper and subscription helper
