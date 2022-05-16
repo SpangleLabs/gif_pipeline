@@ -10,6 +10,7 @@ from gif_pipeline.helpers.menus.menu import Menu
 if TYPE_CHECKING:
     from gif_pipeline.chat import Chat, Channel
     from gif_pipeline.helpers.menu_helper import MenuHelper
+    from gif_pipeline.helpers.send_helper import GifSendHelper
     from gif_pipeline.message import Message
     from gif_pipeline.tag_manager import TagManager
 
@@ -27,6 +28,7 @@ def next_video_from_list(messages: List['Message']) -> Optional['Message']:
 class ScheduleReminderMenu(Menu):
     callback_re_roll = b"re-roll"
     callback_auto_post = b"auto_post"
+    callback_send_now = b"send_now"
 
     def __init__(
             self,
@@ -37,12 +39,14 @@ class ScheduleReminderMenu(Menu):
             post_time: datetime,
             channel: 'Channel',
             tag_manager: 'TagManager',
+            send_helper: 'GifSendHelper',
             auto_post: bool = False
     ):
         super().__init__(menu_helper, chat, cmd, video)
         self.post_time = post_time
         self.channel = channel
         self.tag_manager = tag_manager
+        self.send_helper = send_helper
         self.auto_post = auto_post
 
     @property
@@ -64,6 +68,7 @@ class ScheduleReminderMenu(Menu):
         auto_post_str = "{} auto post and remove".format("✔️" if self.auto_post else "❌")
         buttons = [
             [Button.inline("🎲 Re-roll", self.callback_re_roll)],
+            [Button.inline("Send now", self.callback_send_now)],
             [Button.inline(auto_post_str, self.callback_auto_post)]
         ]
         return buttons
@@ -86,6 +91,10 @@ class ScheduleReminderMenu(Menu):
         if callback_query == self.callback_auto_post:
             self.auto_post = not self.auto_post
             return [await self.send()]
+        if callback_query == self.callback_send_now:
+            return await self.menu_helper.confirmation_menu(
+                self.chat, self.cmd, self.video, self.send_helper, self.channel
+            )
 
     @property
     def missing_tags(self) -> Set[str]:
@@ -109,7 +118,8 @@ class ScheduleReminderMenu(Menu):
             chat: 'Chat',
             video: 'Message',
             all_channels: List['Channel'],
-            tag_manager: 'TagManager'
+            tag_manager: 'TagManager',
+            send_helper: 'GifSendHelper',
     ) -> 'Menu':
         destination = next(filter(lambda channel: channel.queue == chat, all_channels), None)
         return ScheduleReminderMenu(
@@ -120,5 +130,6 @@ class ScheduleReminderMenu(Menu):
             dateutil.parser.parse(json_data["post_time"]),
             destination,
             tag_manager,
+            send_helper,
             json_data.get("auto_post", False)
         )

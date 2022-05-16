@@ -162,8 +162,9 @@ class MenuHelper(Helper):
             menu = TagSelectMenu.from_json(menu_json, self, chat, video_msg, send_helper, channels)
             return SentMenu(menu, menu_msg, clicked)
         if menu_data.menu_type == ScheduleReminderMenu.json_name():
+            send_helper = self.pipeline.helpers[GifSendHelper.__name__]
             channels = self.pipeline.channels
-            menu = ScheduleReminderMenu.from_json(menu_json, self, chat, video_msg, channels, self.tag_manager)
+            menu = ScheduleReminderMenu.from_json(menu_json, self, chat, video_msg, channels, self.tag_manager, send_helper)
             return SentMenu(menu, menu_msg, clicked)
         return None
 
@@ -286,8 +287,9 @@ class MenuHelper(Helper):
             chat: Chat,
             video: 'Message',
             post_time: datetime,
-            channel: 'Channel'
+            channel: 'Channel',
+            send_helper: 'GifSendHelper'
     ) -> Message:
-        menu = ScheduleReminderMenu(self, chat, None, video, post_time, channel, self.tag_manager, False)
+        menu = ScheduleReminderMenu(self, chat, None, video, post_time, channel, self.tag_manager, send_helper, False)
         message = await menu.send()
         return message
