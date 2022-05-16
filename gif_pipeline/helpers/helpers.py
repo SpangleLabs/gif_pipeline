@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import uuid
@@ -21,6 +22,8 @@ usage_counter = Counter(
     "Total usage of gif pipeline helpers",
     labelnames=["class_name"]
 )
+
+logger = logging.getLogger(__name__)
 
 
 def find_video_for_message(chat: Chat, message: Message) -> Optional[Message]:
@@ -158,6 +161,13 @@ class Helper(ABC):
         try:
             yield
         except Exception as e:
+            logger.error(
+                "Helper %s failed to process message %s in chat %s",
+                self.name,
+                message.message_data.message_id,
+                message.message_data.chat_id,
+                exc_info=e
+            )
             await self.send_text_reply(chat, message, f"Command failed. {self.name} tried but failed to process this.")
             raise e
         finally:

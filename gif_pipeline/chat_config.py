@@ -5,6 +5,8 @@ from typing import Union, Dict, Any, Optional
 
 import isodate
 
+from gif_pipeline.text_formatter import TextFormatter
+
 
 class TagType(Enum):
     NORMAL = "normal"  # Store a list of values for this tag
@@ -76,6 +78,66 @@ class ScheduleConfig:
         )
 
 
+class TwitterAccountConfig:
+
+    def __init__(self, access_token: str, access_secret: str):
+        self.access_token = access_token
+        self.access_secret = access_secret
+
+    @classmethod
+    def from_json(cls, json_dict: Dict) -> "TwitterAccountConfig":
+        return cls(
+            json_dict["access_token"],
+            json_dict["access_secret"]
+        )
+
+
+class TwitterReplyConfig:
+
+    def __init__(
+        self,
+        text: str,
+        reply: Optional["TwitterReplyConfig"] = None,
+        account: Optional["TwitterAccountConfig"] = None,
+    ):
+        self.text_format = TextFormatter(text)
+        self.reply = reply
+        self.account = account
+
+    @classmethod
+    def from_json(cls, json_dict: Dict) -> "TwitterReplyConfig":
+        reply = None
+        if "reply" in json_dict:
+            reply = TwitterReplyConfig.from_json(json_dict["reply"])
+        account = None
+        if "account" in json_dict:
+            account = TwitterAccountConfig.from_json(json_dict["account"])
+        return cls(
+            json_dict["text"],
+            reply,
+            account
+        )
+
+
+class TwitterConfig:
+
+    def __init__(self, account: TwitterAccountConfig, text: str, reply: Optional[TwitterReplyConfig] = None):
+        self.account = account
+        self.text_format = TextFormatter(text)
+        self.reply = reply
+
+    @classmethod
+    def from_json(cls, json_dict: Dict) -> "TwitterConfig":
+        reply = None
+        if "reply" in json_dict:
+            reply = TwitterReplyConfig.from_json(json_dict["reply"])
+        return cls(
+            TwitterAccountConfig.from_json(json_dict["account"]),
+            json_dict.get("text", ""),
+            reply
+        )
+
+
 class ChatConfig(ABC):
     def __init__(
             self,
@@ -86,6 +148,7 @@ class ChatConfig(ABC):
         self.handle = handle
         self.duplicate_detection = duplicate_detection
         self.read_only = False
+        self.twitter_config: Optional[TwitterConfig] = None
 
     @staticmethod
     @abstractmethod
@@ -107,6 +170,7 @@ class ChannelConfig(ChatConfig):
             send_folder: Optional[str] = None,
             note_time: bool = False,
             tags: Optional[Dict[str, TagConfig]] = None,
+            twitter_config: Optional[TwitterConfig] = None
     ):
         super().__init__(handle)
         self.queue = queue
@@ -114,6 +178,7 @@ class ChannelConfig(ChatConfig):
         self.send_folder = send_folder
         self.note_time = note_time
         self.tags = tags or {}
+        self.twitter_config = twitter_config
 
     @staticmethod
     def from_json(json_dict) -> 'ChannelConfig':
@@ -126,13 +191,18 @@ class ChannelConfig(ChatConfig):
         tags_val = json_dict.get("tags")
         if tags_val:
             tags = {key: TagConfig.from_json(val) for key, val in tags_val.items()}
+        twitter_config = None
+        twitter_val = json_dict.get("twitter")
+        if twitter_val:
+            twitter_config = TwitterConfig.from_json(twitter_val)
         return ChannelConfig(
             handle,
             queue=queue,
             read_only=json_dict.get("read_only", False),
             send_folder=json_dict.get("send_folder"),
             note_time=json_dict.get("note_time", False),
-            tags=tags
+            tags=tags,
+            twitter_config=twitter_config
         )
 
 

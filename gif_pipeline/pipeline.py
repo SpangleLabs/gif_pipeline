@@ -190,7 +190,8 @@ class Pipeline:
         tag_manager = TagManager(self.channels, self.workshops, self.database)
         delete_helper = DeleteHelper(self.database, self.client, self.worker, self.menu_cache)
         menu_helper = MenuHelper(self.database, self.client, self.worker, self, delete_helper, tag_manager)
-        send_helper = GifSendHelper(self.database, self.client, self.worker, self.channels, menu_helper)
+        twitter_keys = self.api_keys.get("twitter", {})
+        send_helper = GifSendHelper(self.database, self.client, self.worker, self.channels, menu_helper, twitter_keys)
         schedule_helper = ScheduleHelper(
             self.database,
             self.client,
@@ -242,6 +243,8 @@ class Pipeline:
                 ImgurGalleryHelper(self.database, self.client, self.worker, self.api_keys["imgur"]["client_id"]))
         for helper in helpers:
             self.helpers[helper.name] = helper
+        # Check yt-dl install
+        self.client.synchronise_async(download_helper.check_yt_dl())
         # Load menus from database
         self.client.synchronise_async(menu_helper.refresh_from_database())
         # Load schedule helper and subscription helper

@@ -1,12 +1,17 @@
+import logging
 from typing import List, TYPE_CHECKING
 
 import bleach
 import feedparser
+import requests
 
 from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.subscription_helper import SubscriptionHelper
+
+
+logger = logging.getLogger(__name__)
 
 
 class RSSSubscription(Subscription):
@@ -30,7 +35,8 @@ class RSSSubscription(Subscription):
     @classmethod
     async def can_handle_link(cls, feed_link: str, helper: "SubscriptionHelper") -> bool:
         try:
-            feed = feedparser.parse(feed_link)
+            feed_data = requests.get(feed_link, timeout=10).text
+            feed = feedparser.parse(feed_data)
             if not feed.entries:
                 return False
             for entry in feed.entries:
@@ -41,5 +47,6 @@ class RSSSubscription(Subscription):
                     bleach.clean(entry.title, tags=[], strip=True)
                 )
             return True
-        except:
+        except Exception as e:
+            logger.info("RSS Parser could not read feed %s", feed_link, exc_info=e)
             return False
