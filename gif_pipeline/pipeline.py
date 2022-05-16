@@ -1,9 +1,8 @@
 import asyncio
-import enum
 import logging
 from typing import Dict, List, Iterator, Optional, Iterable, Union, Tuple
 
-from prometheus_client import Enum, Info, Gauge, start_http_server
+from prometheus_client import Info, start_http_server
 from telethon import events
 from tqdm import tqdm
 
@@ -40,6 +39,7 @@ from gif_pipeline.helpers.video_rotate_helper import VideoRotateHelper
 from gif_pipeline.helpers.zip_helper import ZipHelper
 from gif_pipeline.menu_cache import MenuCache
 from gif_pipeline.message import Message, MessageData
+from gif_pipeline.startup_monitor import StartupMonitor, StartupState
 from gif_pipeline.tag_manager import TagManager
 from gif_pipeline.tasks.task_worker import TaskWorker, Bottleneck
 from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram, chat_id_from_telegram
@@ -51,50 +51,8 @@ version_info = Info(
     "gif_pipeline_version",
     "Version of gif pipeline currently running"
 )
-startup_time = Gauge(
-    "gif_pipeline_startup_unixtime",
-    "Time the gif pipeline was last started"
-)
-
-class StartupState(enum.Enum):
-    LOADING_CONFIG = "01_loading_config"
-    CREATING_DATABASE = "02_creating_database"
-    CONNECTING_TELEGRAM = "03_connecting_telegram"
-    INITIALISING_CHAT_DATA = "10_initialise_chat_data"
-    LISTING_WORKSHOP_MESSAGES = "11_list_workshop_messages"
-    LISTING_CHANNEL_MESSAGES = "12_list_channel_messages"
-    DOWNLOADING_MESSAGES = "13_downloading_messages"
-    CREATING_WORKSHOPS = "14_creating_workshops"
-    CREATING_CHANNELS = "15_creating_channels"
-    CLEAN_UP_CHAT_FILES = "16_cleanup_chat_files"
-    CREATING_PIPELINE = "20_creating_pipeline"
-    INITIALISING_HELPERS = "21_initialising_helpers"
-    INSTALL_YT_DL = "22_install_yt_dl"
-    LOAD_MENUS = "23_load_menus"
-    INITIALISE_SCHEDULES = "24_initialise_schedules"
-    INITIALISE_SUBSCRIPTIONS = "25_initialise_subscriptions"
-    INITIALISING_PUBLIC_HELPERS = "26_initialise_public_helpers"
-    RUNNING = "30_running"
-
-startup_state = Enum(
-    "gif_pipeline_startup_state",
-    states=[state.value for state in StartupState]
-)
-startup_state_time = Gauge(
-    "gif_pipeline_startup_state_unixtime",
-    "Time that the gif pipeline last went into the given state",
-    labelnames=["state"]
-)
-for state in StartupState:
-    startup_state_time.labels(state=state.value)
-
-def set_startup_state(state: StartupState) -> None:
-    startup_state.state(state.value)
-    startup_state_time.labels(state=state.value).set_to_current_time()
-
 
 PROM_PORT = 7180
-
 
 
 class PipelineConfig:
@@ -104,7 +62,8 @@ class PipelineConfig:
         version_info.info({
             "version": _version.__VERSION__
         })
-        set_startup_state(StartupState.LOADING_CONFIG)
+        self.startup_monitor = StartupMonitor()
+        self.startup_monitor.set_state(StartupState.LOADING_CONFIG)
         self.channels = [ChannelConfig.from_json(x) for x in config['channels']]
         self.workshops = [WorkshopConfig.from_json(x) for x in config["workshop_groups"]]
         self.workshops += [chan.queue for chan in self.channels if chan.queue is not None]
@@ -118,14 +77,14 @@ class PipelineConfig:
         self.api_keys = config.get("api_keys", {})
 
     def initialise_pipeline(self) -> 'Pipeline':
-        set_startup_state(StartupState.CREATING_DATABASE)
+        self.startup_monitor.set_state(StartupState.CREATING_DATABASE)
         database = Database()
-        set_startup_state(StartupState.CONNECTING_TELEGRAM)
+        self.startup_monitor.set_state(StartupState.CONNECTING_TELEGRAM)
         client = TelegramClient(self.api_id, self.api_hash, self.pipeline_bot_token, self.public_bot_token)
         client.synchronise_async(client.initialise())
         channels, workshops = client.synchronise_async(self.initialise_chats(database, client))
-        set_startup_state(StartupState.CREATING_PIPELINE)
-        pipe = Pipeline(database, client, channels, workshops, self.api_keys)
+        self.startup_monitor.set_state(StartupState.CREATING_PIPELINE)
+        pipe = Pipeline(database, client, channels, workshops, self.api_keys, self.startup_monitor)
         return pipe
 
     async def initialise_chats(
@@ -137,37 +96,37 @@ class PipelineConfig:
         workshop_builder = WorkshopBuilder(database, client, download_bottleneck)
         channel_builder = ChannelBuilder(database, client, download_bottleneck)
         # Get chat data for chat config
-        set_startup_state(StartupState.INITIALISING_CHAT_DATA)
+        self.startup_monitor.set_state(StartupState.INITIALISING_CHAT_DATA)
         logger.info("Initialising workshop data")
         workshop_data = await workshop_builder.get_chat_data(self.workshops)
         logger.info("Initialising channel data")
         channel_data = await channel_builder.get_chat_data(self.channels)
 
         message_inits = []
-        set_startup_state(StartupState.LISTING_WORKSHOP_MESSAGES)
+        self.startup_monitor.set_state(StartupState.LISTING_WORKSHOP_MESSAGES)
         logger.info("Listing messages in workshops")
         workshop_message_lists = await workshop_builder.get_message_inits(self.workshops, workshop_data)
         workshop_message_counts = [len(x) for x in workshop_message_lists]
         message_inits += [init for message_list in workshop_message_lists for init in message_list]
-        set_startup_state(StartupState.LISTING_CHANNEL_MESSAGES)
+        self.startup_monitor.set_state(StartupState.LISTING_CHANNEL_MESSAGES)
         logger.info("Listing messages in channels")
         channel_message_lists = await channel_builder.get_message_inits(self.channels, channel_data)
         channel_message_counts = [len(x) for x in channel_message_lists]
         message_inits += [init for message_list in channel_message_lists for init in message_list]
 
-        set_startup_state(StartupState.DOWNLOADING_MESSAGES)
+        self.startup_monitor.set_state(StartupState.DOWNLOADING_MESSAGES)
         logger.info("Downloading messages")
         all_messages = await tqdm_gather(message_inits, desc="Downloading messages")
 
         logger.info("Creating workshops")
-        set_startup_state(StartupState.CREATING_WORKSHOPS)
+        self.startup_monitor.set_state(StartupState.CREATING_WORKSHOPS)
         workshop_dict = {}
         for work_conf, work_data, message_count in zip(self.workshops, workshop_data, workshop_message_counts):
             work_messages = all_messages[:message_count]
             all_messages = all_messages[message_count:]
             workshop_dict[work_conf.handle] = WorkshopGroup(work_data, work_conf, work_messages, client)
         logger.info("Creating channels")
-        set_startup_state(StartupState.CREATING_CHANNELS)
+        self.startup_monitor.set_state(StartupState.CREATING_CHANNELS)
         channels = []
         for chan_conf, chan_data, message_count in zip(self.channels, channel_data, channel_message_counts):
             chan_messages = all_messages[:message_count]
@@ -179,7 +138,7 @@ class PipelineConfig:
         workshops = list(workshop_dict.values())
 
         logger.info("Cleaning up excess files from chats")
-        set_startup_state(StartupState.CLEAN_UP_CHAT_FILES)
+        self.startup_monitor.set_state(StartupState.CLEANING_UP_CHAT_FILES)
         for chat in tqdm([*channels, *workshops], desc="Cleaning up excess files from chats"):
             chat.cleanup_excess_files()
 
@@ -194,7 +153,8 @@ class Pipeline:
             client: TelegramClient,
             channels: List[Channel],
             workshops: List[WorkshopGroup],
-            api_keys: Dict[str, Dict[str, str]]
+            api_keys: Dict[str, Dict[str, str]],
+            startup_monitor: StartupMonitor
     ):
         self.database = database
         self.channels = channels
@@ -206,6 +166,7 @@ class Pipeline:
         self.public_helpers = {}
         self.menu_cache = MenuCache(database)  # MenuHelper later populates this from database
         self.download_bottleneck = Bottleneck(3)
+        self.startup_monitor = startup_monitor
 
     @property
     def all_chats(self) -> List[Chat]:
@@ -240,8 +201,9 @@ class Pipeline:
 
     def initialise_helpers(self) -> None:
         logger.info("Initialising helpers")
-        set_startup_state(StartupState.INITIALISING_HELPERS)
+        self.startup_monitor.set_state(StartupState.INITIALISING_DUPLICATE_DETECTOR)
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
+        self.startup_monitor.set_state(StartupState.INITIALISING_HELPERS)
         tag_manager = TagManager(self.channels, self.workshops, self.database)
         delete_helper = DeleteHelper(self.database, self.client, self.worker, self.menu_cache)
         menu_helper = MenuHelper(self.database, self.client, self.worker, self, delete_helper, tag_manager)
@@ -299,20 +261,20 @@ class Pipeline:
         for helper in helpers:
             self.helpers[helper.name] = helper
         # Check yt-dl install
-        set_startup_state(StartupState.INSTALL_YT_DL)
+        self.startup_monitor.set_state(StartupState.INSTALLING_YT_DL)
         self.client.synchronise_async(download_helper.check_yt_dl())
         # Load menus from database
-        set_startup_state(StartupState.LOAD_MENUS)
+        self.startup_monitor.set_state(StartupState.LOADING_MENUS)
         self.client.synchronise_async(menu_helper.refresh_from_database())
         # Load schedule helper and subscription helper
-        set_startup_state(StartupState.INITIALISE_SCHEDULES)
+        self.startup_monitor.set_state(StartupState.INITIALISING_SCHEDULES)
         self.client.synchronise_async(schedule_helper.initialise())
-        set_startup_state(StartupState.INITIALISE_SUBSCRIPTIONS)
+        self.startup_monitor.set_state(StartupState.INITIALISING_SUBSCRIPTIONS)
         self.client.synchronise_async(subscription_helper.initialise())
         # Helpers complete
         logger.info(f"Initialised {len(self.helpers)} helpers")
         # Set up public helpers
-        set_startup_state(StartupState.INITIALISING_PUBLIC_HELPERS)
+        self.startup_monitor.set_state(StartupState.INITIALISING_PUBLIC_HELPERS)
         public_helpers = [
             PublicTagHelper(self.database, self.client, self.worker, tag_manager)
         ]
@@ -329,8 +291,7 @@ class Pipeline:
 
     def watch_workshop(self) -> None:
         # Start prometheus server
-        startup_time.set_to_current_time()
-        set_startup_state(StartupState.RUNNING)
+        self.startup_monitor.set_running()
         logger.info("Watching workshop")
         # Set up handlers
         self.client.add_message_handler(self.on_new_message, self.all_chat_ids)
