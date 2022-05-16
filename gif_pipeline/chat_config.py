@@ -94,18 +94,28 @@ class TwitterAccountConfig:
 
 class TwitterReplyConfig:
 
-    def __init__(self, text: str, reply: Optional["TwitterReplyConfig"] = None):
+    def __init__(
+        self,
+        text: str,
+        reply: Optional["TwitterReplyConfig"] = None,
+        account: Optional["TwitterAccountConfig"] = None,
+    ):
         self.text_format = TextFormatter(text)
         self.reply = reply
+        self.account = account
 
     @classmethod
     def from_json(cls, json_dict: Dict) -> "TwitterReplyConfig":
         reply = None
         if "reply" in json_dict:
             reply = TwitterReplyConfig.from_json(json_dict["reply"])
+        account = None
+        if "account" in json_dict:
+            account = TwitterAccountConfig.from_json(json_dict["account"])
         return cls(
             json_dict["text"],
-            reply
+            reply,
+            account
         )
 
 

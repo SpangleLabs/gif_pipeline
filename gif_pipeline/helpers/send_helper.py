@@ -16,6 +16,7 @@ from gif_pipeline.video_tags import VideoTags
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.menu_helper import MenuHelper
+    from gif_pipeline.chat_config import TwitterAccountConfig
 
 logger = logging.getLogger(__name__)
 
@@ -245,14 +246,8 @@ class GifSendHelper(Helper):
         if "consumer_key" not in self.twitter_keys or "consumer_secret" not in self.twitter_keys:
             raise TwitterException("Consumer key and/or consumer secret has not been configured for the bot")
         # Check auth
-        auth = tweepy.OAuthHandler(self.twitter_keys["consumer_key"], self.twitter_keys["consumer_secret"])
-        auth.set_access_token(twitter_config.account.access_token, twitter_config.account.access_secret)
-        api = tweepy.API(auth)
-        try:
-            api.verify_credentials()
-        except Exception as e:
-            logger.error("Failed to authenticate to twitter.", exc_info=e)
-            raise TwitterException("Authorisation failed")
+        api = self.get_twitter_api(twitter_config.account)
+        # Upload media
         try:
             media_upload = api.media_upload(video_path, media_category="tweet_video")
         except Exception as e:
@@ -270,6 +265,8 @@ class GifSendHelper(Helper):
         # Send reply, if applicable
         reply_conf = twitter_config.reply
         while reply_conf:
+            if reply_conf.account:
+                api = self.get_twitter_api(reply_conf.account)
             reply_text = reply_conf.text_format.format(tags)
             try:
                 twitter_resp = api.update_status(
@@ -284,6 +281,17 @@ class GifSendHelper(Helper):
                 raise TwitterException("Failed to post reply")
             reply_conf = reply_conf.reply
         return twitter_link
+
+    def get_twitter_api(self, account_config: TwitterAccountConfig) -> tweepy.API:
+        auth = tweepy.OAuthHandler(self.twitter_keys["consumer_key"], self.twitter_keys["consumer_secret"])
+        auth.set_access_token(account_config.access_token, account_config.access_secret)
+        api = tweepy.API(auth)
+        try:
+            api.verify_credentials()
+        except Exception as e:
+            logger.error("Failed to authenticate to twitter.", exc_info=e)
+            raise TwitterException("Authorisation failed")
+        return api
 
 
 def was_giffed(database: Database, video: Message) -> bool:
