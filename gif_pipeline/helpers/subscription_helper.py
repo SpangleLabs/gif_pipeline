@@ -91,7 +91,7 @@ class SubscriptionHelper(Helper):
             self.sub_classes.append(ImgurSearchSubscription)
         if "reddit" in self.api_keys:
             self.sub_classes.append(RedditSubscription)
-        if "twitter" in self.api_keys:
+        if "twitter" in self.api_keys and "nitter_url" in self.api_keys["twitter"]:
             self.sub_classes.append(TwitterSubscription)
         if "instagram" in self.api_keys:
             self.sub_classes.append(InstagramSubscription)
