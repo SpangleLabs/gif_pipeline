@@ -36,7 +36,7 @@ class FindHelper(Helper):
         self.duplicate_helper = duplicate_helper
         self.download_helper = download_helper
 
-    def is_priority(self, chat: Chat, message: Message) -> bool:
+    def is_priority(self, chat: "Chat", message: "Message") -> bool:
         clean_args = message.text.strip().split()
         if not clean_args or clean_args[0].lower() not in ["find"]:
             return False
