@@ -28,9 +28,9 @@ class FindHelper(Helper):
             self,
             database: "Database",
             client: "TelegramClient",
-            worker: TaskWorker,
-            duplicate_helper: DuplicateHelper,
-            download_helper: DownloadHelper
+            worker: "TaskWorker",
+            duplicate_helper: "DuplicateHelper",
+            download_helper: "DownloadHelper"
     ):
         super().__init__(database, client, worker)
         self.duplicate_helper = duplicate_helper
