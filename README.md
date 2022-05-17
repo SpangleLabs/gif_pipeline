@@ -91,9 +91,50 @@ This section stores various API keys or other details for third party services. 
 ## Helpers
 The pipeline has many "helpers", which are classes which handle different types of user requests in workshop groups. These are used to edit videos, and manage tags, and such.
 
+### Channel forward tag helper
 TODO
+
+### Chart helper
+
+### Delete helper
+
+### Download helper
+
+### Duplicate helper
+
+### FA Helper
+
+### FFProbe helper
+
+### Imgur gallery helper
+
+### Menu helper
+
+### Merge helper
+
+### MSG helper
+
+### Reverse helper
+
+### Scene split helper
+
+### Schedule helper
+
+### Send helper
+
+### Stabilise helper
+
+### Subscription helper
+
+### Tag helper
+
+### Telegram gif helper
+
+### Update yt dl helper
+
+### Video crop helper
 
 ## Public helpers
 There are also public helpers, which are helpers that channel subscribers can use with the public bot instance, to request information on gifs from the channels.
 
-TODO
+### Public tag helper
