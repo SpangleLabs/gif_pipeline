@@ -61,36 +61,61 @@ class FindHelper(Helper):
                 )
             ]
         link = msg_args[0]
-        async with self.progress_message(chat, message, f"Getting playlist data for {link}"):
-            # Get source hashes
-            source_hashes = await self.duplicate_helper.get_or_create_message_hashes(video.message_data)
-            # Get the playlist information
-            playlist_task = YoutubeDLDumpJsonTask(link)
-            playlist_resp = await self.worker.await_task(playlist_task)
-            try:
-                playlist_data = json.loads(playlist_resp)
-            except json.JSONDecodeError as e:
-                logger.error("Could not decode json response for playlist: %s", link, exc_info=e)
-        # Start going through videos on the playlist
-        video_urls = [playlist_item["webpage_url"] for playlist_item in playlist_data]
-        video_count = 0
         chunk_length = 4
-        for video_url_chunk in chunks(video_urls, chunk_length):
+        # Get source hashes
+        source_hashes = await self.duplicate_helper.get_or_create_message_hashes(video.message_data)
+        still_searching = True
+        playlist_start = 1
+        while still_searching:
+            playlist_end = playlist_start + chunk_length - 1
             async with self.progress_message(
                     chat,
                     message,
-                    f"Checking {video_count+1}-{video_count+chunk_length+1} of {len(video_urls)} videos"
+                    f"Checking items {playlist_start}-{playlist_end} of playlist"
             ):
-                matching_video_msgs = await asyncio.gather(
-                    *[self.send_matching_video(chat, message, url, source_hashes) for url in video_url_chunk]
+                responses = await self.check_playlist_block(
+                    chat,
+                    message,
+                    source_hashes,
+                    link,
+                    playlist_start,
+                    playlist_end
                 )
-                if any(matching_video_msgs):
-                    return [
-                        matching_msg
-                        for matching_msg in matching_video_msgs
-                        if matching_msg is not None
-                    ]
-        return [await self.send_text_reply(chat, message, f"Checked {len(video_urls)} videos but did not find a match")]
+            if responses:
+                return responses
+            playlist_start = playlist_end + 1
+
+    async def check_playlist_block(
+            self,
+            chat: "Chat",
+            message: "Message",
+            source_hashes: Set[str],
+            playlist_link: str,
+            start: int,
+            end: int
+    ) -> Optional[List["Message"]]:
+        playlist_task = YoutubeDLDumpJsonTask(playlist_link, end, start)
+        playlist_resp = await self.worker.await_task(playlist_task)
+        try:
+            playlist_data = [
+                json.loads(line)
+                for line in playlist_resp.split("\n")
+            ]
+        except json.JSONDecodeError as e:
+            logger.error("Could not decode json response for playlist: %s", playlist_link, exc_info=e)
+            return [await self.send_text_reply(chat, message, "Could not decode playlist response")]
+        if not playlist_data:
+            return [await self.send_text_reply(chat, message, "Could not find target video in feed")]
+        video_urls = [playlist_item["webpage_url"] for playlist_item in playlist_data]
+        matching_video_msgs = await asyncio.gather(
+            *[self.send_matching_video(chat, message, url, source_hashes) for url in video_urls]
+        )
+        if any(matching_video_msgs):
+            return [
+                matching_msg
+                for matching_msg in matching_video_msgs
+                if matching_msg is not None
+            ]
 
     async def send_matching_video(
             self,
