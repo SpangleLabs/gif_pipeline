@@ -1,11 +1,13 @@
 import asyncio
+import dataclasses
 import json
 import logging
-from typing import Optional, List, TYPE_CHECKING, Set
-import uuid
+from enum import Enum
+from typing import Optional, List, TYPE_CHECKING
 
-from gif_pipeline.database import chunks
-from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path
+import vidhash
+
+from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path, cleanup_file
 from gif_pipeline.helpers.video_helper import video_to_video
 from gif_pipeline.tasks.youtube_dl_task import YoutubeDLDumpJsonTask
 from gif_pipeline.video_tags import VideoTags
@@ -19,7 +21,30 @@ if TYPE_CHECKING:
     from gif_pipeline.tasks.task_worker import TaskWorker
     from gif_pipeline.telegram_client import TelegramClient
 
+HASH_OPTIONS = vidhash.HashOptions(fps=5, settings=vidhash.hash_options.DHash(8))
+
 logger = logging.getLogger(__name__)
+
+
+class MatchStatus(Enum):
+    NO_MATCH = 0
+    MATCH = 1
+    ERROR = 2
+
+
+@dataclasses.dataclass
+class SearchStatus:
+    match: MatchStatus
+    messages: List[Message] = dataclasses.field(default_factory=lambda: [])
+
+
+@dataclasses.dataclass
+class FindStatus:
+    video_url: str
+    match: MatchStatus
+    video_path: str = None
+    error: Exception = None
+    messages: List[Message] = dataclasses.field(default_factory=lambda: [])
 
 
 class FindHelper(Helper):
@@ -61,11 +86,13 @@ class FindHelper(Helper):
                 )
             ]
         link = msg_args[0]
-        chunk_length = 4
+        chunk_length = 3
         # Get source hashes
         source_hashes = await self.duplicate_helper.get_or_create_message_hashes(video.message_data)
+        source_vid_hash = await vidhash.hash_video(video.message_data.file_path, HASH_OPTIONS)
         still_searching = True
         playlist_start = 1
+        search_status = SearchStatus(MatchStatus.NO_MATCH, messages=[])
         while still_searching:
             playlist_end = playlist_start + chunk_length - 1
             async with self.progress_message(
@@ -73,27 +100,30 @@ class FindHelper(Helper):
                     message,
                     f"Checking items {playlist_start}-{playlist_end} of playlist"
             ):
-                responses = await self.check_playlist_block(
+                await self.check_playlist_block(
                     chat,
                     message,
-                    source_hashes,
+                    source_vid_hash,
+                    search_status,
                     link,
                     playlist_start,
                     playlist_end
                 )
-            if responses:
-                return responses
+            if search_status.match == MatchStatus.MATCH:
+                return search_status.messages
             playlist_start = playlist_end + 1
 
     async def check_playlist_block(
             self,
             chat: "Chat",
             message: "Message",
-            source_hashes: Set[str],
+            source_vid_hash: vidhash.VideoHash,
+            search_status: SearchStatus,
             playlist_link: str,
             start: int,
             end: int
-    ) -> Optional[List["Message"]]:
+    ) -> None:
+        logger.debug("Checking playlist chunk (%s) from %s to %s", playlist_link, start, end)
         playlist_task = YoutubeDLDumpJsonTask(playlist_link, end, start)
         playlist_resp = await self.worker.await_task(playlist_task)
         try:
@@ -107,36 +137,64 @@ class FindHelper(Helper):
         if not playlist_data:
             return [await self.send_text_reply(chat, message, "Could not find target video in feed")]
         video_urls = [playlist_item["webpage_url"] for playlist_item in playlist_data]
-        matching_video_msgs = await asyncio.gather(
-            *[self.send_matching_video(chat, message, url, source_hashes) for url in video_urls]
+        video_match_results = await asyncio.gather(
+            *[self.send_matching_video(chat, message, url, source_vid_hash) for url in video_urls]
         )
-        if any(matching_video_msgs):
-            return [
-                matching_msg
-                for matching_msg in matching_video_msgs
-                if matching_msg is not None
-            ]
+        for match_result in video_match_results:
+            search_status.messages.extend(match_result.messages)
+            if match_result.match == MatchStatus.MATCH:
+                search_status.match = MatchStatus.MATCH
 
     async def send_matching_video(
             self,
             chat: "Chat",
             message: "Message",
             video_url: str,
-            source_hashes: Set[str]
-    ) -> Optional["Message"]:
-        # Download the video
-        video_path = await self.download_helper.download_link(video_url)
-        # Convert the video
-        output_path = random_sandbox_video_path()
-        tasks = video_to_video(video_path, output_path)
-        for task in tasks:
-            await self.worker.await_task(task)
-        # Hash video
-        decompose_path = f"sandbox/decompose/search/{uuid.uuid4()}/"
-        hash_set = await self.duplicate_helper.create_message_hashes_in_dir(output_path, decompose_path)
-        # If it matches, then send it
-        hash_set.discard(self.duplicate_helper.blank_frame_hash)
-        if len(hash_set.union(source_hashes)) > 3:
+            source_vid_hash: vidhash.VideoHash
+    ) -> FindStatus:
+        video_path = None
+        try:
+            # Download the video
+            logger.debug("Downloading video to check %s", video_url)
+            video_path = await self.download_helper.download_link(video_url)
+            # Hash video
+            logger.debug("Hashing video from feed")
+            vid_hash = await vidhash.hash_video(video_path, HASH_OPTIONS)
+            # If it matches, then send it
+            match_options = vidhash.match_options.PercentageMatch(hamming_dist=5, percentage_overlap=30)
+            if not match_options.check_match(source_vid_hash, vid_hash):
+                return FindStatus(
+                    video_url,
+                    MatchStatus.NO_MATCH
+                )
+            # Convert the video
+            logger.debug("Video (%s) matches source video!", video_url)
+            output_path = random_sandbox_video_path()
+            tasks = video_to_video(video_path, output_path)
+            for task in tasks:
+                await self.worker.await_task(task)
+            # Set source tag
             tags = VideoTags()
             tags.add_tag_value(VideoTags.source, video_url)
-            return await self.send_video_reply(chat, message, output_path, tags, f"Found video in feed: {video_url}")
+            # Send video
+            result_msg = await self.send_video_reply(
+                chat, message, output_path, tags, f"Found video in feed: {video_url}"
+            )
+            return FindStatus(
+                video_url,
+                MatchStatus.MATCH,
+                video_path=output_path,
+                messages=[result_msg]
+            )
+        except Exception as e:
+            err_msg = self.send_text_reply(
+                chat, message, f"Could not check video from feed: {video_url}"
+            )
+            return FindStatus(
+                video_url,
+                MatchStatus.ERROR,
+                error=e,
+                messages=[err_msg]
+            )
+        finally:
+            cleanup_file(video_path)
