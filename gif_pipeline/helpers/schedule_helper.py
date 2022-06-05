@@ -196,8 +196,14 @@ class ScheduleHelper(Helper):
                         self.send_helper.send_tweet_if_applicable(channel, menu.video.message_data.file_path, tags)
                         await self.delete_helper.delete_family(channel.queue, menu.video)
                         return chan_msg
-                    return await self.menu_helper.confirmation_menu(
+                    msgs = []
+                    if menu.chat.count_videos() == 1:
+                        msgs.append(
+                            await self.send_text_reply(menu.chat, menu.video, "This is the only video in the queue")
+                        )
+                    msgs.append(await self.menu_helper.confirmation_menu(
                         menu.chat, None, menu.video, self.send_helper, channel
-                    )
+                    ))
+                    return msgs
             except Exception as e:
                 logger.error("Failed to check channel: %s due to exception: ", channel, exc_info=e)
