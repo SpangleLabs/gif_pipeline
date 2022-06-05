@@ -43,7 +43,8 @@ def message_to_items(msg: "MessageData", handle: Union[str, int]) -> List[Item]:
                 str(msg.message_id),
                 link,
                 msg_link,
-                msg.text
+                msg.text,
+                _tag_source=link
             ))
     return items
 

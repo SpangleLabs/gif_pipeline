@@ -87,7 +87,7 @@ class SubscriptionHelper(Helper):
             self.sub_classes.append(ImgurSearchSubscription)
         if "reddit" in self.api_keys:
             self.sub_classes.append(RedditSubscription)
-        if "twitter" in self.api_keys:
+        if "twitter" in self.api_keys and "nitter_url" in self.api_keys["twitter"]:
             self.sub_classes.append(TwitterSubscription)
         if "instagram" in self.api_keys:
             self.sub_classes.append(InstagramSubscription)
@@ -200,7 +200,7 @@ class SubscriptionHelper(Helper):
                 caption += "\n\n" + "\n".join(warnings)
         # Build tags
         tags = VideoTags()
-        tags.add_tag_value(VideoTags.source, item.source_link)
+        tags.add_tag_value(VideoTags.source, item.tag_source_link)
         # Post item
         await self.send_message(chat, text=caption, video_path=file_path, video_hashes=hash_set, tags=tags)
 

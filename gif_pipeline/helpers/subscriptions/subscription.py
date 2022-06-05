@@ -75,6 +75,13 @@ class Item:
     download_link: str
     source_link: str
     title: Optional[str]
+    _tag_source: Optional[str] = None
+
+    @property
+    def tag_source_link(self) -> str:
+        if self._tag_source:
+            return self._tag_source
+        return self.source_link
 
 
 async def create_sub_for_link(

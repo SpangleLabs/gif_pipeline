@@ -179,8 +179,9 @@ class GifSendHelper(Helper):
             return [await self.send_text_reply(chat, cmd, "You do not have permission to post in that channel.")]
         tags = video.tags(self.database)
         hashes = set(self.database.get_hashes_for_message(video.message_data))
+        caption = destination.config.caption_format.format(tags)
         new_message = await self.send_message(
-            destination, video_path=video.message_data.file_path, tags=tags, video_hashes=hashes
+            destination, video_path=video.message_data.file_path, tags=tags, video_hashes=hashes, text=caption
         )
         # If destination has Twitter configured, send it there too
         twitter_confirm_text = self.send_tweet_if_applicable(destination, video.message_data.file_path, tags)

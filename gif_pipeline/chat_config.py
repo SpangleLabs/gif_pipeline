@@ -149,6 +149,7 @@ class ChatConfig(ABC):
         self.duplicate_detection = duplicate_detection
         self.read_only = False
         self.twitter_config: Optional[TwitterConfig] = None
+        self.caption_format = TextFormatter("")
 
     @staticmethod
     @abstractmethod
@@ -170,7 +171,8 @@ class ChannelConfig(ChatConfig):
             send_folder: Optional[str] = None,
             note_time: bool = False,
             tags: Optional[Dict[str, TagConfig]] = None,
-            twitter_config: Optional[TwitterConfig] = None
+            twitter_config: Optional[TwitterConfig] = None,
+            caption: str = ""
     ):
         super().__init__(handle)
         self.queue = queue
@@ -179,6 +181,7 @@ class ChannelConfig(ChatConfig):
         self.note_time = note_time
         self.tags = tags or {}
         self.twitter_config = twitter_config
+        self.caption_format = TextFormatter(caption)
 
     @staticmethod
     def from_json(json_dict) -> 'ChannelConfig':
@@ -202,7 +205,8 @@ class ChannelConfig(ChatConfig):
             send_folder=json_dict.get("send_folder"),
             note_time=json_dict.get("note_time", False),
             tags=tags,
-            twitter_config=twitter_config
+            twitter_config=twitter_config,
+            caption=json_dict.get("caption", "")
         )
 
 
