@@ -59,7 +59,7 @@ By default, a `source` tag will be added to videos by download helpers, which wi
 If this is provided, videos sent to this channel will also be posted to twitter.
 To use this functionality, you must also provide "consumer_key" and "consumer_secret" in the API keys configuration section for twitter.
 - `account`: `TwitterAccount`. The account tokens for the twitter account to post this video.
-- `text`: `str` (optional, default is empty). The string to use as a caption for the tweet. These are provided as f-string format strings, with `tags` variable provided as a dictionary of tag names to values concatenated with commas. e.g. A "text" value of "Source: {tags[source]}" will result in a caption "Source: https://..." for your given source URL.
+- `text`: `str` (optional, default is empty). The string to use as a caption for the tweet. These are provided as jinja template strings, with `tags` variable provided as a dictionary of tag names to lists of tag values. e.g. A "text" value of "Source: {{ tags['source'] | first }}" will result in a caption "Source: https://..." for your given source URL.
 - `reply`: `dict` (optional). If this is provided, it is another twitter configuration object, with information for automatically posting another tweet as a reply to the original one. The reply will not have a video, so the `text` field is no longer optional. The `reply` field is available, and optional, in case you want to make a longer chain of tweets. The `account` field is also available, and is optional, so that the reply can be posted from a separate twitter account. If the `account` field is not provided, the reply will be posted by the same account as the tweet it is replying to.
 
 ##### TwitterAccount configuration

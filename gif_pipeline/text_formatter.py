@@ -3,6 +3,8 @@ from collections import defaultdict
 
 from typing import TYPE_CHECKING
 
+from jinja2 import BaseLoader, Environment
+
 if TYPE_CHECKING:
     from gif_pipeline.video_tags import VideoTags
 
@@ -12,7 +14,10 @@ class TextFormatter:
         self.text = text
 
     def format(self, tags: "VideoTags") -> str:
-        tag_dict = defaultdict(str)
+        if self.text == "":
+            return ""
+        tag_dict = defaultdict(list)
         for tag_name in tags.list_tag_names():
-            tag_dict[tag_name] = ", ".join(tags.list_values_for_tag(tag_name))
-        return string.Formatter().format(self.text, tags=tag_dict)
+            tag_dict[tag_name] = list(tags.list_values_for_tag(tag_name))
+        template = Environment(loader=BaseLoader()).from_string(self.text)
+        return template.render(tags=tag_dict)
