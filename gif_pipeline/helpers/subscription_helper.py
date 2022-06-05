@@ -204,7 +204,7 @@ class SubscriptionHelper(Helper):
                 caption += "\n\n" + "\n".join(warnings)
         # Build tags
         tags = VideoTags()
-        tags.add_tag_value(VideoTags.source, item.source_link)
+        tags.add_tag_value(VideoTags.source, item.tag_source_link)
         # Post item
         await self.send_message(chat, text=caption, video_path=file_path, video_hashes=hash_set, tags=tags)
 
