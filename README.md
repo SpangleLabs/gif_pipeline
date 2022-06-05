@@ -33,6 +33,7 @@ Each channel is a dictionary in the base `channels` list. They have these keys:
 - `note_time`: `boolean` (optional, default: False). If provided, and true, the send confirmation menu will note to the user when the last message was sent to the destination channel.
 - `tags`: `Tags` (optional). If provided, this will provide configuration for suggested tags for videos sent to the given channel, see below for details.
 - `twitter`: `Twitter` (optional). If provided, videos sent to this channel will also be sent to twitter. See below for details
+- `caption`: `str` (optiona), If provided, used as a jinja2 template string, which is passed a dictionary of tag names to lists of tag values, to format a caption for the destination.
 
 #### Queue configuration
 Configuration for a channel queue. Must be a group chat, rather than another channel.
