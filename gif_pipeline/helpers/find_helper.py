@@ -35,7 +35,7 @@ class MatchStatus(Enum):
 @dataclasses.dataclass
 class SearchStatus:
     match: MatchStatus
-    messages: List[Message] = dataclasses.field(default_factory=lambda: [])
+    messages: List["Message"] = dataclasses.field(default_factory=lambda: [])
 
 
 @dataclasses.dataclass
@@ -44,7 +44,7 @@ class FindStatus:
     match: MatchStatus
     video_path: str = None
     error: Exception = None
-    messages: List[Message] = dataclasses.field(default_factory=lambda: [])
+    messages: List["Message"] = dataclasses.field(default_factory=lambda: [])
 
 
 class FindHelper(Helper):
