@@ -17,14 +17,14 @@ class DestinationMenu(Menu):
     folder = "send_folder"
 
     def __init__(
-            self,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            cmd_msg: Message,
-            video: Message,
-            send_helper: 'GifSendHelper',
-            channels: List[Channel],
-            tag_manager: TagManager
+        self,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        cmd_msg: Message,
+        video: Message,
+        send_helper: "GifSendHelper",
+        channels: List[Channel],
+        tag_manager: TagManager,
     ):
         super().__init__(menu_helper, chat, cmd_msg, video)
         self.send_helper = send_helper
@@ -52,31 +52,22 @@ class DestinationMenu(Menu):
                     if channel.config.send_folder == self.current_folder:
                         channels.add(channel)
                     if channel.config.send_folder.startswith(self.current_folder + "/"):
-                        folders.add(channel.config.send_folder[len(self.current_folder + "/"):].split("/")[0])
+                        folders.add(channel.config.send_folder[len(self.current_folder + "/") :].split("/")[0])
         # Create folder buttons
         for folder in sorted(folders):
-            buttons.append(Button.inline(
-                "📂: " + folder,
-                f"{self.folder}:{folder}"
-            ))
+            buttons.append(Button.inline("📂: " + folder, f"{self.folder}:{folder}"))
         # Create channel buttons
         for channel in sorted(channels, key=lambda chan: chan.chat_data.title):
-            buttons.append(Button.inline(
-                channel.chat_data.title,
-                f"{self.confirm_send}:{channel.chat_data.chat_id}"
-            ))
+            buttons.append(Button.inline(channel.chat_data.title, f"{self.confirm_send}:{channel.chat_data.chat_id}"))
         # Create back button
         if self.current_folder is not None:
-            buttons.append(Button.inline(
-                "🔙 Back",
-                f"{self.folder}:/"
-            ))
+            buttons.append(Button.inline("🔙 Back", f"{self.folder}:/"))
         return [[b] for b in buttons]
 
     async def handle_callback_query(
-            self,
-            callback_query: bytes,
-            sender_id: int,
+        self,
+        callback_query: bytes,
+        sender_id: int,
     ) -> Optional[List[Message]]:
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.confirm_send:
@@ -112,33 +103,25 @@ class DestinationMenu(Menu):
         return {
             "cmd_msg_id": self.cmd_msg_id,
             "channel_ids": [channel.chat_data.chat_id for channel in self.channels],
-            "current_folder": self.current_folder
+            "current_folder": self.current_folder,
         }
 
     @classmethod
     def from_json(
-            cls,
-            json_data: Dict,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            video: Message,
-            send_helper: 'GifSendHelper',
-            all_channels: List[Channel],
-            tag_manager
-    ) -> 'DestinationMenu':
+        cls,
+        json_data: Dict,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        video: Message,
+        send_helper: "GifSendHelper",
+        all_channels: List[Channel],
+        tag_manager,
+    ) -> "DestinationMenu":
         channels = []
         for channel_id in json_data["channel_ids"]:
-            channels.append(
-                next(filter(lambda x: x.chat_data.chat_id == channel_id, all_channels), None)
-            )
+            channels.append(next(filter(lambda x: x.chat_data.chat_id == channel_id, all_channels), None))
         menu = DestinationMenu(
-            menu_helper,
-            chat,
-            chat.message_by_id(json_data["cmd_msg_id"]),
-            video,
-            send_helper,
-            channels,
-            tag_manager
+            menu_helper, chat, chat.message_by_id(json_data["cmd_msg_id"]), video, send_helper, channels, tag_manager
         )
         menu.current_folder = json_data["current_folder"]
         return menu

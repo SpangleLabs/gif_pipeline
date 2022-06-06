@@ -7,7 +7,6 @@ yt_dl_pkg = "yt-dlp"
 
 
 class YoutubeDLTask(Task[str]):
-
     def __init__(self, link: str, output_path: str):
         self.link = link
         self.output_path = output_path
@@ -20,7 +19,6 @@ class YoutubeDLTask(Task[str]):
 
 
 class YoutubeDLDumpJsonTask(Task[str]):
-
     def __init__(self, link: str, max_items: Optional[int] = None):
         self.link = link
         self.max_items = max_items

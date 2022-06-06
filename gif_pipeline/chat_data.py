@@ -4,7 +4,7 @@ from typing import Optional, TypeVar, Union
 from gif_pipeline.chat_config import ChannelConfig, ChatConfig, WorkshopConfig
 from gif_pipeline.message import MessageData
 
-C = TypeVar('C', bound='ChatData')
+C = TypeVar("C", bound="ChatData")
 
 
 def chat_id_matches(id1: Union[int, str], id2: Union[int, str]) -> bool:
@@ -12,9 +12,9 @@ def chat_id_matches(id1: Union[int, str], id2: Union[int, str]) -> bool:
     id1_str = str(id1)
     id2_str = str(id2)
     if id1_str.startswith(prefix):
-        id1_str = id1_str[len(prefix):]
+        id1_str = id1_str[len(prefix) :]
     if id2_str.startswith(prefix):
-        id2_str = id2_str[len(prefix):]
+        id2_str = id2_str[len(prefix) :]
     return id1_str == id2_str
 
 
@@ -28,13 +28,7 @@ def chat_username_matches(username1: Optional[str], username2: Optional[str]) ->
 
 class ChatData(ABC):
     def __init__(
-            self,
-            chat_id: int,
-            access_hash: int,
-            username: Optional[str],
-            title: str,
-            broadcast: bool,
-            megagroup: bool
+        self, chat_id: int, access_hash: int, username: Optional[str], title: str, broadcast: bool, megagroup: bool
     ) -> None:
         self.chat_id = chat_id
         self.access_hash = access_hash
@@ -48,7 +42,7 @@ class ChatData(ABC):
     def directory(self) -> str:
         pass
 
-    def telegram_link_for_message(self, message_data: 'MessageData') -> str:
+    def telegram_link_for_message(self, message_data: "MessageData") -> str:
         handle = abs(self.chat_id)
         if str(self.chat_id).startswith("-100"):
             handle = str(self.chat_id)[4:]
@@ -60,21 +54,20 @@ class ChatData(ABC):
 
     def matches_handle(self, handle: str) -> bool:
         return chat_username_matches(self.username, handle) or chat_id_matches(self.chat_id, handle)
-    
+
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(id={self.chat_id},username={self.username},title=\"{self.title}\")"
+        return f'{self.__class__.__name__}(id={self.chat_id},username={self.username},title="{self.title}")'
 
     def is_complete(self) -> bool:
         return self.access_hash is not None and self.broadcast is not None and self.megagroup is not None
 
 
 class ChannelData(ChatData):
-
     @property
     def directory(self) -> str:
         return f"store/channels/{self.username or self.chat_id}/"
 
-    def telegram_link_for_message(self, message_data: 'MessageData') -> str:
+    def telegram_link_for_message(self, message_data: "MessageData") -> str:
         if self.username is None:
             return super().telegram_link_for_message(message_data)
         return f"https://t.me/{self.username}/{message_data.message_id}"
@@ -84,7 +77,6 @@ class ChannelData(ChatData):
 
 
 class WorkshopData(ChatData):
-
     @property
     def directory(self) -> str:
         return f"store/workshop/{self.chat_id}/"

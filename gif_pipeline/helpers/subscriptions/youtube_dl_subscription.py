@@ -26,12 +26,7 @@ class YoutubeDLSubscription(Subscription):
             if item_id in self.seen_item_ids:
                 continue
             video_url = json_obj["webpage_url"]
-            item = Item(
-                json_obj["id"],
-                video_url,
-                video_url,
-                json_obj["title"]
-            )
+            item = Item(json_obj["id"], video_url, video_url, json_obj["title"])
             new_items.append(item)
             self.seen_item_ids.append(item.item_id)
         return new_items
@@ -51,10 +46,7 @@ class YoutubeDLSubscription(Subscription):
 
     @classmethod
     async def get_json_dump(
-            cls,
-            feed_link: str,
-            helper: "SubscriptionHelper",
-            feed_items: Optional[int] = None
+        cls, feed_link: str, helper: "SubscriptionHelper", feed_items: Optional[int] = None
     ) -> List[Dict]:
         feed_items = feed_items or cls.CHECK_MAX
         attempts = 5
@@ -63,10 +55,7 @@ class YoutubeDLSubscription(Subscription):
         while True:
             try:
                 json_resp = await helper.worker.await_task(YoutubeDLDumpJsonTask(feed_link, feed_items))
-                return [
-                    json.loads(line)
-                    for line in json_resp.split("\n")
-                ]
+                return [json.loads(line) for line in json_resp.split("\n")]
             except Exception as e:
                 attempt += 1
                 logger.warning("Youtube dl dump json task failed: ", exc_info=e)

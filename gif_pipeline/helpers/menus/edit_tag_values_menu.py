@@ -22,15 +22,15 @@ class EditTagValuesMenu(Menu):
     page_width = 3
 
     def __init__(
-            self,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            cmd: Message,
-            video: Message,
-            send_helper: 'GifSendHelper',
-            destination: Channel,
-            tag_manager: TagManager,
-            tag_name: str
+        self,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        cmd: Message,
+        video: Message,
+        send_helper: "GifSendHelper",
+        destination: Channel,
+        tag_manager: TagManager,
+        tag_name: str,
     ):
         super().__init__(menu_helper, chat, cmd, video)
         self.send_helper = send_helper
@@ -45,14 +45,16 @@ class EditTagValuesMenu(Menu):
     def paged_tag_values(self) -> List[List[str]]:
         len_values = len(self.known_tag_values)
         page_size = self.page_height * self.page_width
-        return [self.known_tag_values[i: i + page_size] for i in range(0, len_values, page_size)]
+        return [self.known_tag_values[i : i + page_size] for i in range(0, len_values, page_size)]
 
     @property
     def text(self) -> str:
         if not self.known_tag_values:
-            return f"There are no known previous values for the tag \"{self.tag_name}\" going to that destination.\n" \
-                   f"Please reply to this menu with a tag value to add."
-        return f"Select which tags this video should have for \"{self.tag_name}\":"
+            return (
+                f'There are no known previous values for the tag "{self.tag_name}" going to that destination.\n'
+                f"Please reply to this menu with a tag value to add."
+            )
+        return f'Select which tags this video should have for "{self.tag_name}":'
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
@@ -66,7 +68,7 @@ class EditTagValuesMenu(Menu):
         current_page = self.paged_tag_values[self.page_num]
         columns = (len(current_page) // self.page_height) + (len(current_page) % self.page_height > 0)
         return [
-            [self.button_for_tag(tag_value, i+j) for j, tag_value in enumerate(current_page[i:i+columns])]
+            [self.button_for_tag(tag_value, i + j) for j, tag_value in enumerate(current_page[i : i + columns])]
             for i in range(0, len(current_page), columns)
         ]
 
@@ -99,9 +101,9 @@ class EditTagValuesMenu(Menu):
         return tag_value
 
     async def handle_callback_query(
-            self,
-            callback_query: bytes,
-            sender_id: int,
+        self,
+        callback_query: bytes,
+        sender_id: int,
     ) -> Optional[List[Message]]:
         if callback_query == self.complete_callback:
             return await self.handle_callback_done()
@@ -161,20 +163,20 @@ class EditTagValuesMenu(Menu):
             "cmd_msg_id": self.cmd_msg_id,
             "destination_id": self.destination.chat_data.chat_id,
             "tag_name": self.tag_name,
-            "page_num": self.page_num
+            "page_num": self.page_num,
         }
 
     @classmethod
     def from_json(
-            cls,
-            json_data: Dict,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            video: Message,
-            send_helper: 'GifSendHelper',
-            all_channels: List[Channel],
-            tag_manager: TagManager
-    ) -> 'EditTagValuesMenu':
+        cls,
+        json_data: Dict,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        video: Message,
+        send_helper: "GifSendHelper",
+        all_channels: List[Channel],
+        tag_manager: TagManager,
+    ) -> "EditTagValuesMenu":
         destination = next(filter(lambda x: x.chat_data.chat_id == json_data["destination_id"], all_channels), None)
         menu = cls(
             menu_helper,
@@ -184,7 +186,7 @@ class EditTagValuesMenu(Menu):
             send_helper,
             destination,
             tag_manager,
-            json_data["tag_name"]
+            json_data["tag_name"],
         )
         menu.page_num = json_data["page_num"]
         return menu

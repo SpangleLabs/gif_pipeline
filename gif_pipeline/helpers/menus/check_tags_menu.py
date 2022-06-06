@@ -17,14 +17,14 @@ class CheckTagsMenu(Menu):
     cancel_callback = b"cancel"
 
     def __init__(
-            self,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            cmd_msg: Message,
-            video: Message,
-            send_helper: 'GifSendHelper',
-            destination: Channel,
-            missing_tags: Set[str]
+        self,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        cmd_msg: Message,
+        video: Message,
+        send_helper: "GifSendHelper",
+        destination: Channel,
+        missing_tags: Set[str],
     ):
         super().__init__(menu_helper, chat, cmd_msg, video)
         self.send_helper = send_helper
@@ -50,13 +50,13 @@ class CheckTagsMenu(Menu):
             return [
                 [Button.inline("Send anyway", self.send_callback)],
                 [Button.inline("Edit tags", self.edit_callback)],
-                [Button.inline("Cancel", self.cancel_callback)]
+                [Button.inline("Cancel", self.cancel_callback)],
             ]
 
     async def handle_callback_query(
-            self,
-            callback_query: bytes,
-            sender_id: int,
+        self,
+        callback_query: bytes,
+        sender_id: int,
     ) -> Optional[List[Message]]:
         if callback_query == self.cancel_callback:
             self.cancelled = True
@@ -85,18 +85,13 @@ class CheckTagsMenu(Menu):
             "cmd_msg_id": self.cmd_msg_id,
             "destination_id": self.destination.chat_data.chat_id,
             "missing_tags": list(self.missing_tags),
-            "cancelled": self.cancelled
+            "cancelled": self.cancelled,
         }
 
     @classmethod
     def from_json(
-            cls,
-            json_data: Dict,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            video: Message,
-            send_helper: 'GifSendHelper'
-    ) -> 'Menu':
+        cls, json_data: Dict, menu_helper: "MenuHelper", chat: Chat, video: Message, send_helper: "GifSendHelper"
+    ) -> "Menu":
         menu = CheckTagsMenu(
             menu_helper,
             chat,
@@ -104,7 +99,7 @@ class CheckTagsMenu(Menu):
             video,
             send_helper,
             send_helper.get_destination_from_name(json_data["destination_id"]),
-            set(json_data["missing_tags"])
+            set(json_data["missing_tags"]),
         )
         menu.cancelled = json_data["cancelled"]
         return menu

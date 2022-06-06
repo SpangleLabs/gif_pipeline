@@ -27,15 +27,14 @@ class TwitterException(Exception):
 
 
 class GifSendHelper(Helper):
-
     def __init__(
-            self,
-            database: Database,
-            client: TelegramClient,
-            worker: TaskWorker,
-            channels: List[Channel],
-            menu_helper: MenuHelper,
-            twitter_keys: Optional[Dict[str, str]] = None
+        self,
+        database: Database,
+        client: TelegramClient,
+        worker: TaskWorker,
+        channels: List[Channel],
+        menu_helper: MenuHelper,
+        twitter_keys: Optional[Dict[str, str]] = None,
     ):
         super().__init__(database, client, worker)
         self.channels = channels
@@ -66,21 +65,14 @@ class GifSendHelper(Helper):
         return await self.handle_dest_str(chat, message, video, dest_str, message.message_data.sender_id)
 
     async def handle_dest_str(
-            self,
-            chat: Chat,
-            cmd: Message,
-            video: Message,
-            dest_str: str,
-            sender_id: int
+        self, chat: Chat, cmd: Message, video: Message, dest_str: str, sender_id: int
     ) -> List[Message]:
         if dest_str == "":
             channels = await self.available_channels_for_user(sender_id)
             if not channels:
                 return [
                     await self.send_text_reply(
-                        chat,
-                        cmd,
-                        "You do not have permission to send to any available channels."
+                        chat, cmd, "You do not have permission to send to any available channels."
                     )
                 ]
             return await self.menu_helper.destination_menu(chat, cmd, video, self, channels)
@@ -104,32 +96,18 @@ class GifSendHelper(Helper):
         user_is_admin = await asyncio.gather(
             *(self.client.user_can_post_in_chat(user_id, channel.chat_data) for channel in all_channels)
         )
-        return [
-            channel for channel, is_admin in zip(all_channels, user_is_admin) if is_admin
-        ]
+        return [channel for channel, is_admin in zip(all_channels, user_is_admin) if is_admin]
 
     async def send_two_way_forward(
-            self,
-            chat: Chat,
-            cmd_message: Message,
-            video: Message,
-            destination1: str,
-            destination2: str,
-            sender_id: int
+        self, chat: Chat, cmd_message: Message, video: Message, destination1: str, destination2: str, sender_id: int
     ) -> List[Message]:
         messages = []
-        messages += await self.send_forward(chat, cmd_message, video, destination1, destination2, sender_id),
+        messages += (await self.send_forward(chat, cmd_message, video, destination1, destination2, sender_id),)
         messages += await self.send_forward(chat, cmd_message, video, destination2, destination1, sender_id)
         return messages
 
     async def send_forward(
-            self,
-            chat: Chat,
-            cmd_msg: Message,
-            video: Message,
-            destination_from: str,
-            destination_to: str,
-            sender_id: int
+        self, chat: Chat, cmd_msg: Message, video: Message, destination_from: str, destination_to: str, sender_id: int
     ) -> List[Message]:
         chat_from = self.get_destination_from_name(destination_from)
         if chat_from is None:
@@ -141,8 +119,8 @@ class GifSendHelper(Helper):
             return [await self.send_text_reply(chat, cmd_msg, f"Unrecognised destination to: {destination_to}")]
         # Check permissions in both groups
         if not (
-                await self.client.user_can_post_in_chat(sender_id, chat_from.chat_data)
-                and await self.client.user_can_post_in_chat(sender_id, chat_to.chat_data)
+            await self.client.user_can_post_in_chat(sender_id, chat_from.chat_data)
+            and await self.client.user_can_post_in_chat(sender_id, chat_to.chat_data)
         ):
             await self.menu_helper.delete_menu_for_video(chat, video)
             error_text = "You need to be an admin of both channels to send a forwarded video."
@@ -168,12 +146,7 @@ class GifSendHelper(Helper):
         return messages
 
     async def send_video(
-            self,
-            chat: Chat,
-            video: Message,
-            cmd: Message,
-            destination: Chat,
-            sender_id: int
+        self, chat: Chat, video: Message, cmd: Message, destination: Chat, sender_id: int
     ) -> List[Message]:
         if not await self.client.user_can_post_in_chat(sender_id, destination.chat_data):
             await self.menu_helper.delete_menu_for_video(chat, video)
@@ -202,11 +175,7 @@ class GifSendHelper(Helper):
         return destination
 
     async def forward_message(
-            self,
-            destination: Chat,
-            message: Message,
-            tags: VideoTags,
-            video_hashes: Set[str]
+        self, destination: Chat, message: Message, tags: VideoTags, video_hashes: Set[str]
     ) -> Message:
         msg = await self.client.forward_message(destination.chat_data, message.message_data)
         message_data = message_data_from_telegram(msg)
@@ -227,9 +196,7 @@ class GifSendHelper(Helper):
         twitter_confirm_text = ""
         if destination.has_twitter:
             try:
-                tweet_link = self.send_tweet(
-                    destination, video_path, tags
-                )
+                tweet_link = self.send_tweet(destination, video_path, tags)
             except TwitterException as e:
                 twitter_confirm_text = f"\nError posting to twitter: {e}"
                 pass
@@ -272,9 +239,7 @@ class GifSendHelper(Helper):
             reply_text = reply_conf.text_format.format(tags)
             try:
                 twitter_resp = api.update_status(
-                    status=reply_text,
-                    in_reply_to_status_id=twitter_resp.id,
-                    auto_populate_reply_metadata=True
+                    status=reply_text, in_reply_to_status_id=twitter_resp.id, auto_populate_reply_metadata=True
                 )
                 reply_link = f"https://twitter.com/{twitter_resp.user.name}/status/{twitter_resp.id}"
                 logger.info(f"Posted reply: {reply_link}")

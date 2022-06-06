@@ -10,7 +10,6 @@ from gif_pipeline.telegram_client import TelegramClient
 
 
 class PublicHelper(ABC):
-
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         self.database = database
         self.client = client

@@ -35,11 +35,11 @@ class VideoTags:
             self._tags[tag_name] = set()
         self._tags[tag_name] ^= {tag_value}
 
-    def merge_with(self, other: 'VideoTags') -> None:
+    def merge_with(self, other: "VideoTags") -> None:
         for entry in other.to_entries():
             self.add_tag_value(entry.tag_name, entry.tag_value)
 
-    def merge_all(self, others: List['VideoTags']) -> None:
+    def merge_all(self, others: List["VideoTags"]) -> None:
         for other in others:
             self.merge_with(other)
 
@@ -59,13 +59,11 @@ class VideoTags:
         return self._tags.get(tag_name, set())
 
     @classmethod
-    def from_database(cls, tag_data: List[TagEntry]) -> 'VideoTags':
+    def from_database(cls, tag_data: List[TagEntry]) -> "VideoTags":
         tags_dict = defaultdict(lambda: set())
         for tag in tag_data:
             tags_dict[tag.tag_name].add(tag.tag_value)
-        return VideoTags(
-            tags_dict
-        )
+        return VideoTags(tags_dict)
 
     def update_from_database(self, tag_data: List[TagEntry]) -> None:
         tags_dict = defaultdict(lambda: set())
@@ -74,17 +72,10 @@ class VideoTags:
         self._tags = tags_dict
 
     def to_entries(self) -> List[TagEntry]:
-        return [
-            TagEntry(key, value)
-            for key, values in self._tags.items()
-            for value in values
-        ]
+        return [TagEntry(key, value) for key, values in self._tags.items() for value in values]
 
     def to_entries_for_tag(self, tag_name: str) -> List[TagEntry]:
-        return [
-            TagEntry(tag_name, value)
-            for value in self.list_values_for_tag(tag_name)
-        ]
+        return [TagEntry(tag_name, value) for value in self.list_values_for_tag(tag_name)]
 
     def incomplete_tags(self, dest_tags: Dict[str, TagConfig], all_values_dict: Dict[str, Set[str]]) -> Set[str]:
         return {
@@ -106,24 +97,13 @@ class VideoTags:
             return False
         return True
 
-    def copy(self) -> 'VideoTags':
-        dict_copy = {
-            key: set(val for val in values)
-            for key, values in self._tags.items()
-        }
+    def copy(self) -> "VideoTags":
+        dict_copy = {key: set(val for val in values) for key, values in self._tags.items()}
         return VideoTags(dict_copy)
 
     def to_json(self) -> Dict:
-        return {
-            tag_name: [value for value in tag_values]
-            for tag_name, tag_values in self._tags.items()
-        }
+        return {tag_name: [value for value in tag_values] for tag_name, tag_values in self._tags.items()}
 
     @classmethod
-    def from_json(cls, json_data: Dict) -> 'VideoTags':
-        return VideoTags(
-            {
-                tag_name: set(tag_values)
-                for tag_name, tag_values in json_data.items()
-            }
-        )
+    def from_json(cls, json_data: Dict) -> "VideoTags":
+        return VideoTags({tag_name: set(tag_values) for tag_name, tag_values in json_data.items()})

@@ -9,8 +9,13 @@ from telethon.tl.custom import message
 from telethon.tl.custom.participantpermissions import ParticipantPermissions
 from telethon.tl.functions.channels import EditAdminRequest, GetFullChannelRequest
 from telethon.tl.functions.messages import GetScheduledHistoryRequest, MigrateChatRequest
-from telethon.tl.types import (ChannelForbidden, ChannelParticipantCreator, ChannelParticipantsAdmins, ChatAdminRights,
-                               DocumentAttributeFilename)
+from telethon.tl.types import (
+    ChannelForbidden,
+    ChannelParticipantCreator,
+    ChannelParticipantsAdmins,
+    ChatAdminRights,
+    DocumentAttributeFilename,
+)
 
 from gif_pipeline.chat_data import ChannelData, ChatData, WorkshopData
 from gif_pipeline.message import MessageData
@@ -46,7 +51,7 @@ def message_data_from_telegram(msg: telethon.tl.custom.message.Message, schedule
         msg.reply_to_msg_id,
         sender_id,
         scheduled,
-        forward_link
+        forward_link,
     )
 
 
@@ -60,7 +65,7 @@ def sender_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
 
 class TelegramClient:
     def __init__(self, api_id: int, api_hash: str, pipeline_bot_token: str = None, public_bot_token: str = None):
-        self.client = telethon.TelegramClient('duplicate_checker', api_id, api_hash)
+        self.client = telethon.TelegramClient("duplicate_checker", api_id, api_hash)
         self.client.start()
         self.pipeline_bot_id = None
         self.pipeline_bot_client = self.client
@@ -69,7 +74,7 @@ class TelegramClient:
             self.pipeline_bot_client.start(bot_token=pipeline_bot_token)
         self.public_bot_client = self.client
         if public_bot_token:
-            self.public_bot_client = telethon.TelegramClient('duplicate_checker_public_bot', api_id, api_hash)
+            self.public_bot_client = telethon.TelegramClient("duplicate_checker_public_bot", api_id, api_hash)
             self.public_bot_client.start(bot_token=public_bot_token)
         self.message_cache = {}
 
@@ -96,31 +101,21 @@ class TelegramClient:
         entity = await self.client.get_entity(handle)
         peer_id = telethon.utils.get_peer_id(entity)
         return ChannelData(
-            peer_id,
-            entity.access_hash,
-            entity.username,
-            entity.title,
-            entity.broadcast,
-            entity.megagroup
+            peer_id, entity.access_hash, entity.username, entity.title, entity.broadcast, entity.megagroup
         )
 
     async def get_workshop_data(self, handle: str) -> WorkshopData:
         entity = await self.client.get_entity(handle)
         peer_id = telethon.utils.get_peer_id(entity)
         return WorkshopData(
-            peer_id,
-            entity.access_hash,
-            entity.username,
-            entity.title,
-            entity.broadcast,
-            entity.megagroup
+            peer_id, entity.access_hash, entity.username, entity.title, entity.broadcast, entity.megagroup
         )
 
     async def list_messages_since(
-            self,
-            chat_handle: Union[str, int],
-            min_id: int = 0,
-            limit: Optional[int] = None,
+        self,
+        chat_handle: Union[str, int],
+        min_id: int = 0,
+        limit: Optional[int] = None,
     ) -> Generator[MessageData, None, None]:
         entity = await self.client.get_entity(chat_handle)
         async for msg in self.client.iter_messages(
@@ -129,20 +124,18 @@ class TelegramClient:
             min_id=min_id,
         ):
             # Skip edit photo events.
-            if msg.action.__class__.__name__ in ['MessageActionChatEditPhoto']:
+            if msg.action.__class__.__name__ in ["MessageActionChatEditPhoto"]:
                 continue
             # Save message and yield
             self._save_message(msg)
             yield message_data_from_telegram(msg)
 
     async def iter_channel_messages(
-            self,
-            chat_data: ChatData,
-            and_scheduled: bool = True
+        self, chat_data: ChatData, and_scheduled: bool = True
     ) -> Generator[MessageData, None, None]:
         async for msg in self.client.iter_messages(chat_data.chat_id):
             # Skip edit photo events.
-            if msg.action.__class__.__name__ in ['MessageActionChatEditPhoto']:
+            if msg.action.__class__.__name__ in ["MessageActionChatEditPhoto"]:
                 continue
             # Save message and yield
             self._save_message(msg)
@@ -153,10 +146,7 @@ class TelegramClient:
 
     async def iter_scheduled_channel_messages(self, chat_data: ChatData) -> Generator[MessageData, None, None]:
         # noinspection PyTypeChecker
-        messages = await self.client(GetScheduledHistoryRequest(
-            peer=chat_data.chat_id,
-            hash=0
-        ))
+        messages = await self.client(GetScheduledHistoryRequest(peer=chat_data.chat_id, hash=0))
         for msg in messages.messages:
             self._save_message(msg)
             yield message_data_from_telegram(msg, scheduled=True)
@@ -217,30 +207,26 @@ class TelegramClient:
         self.pipeline_bot_client.add_event_handler(function_wrapper, events.CallbackQuery())
 
     async def send_text_message(
-            self,
-            chat: ChatData,
-            text: str,
-            *,
-            reply_to_msg_id: Optional[int] = None,
-            buttons: Optional[List[List[Button]]] = None
+        self,
+        chat: ChatData,
+        text: str,
+        *,
+        reply_to_msg_id: Optional[int] = None,
+        buttons: Optional[List[List[Button]]] = None,
     ) -> telethon.tl.custom.message.Message:
         return await self.pipeline_bot_client.send_message(
-            chat.chat_id,
-            text,
-            reply_to=reply_to_msg_id,
-            buttons=buttons,
-            parse_mode="html"
+            chat.chat_id, text, reply_to=reply_to_msg_id, buttons=buttons, parse_mode="html"
         )
 
     async def send_video_message(
-            self,
-            chat: ChatData,
-            video_path: str,
-            text: str = None,
-            *,
-            reply_to_msg_id: int = None,
-            buttons: Optional[List[List[Button]]] = None,
-            filename: Optional[str] = None
+        self,
+        chat: ChatData,
+        video_path: str,
+        text: str = None,
+        *,
+        reply_to_msg_id: int = None,
+        buttons: Optional[List[List[Button]]] = None,
+        filename: Optional[str] = None,
     ) -> telethon.tl.custom.message.Message:
         attributes = None
         if filename:
@@ -253,7 +239,7 @@ class TelegramClient:
             allow_cache=False,
             buttons=buttons,
             parse_mode="html",
-            attributes=attributes
+            attributes=attributes,
         )
 
     async def delete_message(self, message_data: MessageData) -> None:
@@ -261,24 +247,14 @@ class TelegramClient:
 
     async def forward_message(self, chat: ChatData, message_data: MessageData) -> telethon.tl.custom.message.Message:
         return await self.pipeline_bot_client.forward_messages(
-            chat.chat_id,
-            message_data.message_id,
-            message_data.chat_id
+            chat.chat_id, message_data.message_id, message_data.chat_id
         )
 
     async def edit_message(
-            self,
-            chat: ChatData,
-            message_data: MessageData,
-            new_text: str,
-            new_buttons: Optional[List[List[Button]]] = None
+        self, chat: ChatData, message_data: MessageData, new_text: str, new_buttons: Optional[List[List[Button]]] = None
     ):
         return await self.pipeline_bot_client.edit_message(
-            chat.chat_id,
-            message_data.message_id,
-            new_text,
-            buttons=new_buttons,
-            parse_mode="html"
+            chat.chat_id, message_data.message_id, new_text, buttons=new_buttons, parse_mode="html"
         )
 
     def synchronise_async(self, future: Union[Future, Coroutine]) -> Any:
@@ -297,37 +273,34 @@ class TelegramClient:
         except UserNotParticipantError:
             pass
         else:
-            required_perms = [
-                permissions.delete_messages
-            ]
+            required_perms = [permissions.delete_messages]
             if chat_data.broadcast:
-                required_perms.extend([
-                    permissions.post_messages,
-                    permissions.edit_messages
-                ])
+                required_perms.extend([permissions.post_messages, permissions.edit_messages])
             if all(required_perms):
                 logger.debug("Bot has all required permissions in %s chat, skipping invite", chat_data)
                 return
         # Add bot as an admin
         pipeline_bot_entity = await self.pipeline_bot_client.get_me()
         logger.debug("Inviting bot to chat: %s", chat_data)
-        await self.client(EditAdminRequest(
-            chat_data.chat_id,
-            pipeline_bot_entity.username,
-            ChatAdminRights(
-                post_messages=True,
-                edit_messages=True,
-                delete_messages=True
-            ),
-            "Helpful bot"
-        ))
-    
+        await self.client(
+            EditAdminRequest(
+                chat_data.chat_id,
+                pipeline_bot_entity.username,
+                ChatAdminRights(post_messages=True, edit_messages=True, delete_messages=True),
+                "Helpful bot",
+            )
+        )
+
     async def _user_permissions_in_chat(self, user_id: int, chat_data: ChatData) -> ParticipantPermissions:
         logger.debug("Checking permissions for user %s in chat %s", user_id, chat_data)
         perms = await self.client.get_permissions(chat_data.chat_id, user_id)
         logger.debug(
             "User permissions: is_creator=%s, is_admin=%s, can_post=%s, can_edit=%s, can_delete=%s",
-            perms.is_creator, perms.is_admin, perms.post_messages, perms.edit_messages, perms.delete_messages
+            perms.is_creator,
+            perms.is_admin,
+            perms.post_messages,
+            perms.edit_messages,
+            perms.delete_messages,
         )
         return perms
 

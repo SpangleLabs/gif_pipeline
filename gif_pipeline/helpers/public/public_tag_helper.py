@@ -10,7 +10,6 @@ from gif_pipeline.telegram_client import TelegramClient
 
 
 class PublicTagHelper(PublicHelper):
-
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, tag_manager: TagManager):
         super().__init__(database, client, worker)
         self.tag_manager = tag_manager
@@ -31,8 +30,11 @@ class PublicTagHelper(PublicHelper):
                         if tag_key.endswith("__rejected"):
                             continue
                         if tag_title.endswith("__confirmed"):
-                            tag_title = tag_key[:-len("__confirmed")]
-                        tag_entries.append(f"<b>{html.escape(tag_title)}:</b> " + ", ".join(html.escape(t) for t in tags.list_values_for_tag(tag_key)))
+                            tag_title = tag_key[: -len("__confirmed")]
+                        tag_entries.append(
+                            f"<b>{html.escape(tag_title)}:</b> "
+                            + ", ".join(html.escape(t) for t in tags.list_values_for_tag(tag_key))
+                        )
                     text += "\n".join(tag_entries)
                 else:
                     text += " It has no tags, sorry"

@@ -10,7 +10,6 @@ from gif_pipeline.telegram_client import TelegramClient
 
 
 class UpdateYoutubeDlHelper(Helper):
-
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 
@@ -28,6 +27,4 @@ class UpdateYoutubeDlHelper(Helper):
         self.usage_counter.inc()
         async with self.progress_message(chat, message, "Updating youtube downloader"):
             resp = await self.worker.await_task(UpdateYoutubeDLTask())
-            return [
-                await self.send_text_reply(chat, message, f"Youtube downloader update returned: {resp}")
-            ]
+            return [await self.send_text_reply(chat, message, f"Youtube downloader update returned: {resp}")]

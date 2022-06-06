@@ -4,10 +4,7 @@ from typing import Optional
 
 from prometheus_client import Enum, Gauge
 
-startup_time = Gauge(
-    "gif_pipeline_startup_unixtime",
-    "Time the gif pipeline was last started"
-)
+startup_time = Gauge("gif_pipeline_startup_unixtime", "Time the gif pipeline was last started")
 
 
 class StartupState(enum.Enum):
@@ -35,16 +32,15 @@ class StartupState(enum.Enum):
 startup_state = Enum(
     "gif_pipeline_startup_state",
     "Current startup state of gif pipeline",
-    states=[state.value for state in StartupState]
+    states=[state.value for state in StartupState],
 )
 startup_state_latest_state_change = Gauge(
-    "gif_pipeline_startup_state_change_unixtime",
-    "Time that the startup state last changed"
+    "gif_pipeline_startup_state_change_unixtime", "Time that the startup state last changed"
 )
 startup_state_duration = Gauge(
     "gif_pipeline_startup_state_duration_seconds",
     "Time that the gif pipeline spent in the given startup state",
-    labelnames=["state"]
+    labelnames=["state"],
 )
 for state in StartupState:
     startup_state_duration.labels(state=state.value)

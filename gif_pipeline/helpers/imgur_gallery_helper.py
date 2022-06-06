@@ -14,7 +14,6 @@ from gif_pipeline.video_tags import VideoTags
 
 
 class ImgurGalleryHelper(Helper):
-
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, imgur_client_id: str):
         super().__init__(database, client, worker)
         self.imgur_client_id = imgur_client_id
@@ -29,9 +28,9 @@ class ImgurGalleryHelper(Helper):
             return None
         self.usage_counter.inc()
         async with self.progress_message(chat, message, "Processing imgur gallery links in message"):
-            galleries = await asyncio.gather(*(
-                self.handle_gallery_link(chat, message, gallery_id) for gallery_id in matching_links
-            ))
+            galleries = await asyncio.gather(
+                *(self.handle_gallery_link(chat, message, gallery_id) for gallery_id in matching_links)
+            )
             return [message for gallery in galleries for message in gallery]
 
     async def handle_gallery_link(self, chat: Chat, message: Message, gallery_id: str) -> List[Message]:

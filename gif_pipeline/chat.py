@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from gif_pipeline.database import Database
     from gif_pipeline.message import MessageData
     from gif_pipeline.telegram_client import TelegramClient
-T = TypeVar('T', bound='Group')
+T = TypeVar("T", bound="Group")
 
 
 logger = logging.getLogger(__name__)
@@ -24,38 +24,30 @@ logger = logging.getLogger(__name__)
 video_count = Gauge(
     "gif_pipeline_chat_video_count",
     "Number of videos in the chat, which can go up and down",
-    labelnames=["chat_type", "chat_title"]
+    labelnames=["chat_type", "chat_title"],
 )
 file_size_total = Gauge(
     "gif_pipeline_chat_total_file_size_bytes",
     "Total combined size of all files in a given chat, in bytes",
-    labelnames=["chat_type", "chat_title"]
+    labelnames=["chat_type", "chat_title"],
 )
 subscriber_count = Gauge(
-    "gif_pipeline_channel_subscriber_count",
-    "Number of subscribers in the channel",
-    labelnames=["chat_title"]
+    "gif_pipeline_channel_subscriber_count", "Number of subscribers in the channel", labelnames=["chat_title"]
 )
 workshop_new_message_count = Counter(
     "gif_pipeline_workshop_new_message_count",
     "Number of new messages posted in the workshop",
-    labelnames=["chat_title"]
+    labelnames=["chat_title"],
 )
 queue_duration = Gauge(
     "gif_pipeline_queue_est_duration_seconds",
     "Estimated duration of queue, based on schedule and videos in queue",
-    labelnames=["chat_title"]
+    labelnames=["chat_title"],
 )
 
 
 class Chat(ABC):
-    def __init__(
-            self,
-            chat_data: ChatData,
-            config: ChatConfig,
-            messages: List[Message],
-            client: TelegramClient
-    ):
+    def __init__(self, chat_data: ChatData, config: ChatConfig, messages: List[Message], client: TelegramClient):
         self.chat_data = chat_data
         self.config = config
         self.messages = messages
@@ -63,21 +55,19 @@ class Chat(ABC):
         self.init_metrics()
 
     def init_metrics(self) -> None:
-        video_count.labels(
-            chat_type=self.__class__.__name__,
-            chat_title=self.chat_data.title
-        ).set_function(lambda: self.count_videos())
-        file_size_total.labels(
-            chat_type=self.__class__.__name__,
-            chat_title=self.chat_data.title
-        ).set_function(lambda: self.sum_file_size())
+        video_count.labels(chat_type=self.__class__.__name__, chat_title=self.chat_data.title).set_function(
+            lambda: self.count_videos()
+        )
+        file_size_total.labels(chat_type=self.__class__.__name__, chat_title=self.chat_data.title).set_function(
+            lambda: self.sum_file_size()
+        )
 
     @staticmethod
     async def list_message_initialisers(
-            chat_data: 'ChatData',
-            config: 'ChatConfig',
-            client: TelegramClient,
-            database: 'Database',
+        chat_data: "ChatData",
+        config: "ChatConfig",
+        client: TelegramClient,
+        database: "Database",
     ) -> List[Awaitable[Message]]:
         logger.info(f"Initialising chat: {config}")
         # Ensure bot is in chat
@@ -146,26 +136,23 @@ class Chat(ABC):
 
 
 class Channel(Chat):
-
     def __init__(
-            self,
-            chat_data: ChannelData,
-            config: ChannelConfig,
-            messages: List[Message],
-            client: TelegramClient,
-            queue: Optional[WorkshopGroup] = None
+        self,
+        chat_data: ChannelData,
+        config: ChannelConfig,
+        messages: List[Message],
+        client: TelegramClient,
+        queue: Optional[WorkshopGroup] = None,
     ):
         super().__init__(chat_data, config, messages, client)
         self.config = config
         self.queue = queue
-        self.sub_count = subscriber_count.labels(
-            chat_title=self.chat_data.title
-        )
+        self.sub_count = subscriber_count.labels(chat_title=self.chat_data.title)
         self.queue_duration = None
         if self.config.queue is not None and self.config.queue.schedule is not None:
-            self.queue_duration = queue_duration.labels(
-                chat_title=self.chat_data.title
-            ).set_function(lambda: self.config.queue.schedule.avg_time.total_seconds() * self.queue.count_videos())
+            self.queue_duration = queue_duration.labels(chat_title=self.chat_data.title).set_function(
+                lambda: self.config.queue.schedule.avg_time.total_seconds() * self.queue.count_videos()
+            )
         asyncio.ensure_future(self.periodically_update_sub_count())
 
     async def periodically_update_sub_count(self) -> None:
@@ -173,7 +160,7 @@ class Channel(Chat):
         while True:
             logger.info("Checking subscriber count")
             await self.update_sub_count()
-            await asyncio.sleep(60*60)
+            await asyncio.sleep(60 * 60)
 
     async def update_sub_count(self) -> None:
         sub_count = await self.client.get_subscriber_count(self.chat_data)
@@ -196,18 +183,11 @@ class Channel(Chat):
 
 
 class WorkshopGroup(Chat):
-
     def __init__(
-            self,
-            chat_data: WorkshopData,
-            config: WorkshopConfig,
-            messages: List[Message],
-            client: TelegramClient
+        self, chat_data: WorkshopData, config: WorkshopConfig, messages: List[Message], client: TelegramClient
     ):
         super().__init__(chat_data, config, messages, client)
-        self.new_message_count = workshop_new_message_count.labels(
-            chat_title=self.chat_data.title
-        )
+        self.new_message_count = workshop_new_message_count.labels(chat_title=self.chat_data.title)
 
     def add_message(self, message: Message) -> None:
         self.new_message_count.inc()

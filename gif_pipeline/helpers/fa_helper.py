@@ -15,7 +15,6 @@ from gif_pipeline.video_tags import VideoTags
 
 
 class FAHelper(TelegramGifHelper):
-
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 

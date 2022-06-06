@@ -53,7 +53,7 @@ class TagManager:
             else:
                 all_values_dict[tag_name] = self.get_values_for_tag(tag_name, chats)
         return tags.incomplete_tags(dest_tags, all_values_dict)
-    
+
     def tag_value_rates_for_chat(self, dest: Channel, tag_name: str) -> Counter:
         counter = Counter()
         tag_config = dest.config.tags[tag_name]

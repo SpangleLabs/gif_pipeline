@@ -20,12 +20,12 @@ class TagConfig:
         self.type = tag_type
 
     @staticmethod
-    def from_json(json_dict: Dict[str, Any]) -> 'TagConfig':
+    def from_json(json_dict: Dict[str, Any]) -> "TagConfig":
         tag_type_str = json_dict.get("type", "normal")
         try:
             tag_type = TagType[tag_type_str.upper()]
         except KeyError as e:
-            raise KeyError(f"Invalid tag type, \"{tag_type_str}\": {e}")
+            raise KeyError(f'Invalid tag type, "{tag_type_str}": {e}')
         return TagConfig(tag_type)
 
     def __repr__(self) -> str:
@@ -40,11 +40,11 @@ class ScheduleOrder(Enum):
 
 class ScheduleConfig:
     def __init__(
-            self,
-            min_time: timedelta,
-            *,
-            max_time: timedelta = None,
-            order: ScheduleOrder = None,
+        self,
+        min_time: timedelta,
+        *,
+        max_time: timedelta = None,
+        order: ScheduleOrder = None,
     ):
         self.min_time = min_time
         self.max_time = max_time
@@ -57,7 +57,7 @@ class ScheduleConfig:
         return (self.max_time + self.min_time) / 2
 
     @staticmethod
-    def from_json(json_dict: Dict[str, Any]) -> 'ScheduleConfig':
+    def from_json(json_dict: Dict[str, Any]) -> "ScheduleConfig":
         min_time_str = json_dict["min_time"]
         max_time_str = json_dict.get("max_time")
         order_str = json_dict.get("order")
@@ -70,30 +70,21 @@ class ScheduleConfig:
             try:
                 order = ScheduleOrder[order_str.upper()]
             except KeyError as e:
-                raise KeyError(f"Invalid schedule order, \"{order_str}\": {e}")
-        return ScheduleConfig(
-            min_time=min_time,
-            max_time=max_time,
-            order=order
-        )
+                raise KeyError(f'Invalid schedule order, "{order_str}": {e}')
+        return ScheduleConfig(min_time=min_time, max_time=max_time, order=order)
 
 
 class TwitterAccountConfig:
-
     def __init__(self, access_token: str, access_secret: str):
         self.access_token = access_token
         self.access_secret = access_secret
 
     @classmethod
     def from_json(cls, json_dict: Dict) -> "TwitterAccountConfig":
-        return cls(
-            json_dict["access_token"],
-            json_dict["access_secret"]
-        )
+        return cls(json_dict["access_token"], json_dict["access_secret"])
 
 
 class TwitterReplyConfig:
-
     def __init__(
         self,
         text: str,
@@ -112,15 +103,10 @@ class TwitterReplyConfig:
         account = None
         if "account" in json_dict:
             account = TwitterAccountConfig.from_json(json_dict["account"])
-        return cls(
-            json_dict["text"],
-            reply,
-            account
-        )
+        return cls(json_dict["text"], reply, account)
 
 
 class TwitterConfig:
-
     def __init__(self, account: TwitterAccountConfig, text: str, reply: Optional[TwitterReplyConfig] = None):
         self.account = account
         self.text_format = TextFormatter(text)
@@ -131,20 +117,11 @@ class TwitterConfig:
         reply = None
         if "reply" in json_dict:
             reply = TwitterReplyConfig.from_json(json_dict["reply"])
-        return cls(
-            TwitterAccountConfig.from_json(json_dict["account"]),
-            json_dict.get("text", ""),
-            reply
-        )
+        return cls(TwitterAccountConfig.from_json(json_dict["account"]), json_dict.get("text", ""), reply)
 
 
 class ChatConfig(ABC):
-    def __init__(
-            self,
-            handle: Union[str, int],
-            *,
-            duplicate_detection: bool = True
-    ):
+    def __init__(self, handle: Union[str, int], *, duplicate_detection: bool = True):
         self.handle = handle
         self.duplicate_detection = duplicate_detection
         self.read_only = False
@@ -153,7 +130,7 @@ class ChatConfig(ABC):
 
     @staticmethod
     @abstractmethod
-    def from_json(json_dict: Dict[str, Any]) -> 'ChatConfig':
+    def from_json(json_dict: Dict[str, Any]) -> "ChatConfig":
         pass
 
     def __repr__(self) -> str:
@@ -161,18 +138,17 @@ class ChatConfig(ABC):
 
 
 class ChannelConfig(ChatConfig):
-
     def __init__(
-            self,
-            handle: Union[str, int],
-            *,
-            queue: 'QueueConfig' = None,
-            read_only: bool = False,
-            send_folder: Optional[str] = None,
-            note_time: bool = False,
-            tags: Optional[Dict[str, TagConfig]] = None,
-            twitter_config: Optional[TwitterConfig] = None,
-            caption: str = ""
+        self,
+        handle: Union[str, int],
+        *,
+        queue: "QueueConfig" = None,
+        read_only: bool = False,
+        send_folder: Optional[str] = None,
+        note_time: bool = False,
+        tags: Optional[Dict[str, TagConfig]] = None,
+        twitter_config: Optional[TwitterConfig] = None,
+        caption: str = "",
     ):
         super().__init__(handle)
         self.queue = queue
@@ -184,7 +160,7 @@ class ChannelConfig(ChatConfig):
         self.caption_format = TextFormatter(caption)
 
     @staticmethod
-    def from_json(json_dict) -> 'ChannelConfig':
+    def from_json(json_dict) -> "ChannelConfig":
         handle = json_dict["handle"]
         queue_val = json_dict.get("queue")
         queue = None
@@ -206,35 +182,31 @@ class ChannelConfig(ChatConfig):
             note_time=json_dict.get("note_time", False),
             tags=tags,
             twitter_config=twitter_config,
-            caption=json_dict.get("caption", "")
+            caption=json_dict.get("caption", ""),
         )
 
 
 class WorkshopConfig(ChatConfig):
-
     @staticmethod
-    def from_json(json_dict) -> 'WorkshopConfig':
-        return WorkshopConfig(
-            json_dict['handle'],
-            duplicate_detection=json_dict.get("duplicate_detection", True)
-        )
+    def from_json(json_dict) -> "WorkshopConfig":
+        return WorkshopConfig(json_dict["handle"], duplicate_detection=json_dict.get("duplicate_detection", True))
 
 
 class QueueConfig(WorkshopConfig):
     def __init__(
-            self,
-            handle: Union[str, int],
-            channel_handle: Union[str, int],
-            *,
-            duplicate_detection: bool = True,
-            schedule: ScheduleConfig = None
+        self,
+        handle: Union[str, int],
+        channel_handle: Union[str, int],
+        *,
+        duplicate_detection: bool = True,
+        schedule: ScheduleConfig = None,
     ):
         super().__init__(handle, duplicate_detection=duplicate_detection)
         self.channel_handle = channel_handle
         self.schedule = schedule
 
     @staticmethod
-    def from_json(json_dict: Dict[str, Any], channel_handle: Union[str, int]) -> 'QueueConfig':
+    def from_json(json_dict: Dict[str, Any], channel_handle: Union[str, int]) -> "QueueConfig":
         schedule = None
         schedule_val = json_dict.get("schedule")
         if schedule_val:
@@ -243,5 +215,5 @@ class QueueConfig(WorkshopConfig):
             json_dict["handle"],
             channel_handle,
             duplicate_detection=json_dict.get("duplicate_detection", True),
-            schedule=schedule
+            schedule=schedule,
         )

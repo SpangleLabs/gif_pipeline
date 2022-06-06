@@ -11,7 +11,6 @@ from gif_pipeline.telegram_client import TelegramClient
 
 
 class VideoCutHelper(Helper):
-
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 
@@ -21,27 +20,31 @@ class VideoCutHelper(Helper):
         text_clean = message.text.lower().strip()
         cut_out = False
         if text_clean.startswith("cut out"):
-            start, end = VideoCutHelper.get_start_and_end(text_clean[len("cut out"):].strip())
+            start, end = VideoCutHelper.get_start_and_end(text_clean[len("cut out") :].strip())
             cut_out = True
         elif text_clean.startswith("cut"):
-            start, end = VideoCutHelper.get_start_and_end(text_clean[len("cut"):].strip())
+            start, end = VideoCutHelper.get_start_and_end(text_clean[len("cut") :].strip())
         else:
             return None
         self.usage_counter.inc()
         video = find_video_for_message(chat, message)
         if video is None:
-            return [await self.send_text_reply(
-                chat,
-                message,
-                "I am not sure which video you would like to cut. Please reply to the video with your cut command."
-            )]
+            return [
+                await self.send_text_reply(
+                    chat,
+                    message,
+                    "I am not sure which video you would like to cut. Please reply to the video with your cut command.",
+                )
+            ]
         if start is None and end is None:
-            return [await self.send_text_reply(
-                chat,
-                message,
-                "Start and end was not understood for this cut. "
-                "Please provide start and end in the format MM:SS or as a number of seconds, with a space between them."
-            )]
+            return [
+                await self.send_text_reply(
+                    chat,
+                    message,
+                    "Start and end was not understood for this cut. "
+                    "Please provide start and end in the format MM:SS or as a number of seconds, with a space between them.",
+                )
+            ]
         if cut_out and (start is None or end is None):
             cut_out = False
             if start is None:
@@ -62,33 +65,21 @@ class VideoCutHelper(Helper):
     async def cut_video(self, video: Message, start: Optional[str], end: Optional[str]) -> str:
         new_path = random_sandbox_video_path()
         out_string = (f"-ss {start}" if start is not None else "") + " " + (f"-to {end}" if end is not None else "")
-        task = FfmpegTask(
-            inputs={video.message_data.file_path: None},
-            outputs={new_path: out_string}
-        )
+        task = FfmpegTask(inputs={video.message_data.file_path: None}, outputs={new_path: out_string})
         await self.worker.await_task(task)
         return new_path
 
     async def cut_out_video(self, video: Message, start: str, end: str) -> str:
         first_part_path = random_sandbox_video_path()
         second_part_path = random_sandbox_video_path()
-        task1 = FfmpegTask(
-            inputs={video.message_data.file_path: None},
-            outputs={first_part_path: f"-to {start}"}
-        )
-        task2 = FfmpegTask(
-            inputs={video.message_data.file_path: None},
-            outputs={second_part_path: f"-ss {end}"}
-        )
+        task1 = FfmpegTask(inputs={video.message_data.file_path: None}, outputs={first_part_path: f"-to {start}"})
+        task2 = FfmpegTask(inputs={video.message_data.file_path: None}, outputs={second_part_path: f"-ss {end}"})
         await self.worker.await_tasks([task1, task2])
         inputs_file = random_sandbox_video_path("txt")
         with open(inputs_file, "w") as f:
             f.write(f"file '{first_part_path.split('/')[1]}'\nfile '{second_part_path.split('/')[1]}'")
         output_path = random_sandbox_video_path()
-        task_concat = FfmpegTask(
-            inputs={inputs_file: "-safe 0 -f concat"},
-            outputs={output_path: "-c copy"}
-        )
+        task_concat = FfmpegTask(inputs={inputs_file: "-safe 0 -f concat"}, outputs={output_path: "-c copy"})
         await self.worker.await_task(task_concat)
         return output_path
 

@@ -54,12 +54,7 @@ class GifSettings:
                     bitrate = float(bit_arg)
             elif arg.lower().endswith("fps"):
                 framerate = float(arg[:-3])
-        return GifSettings(
-            width=width,
-            height=height,
-            bitrate=bitrate,
-            fps=framerate
-        )
+        return GifSettings(width=width, height=height, bitrate=bitrate, fps=framerate)
 
     @property
     def fps_filter(self) -> str:
@@ -69,14 +64,14 @@ class GifSettings:
 
     @property
     def ffmpeg_options(self) -> str:
-        ffmpeg_options = " -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
-            "-vf \"scale='min({0},iw)':'min({1},ih)':force_original_aspect_" \
-            "ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2{2}\" -profile:v baseline -level 3.0 -vsync vfr"
+        ffmpeg_options = (
+            " -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p "
+            "-vf \"scale='min({0},iw)':'min({1},ih)':force_original_aspect_"
+            'ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2{2}" -profile:v baseline -level 3.0 -vsync vfr'
+        )
         if not self.audio:
             ffmpeg_options = " -an" + ffmpeg_options
-        return ffmpeg_options.format(
-            self.width, self.height, self.fps_filter
-        )
+        return ffmpeg_options.format(self.width, self.height, self.fps_filter)
 
     @property
     def ffmpeg_options_one_pass(self) -> str:
@@ -132,7 +127,7 @@ class TelegramGifHelper(Helper):
                 chat,
                 message,
                 "Cannot work out which video you want to convert to a gif. "
-                "Please reply to the video you want to convert with the message \"gif\"."
+                'Please reply to the video you want to convert with the message "gif".',
             )
             return [reply]
         # Otherwise, ignore
@@ -148,9 +143,7 @@ class TelegramGifHelper(Helper):
         tags.add_tag_value(VideoTags.source, gif_link)
         return await self.send_video_reply(chat, message, new_path, tags)
 
-    async def convert_video_to_telegram_gif(
-            self, video_path: str, gif_settings: GifSettings = None
-    ) -> str:
+    async def convert_video_to_telegram_gif(self, video_path: str, gif_settings: GifSettings = None) -> str:
         gif_settings = gif_settings or GifSettings.from_input([])
         if gif_settings.bitrate:
             first_try_filename = await self.two_pass_convert(video_path, gif_settings)
@@ -166,10 +159,7 @@ class TelegramGifHelper(Helper):
         first_pass_filename = random_sandbox_video_path()
         # first attempt
         ffmpeg_args = gif_settings.ffmpeg_options_one_pass
-        task = FfmpegTask(
-            inputs={video_path: None},
-            outputs={first_pass_filename: ffmpeg_args}
-        )
+        task = FfmpegTask(inputs={video_path: None}, outputs={first_pass_filename: ffmpeg_args})
         await self.worker.await_task(task)
         return first_pass_filename
 
@@ -177,17 +167,14 @@ class TelegramGifHelper(Helper):
         # Get video duration from ffprobe
         probe_task = FFprobeTask(
             global_options=["-v error"],
-            inputs={video_path: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
+            inputs={video_path: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"},
         )
         duration = float(await self.worker.await_task(probe_task))
         # Calculate new bitrate
         max_bitrate = file_size_mb / duration * 1000000 * 8
         if not gif_settings.bitrate:
             gif_settings.bitrate = max_bitrate
-        gif_settings.bitrate = min(
-            max_bitrate,
-            gif_settings.bitrate
-        )
+        gif_settings.bitrate = min(max_bitrate, gif_settings.bitrate)
         return await self.two_pass_convert(video_path, gif_settings)
 
     async def two_pass_convert(self, video_path: str, gif_settings: GifSettings):
@@ -195,16 +182,10 @@ class TelegramGifHelper(Helper):
         two_pass_filename = random_sandbox_video_path()
         # First pass
         two_pass_args = gif_settings.ffmpeg_options_two_pass
-        task1 = FfmpegTask(
-            global_options=["-y"],
-            inputs={video_path: None},
-            outputs={os.devnull: two_pass_args[0]}
-        )
+        task1 = FfmpegTask(global_options=["-y"], inputs={video_path: None}, outputs={os.devnull: two_pass_args[0]})
         await self.worker.await_task(task1)
         task2 = FfmpegTask(
-            global_options=["-y"],
-            inputs={video_path: None},
-            outputs={two_pass_filename: two_pass_args[1]}
+            global_options=["-y"], inputs={video_path: None}, outputs={two_pass_filename: two_pass_args[1]}
         )
         await self.worker.await_task(task2)
         return two_pass_filename

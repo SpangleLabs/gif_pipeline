@@ -7,19 +7,18 @@ from gif_pipeline.message import Message
 
 
 class EditTextTagValuesMenu(EditTagValuesMenu):
-
     @property
     def text(self) -> str:
-        return f"Please reply to this menu with the value for the \"{self.tag_name}\" tag for this video."
+        return f'Please reply to this menu with the value for the "{self.tag_name}" tag for this video.'
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
         return [[self.button_cancel()]]
 
     async def handle_callback_query(
-            self,
-            callback_query: bytes,
-            sender_id: int,
+        self,
+        callback_query: bytes,
+        sender_id: int,
     ) -> Optional[List[Message]]:
         if callback_query == self.cancel_callback:
             return await self.handle_callback_cancel()

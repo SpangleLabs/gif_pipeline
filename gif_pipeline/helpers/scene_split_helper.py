@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 
 
 class SceneSplitHelper(VideoCutHelper):
-
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, menu_helper: MenuHelper):
         super().__init__(database, client, worker)
         self.menu_helper = menu_helper
@@ -29,7 +28,7 @@ class SceneSplitHelper(VideoCutHelper):
         args = None
         for key_word in key_words:
             if text_clean.startswith(key_word):
-                args = text_clean[len(key_word):].strip()
+                args = text_clean[len(key_word) :].strip()
         if args is None:
             return None
         self.usage_counter.inc()
@@ -39,18 +38,22 @@ class SceneSplitHelper(VideoCutHelper):
             try:
                 threshold = int(args)
             except ValueError:
-                return [await self.send_text_reply(
-                    chat,
-                    message,
-                    "I don't understand that threshold setting. Please specify an integer. e.g. 'split scenes 20'"
-                )]
+                return [
+                    await self.send_text_reply(
+                        chat,
+                        message,
+                        "I don't understand that threshold setting. Please specify an integer. e.g. 'split scenes 20'",
+                    )
+                ]
         video = find_video_for_message(chat, message)
         if video is None:
-            return [await self.send_text_reply(
-                chat,
-                message,
-                "I am not sure which video you would like to split. Please reply to the video with your split command."
-            )]
+            return [
+                await self.send_text_reply(
+                    chat,
+                    message,
+                    "I am not sure which video you would like to split. Please reply to the video with your split command.",
+                )
+            ]
         async with self.progress_message(chat, message, "Calculating scene list"):
             loop = asyncio.get_event_loop()
             scene_list = await loop.run_in_executor(None, self.calculate_scene_list, video, threshold)
@@ -74,19 +77,14 @@ class SceneSplitHelper(VideoCutHelper):
             video_manager.release()
 
     async def split_scenes(
-            self,
-            chat: Chat,
-            message: Message,
-            video: Message,
-            scene_list: List[Tuple[FrameTimecode, FrameTimecode]]
+        self, chat: Chat, message: Message, video: Message, scene_list: List[Tuple[FrameTimecode, FrameTimecode]]
     ) -> Optional[List[Message]]:
-        cut_videos = await asyncio.gather(*[
-            self.cut_video(
-                video,
-                start_time.get_timecode(),
-                end_time.previous_frame().get_timecode()
-            ) for (start_time, end_time) in scene_list
-        ])
+        cut_videos = await asyncio.gather(
+            *[
+                self.cut_video(video, start_time.get_timecode(), end_time.previous_frame().get_timecode())
+                for (start_time, end_time) in scene_list
+            ]
+        )
         video_replies = []
         for new_path in cut_videos:
             video_replies.append(await self.send_video_reply(chat, message, new_path, video.tags(self.database)))

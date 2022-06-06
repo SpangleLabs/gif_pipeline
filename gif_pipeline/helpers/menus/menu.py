@@ -25,8 +25,7 @@ def delta_to_string(delta: datetime.timedelta) -> str:
 
 
 class Menu:
-
-    def __init__(self, menu_helper: 'MenuHelper', chat: Chat, cmd: Optional[Message], video: Message):
+    def __init__(self, menu_helper: "MenuHelper", chat: Chat, cmd: Optional[Message], video: Message):
         self.menu_helper = menu_helper
         self.chat = chat
         self.cmd = cmd
@@ -55,30 +54,16 @@ class Menu:
     def buttons(self) -> Optional[List[List[Button]]]:
         return None
 
-    async def handle_callback_query(
-            self,
-            callback_query: bytes,
-            sender_id: int
-    ) -> Optional[List[Message]]:
+    async def handle_callback_query(self, callback_query: bytes, sender_id: int) -> Optional[List[Message]]:
         pass
 
     async def send_as_reply(self, reply_to: Message) -> Message:
-        menu_msg = await self.menu_helper.send_text_reply(
-            self.chat,
-            reply_to,
-            self.text,
-            buttons=self.buttons
-        )
+        menu_msg = await self.menu_helper.send_text_reply(self.chat, reply_to, self.text, buttons=self.buttons)
         self.add_self_to_cache(menu_msg)
         return menu_msg
 
     async def edit_message(self, old_msg: Message) -> Message:
-        menu_msg = await self.menu_helper.edit_message(
-            self.chat,
-            old_msg,
-            new_text=self.text,
-            new_buttons=self.buttons
-        )
+        menu_msg = await self.menu_helper.edit_message(self.chat, old_msg, new_text=self.text, new_buttons=self.buttons)
         if self.buttons:
             self.add_self_to_cache(menu_msg)
         else:
@@ -117,5 +102,5 @@ class Menu:
 
     @classmethod
     @abstractmethod
-    def from_json(cls, json_data: Dict) -> 'Menu':
+    def from_json(cls, json_data: Dict) -> "Menu":
         pass

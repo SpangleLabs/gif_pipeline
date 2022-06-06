@@ -17,8 +17,7 @@ class ReverseHelper(Helper):
             return [await self.send_text_reply(chat, message, "Please reply to the video you want to reverse")]
         output_path = random_sandbox_video_path()
         reverse_task = FfmpegTask(
-            inputs={video.message_data.file_path: None},
-            outputs={output_path: "-vf reverse -af areverse"}
+            inputs={video.message_data.file_path: None}, outputs={output_path: "-vf reverse -af areverse"}
         )
         async with self.progress_message(chat, message, "Reversing video"):
             await self.worker.await_task(reverse_task)

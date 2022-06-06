@@ -17,6 +17,7 @@ class UninitialisedSubscription(Subscription):
     subscription was created. The most likely situation is something that yt-dlp could handle, but has now changed, and
     yt-dlp cannot yet handle it.
     """
+
     CHECK_MAX = 10
     VALIDATE_MAX = 2
 
@@ -38,7 +39,7 @@ class UninitialisedSubscription(Subscription):
             last_check_time=self.last_check_time,
             check_rate=self.check_rate,
             enabled=self.enabled,
-            seen_item_ids=self.seen_item_ids
+            seen_item_ids=self.seen_item_ids,
         )
         if self.found_sub is None:
             raise ValueError(f"Could not initialise subscription: {self.feed_url}")

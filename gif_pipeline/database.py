@@ -13,10 +13,7 @@ from gif_pipeline.chat_data import ChannelData, ChatData, WorkshopData
 from gif_pipeline.message import MessageData
 from gif_pipeline.video_tags import TagEntry, VideoTags
 
-chat_types = {
-    "channel": ChannelData,
-    "workshop": WorkshopData
-}
+chat_types = {"channel": ChannelData, "workshop": WorkshopData}
 chat_types_inv = {v: k for k, v in chat_types.items()}
 T = TypeVar("T", bound=ChatData)
 
@@ -35,7 +32,7 @@ def message_data_from_row(row: sqlite3.Row) -> MessageData:
         row["reply_to"],
         row["sender_id"],
         bool(row["is_scheduled"]),
-        row["forwarded_channel_link"]
+        row["forwarded_channel_link"],
     )
 
 
@@ -108,35 +105,39 @@ class Database:
             "DO UPDATE SET access_hash=excluded.access_hash, username=excluded.username, title=excluded.title, "
             "broadcast=excluded.broadcast, megagroup=excluded.megagroup;",
             (
-                chat_data.chat_id, chat_data.access_hash, chat_data.username, chat_data.title, chat_type,
-                chat_data.broadcast, chat_data.megagroup
-            )
+                chat_data.chat_id,
+                chat_data.access_hash,
+                chat_data.username,
+                chat_data.title,
+                chat_type,
+                chat_data.broadcast,
+                chat_data.megagroup,
+            ),
         )
 
     def remove_chat(self, chat_data: ChatData):
         messages = self.list_messages_for_chat(chat_data)
         for message in messages:
             self.remove_message(message)
-        self._just_execute(
-            "DELETE FROM chats WHERE chat_id = ?",
-            (chat_data.chat_id, )
-        )
+        self._just_execute("DELETE FROM chats WHERE chat_id = ?", (chat_data.chat_id,))
 
     def list_chats(self, chat_type: Type[T]) -> List[T]:
         chats = []
         with self._execute(
             "SELECT chat_id, access_hash, username, title, broadcast, megagroup FROM chats WHERE chat_type = ?",
-            (chat_types_inv[chat_type],)
+            (chat_types_inv[chat_type],),
         ) as result:
             for row in result:
-                chats.append(chat_type(
-                    row["chat_id"],
-                    row["access_hash"],
-                    row["username"],
-                    row["title"],
-                    parse_bool(row["broadcast"]),
-                    parse_bool(row["megagroup"])
-                ))
+                chats.append(
+                    chat_type(
+                        row["chat_id"],
+                        row["access_hash"],
+                        row["username"],
+                        row["title"],
+                        parse_bool(row["broadcast"]),
+                        parse_bool(row["megagroup"]),
+                    )
+                )
         return chats
 
     def list_channels(self) -> List[ChannelData]:
@@ -147,9 +148,9 @@ class Database:
 
     def get_chat_by_id(self, chat_id: int) -> Optional[ChatData]:
         with self._execute(
-                "SELECT chat_id, access_hash, username, title, chat_type, broadcast, megagroup "
-                "FROM chats WHERE chat_id = ?",
-                (chat_id,)
+            "SELECT chat_id, access_hash, username, title, chat_type, broadcast, megagroup "
+            "FROM chats WHERE chat_id = ?",
+            (chat_id,),
         ) as result:
             chat_row = next(result, None)
             if chat_row is None:
@@ -161,16 +162,16 @@ class Database:
                 chat_row["username"],
                 chat_row["title"],
                 parse_bool(chat_row["broadcast"]),
-                parse_bool(chat_row["megagroup"])
+                parse_bool(chat_row["megagroup"]),
             )
 
     def list_messages_for_chat(self, chat_data: ChatData) -> List[MessageData]:
         messages = []
         with self._execute(
-                "SELECT chat_id, message_id, datetime, text, is_forward, "
-                "file_path, file_mime_type, file_size, reply_to, sender_id, is_scheduled, forwarded_channel_link "
-                "FROM messages WHERE chat_id = ?",
-                (chat_data.chat_id,)
+            "SELECT chat_id, message_id, datetime, text, is_forward, "
+            "file_path, file_mime_type, file_size, reply_to, sender_id, is_scheduled, forwarded_channel_link "
+            "FROM messages WHERE chat_id = ?",
+            (chat_data.chat_id,),
         ) as result:
             for row in result:
                 messages.append(message_data_from_row(row))
@@ -187,10 +188,18 @@ class Database:
             "reply_to=excluded.reply_to, sender_id=excluded.sender_id, "
             "forwarded_channel_link=excluded.forwarded_channel_link",
             (
-                message.chat_id, message.message_id, message.datetime, message.text, message.is_forward,
-                message.file_path, message.file_mime_type, message.reply_to, message.sender_id, message.is_scheduled,
-                message.forwarded_channel_link
-            )
+                message.chat_id,
+                message.message_id,
+                message.datetime,
+                message.text,
+                message.is_forward,
+                message.file_path,
+                message.file_mime_type,
+                message.reply_to,
+                message.sender_id,
+                message.is_scheduled,
+                message.forwarded_channel_link,
+            ),
         )
 
     def get_tags_for_message(self, message: MessageData) -> List[TagEntry]:
@@ -198,10 +207,7 @@ class Database:
         entries = []
         with self._execute("SELECT tag_name, tag_value FROM video_tags WHERE entry_id = ?", (entry_id,)) as result:
             for row in result:
-                entries.append(TagEntry(
-                    row["tag_name"],
-                    row["tag_value"]
-                ))
+                entries.append(TagEntry(row["tag_name"], row["tag_value"]))
         return entries
 
     def list_tag_values(self, tag_name: str, chat_ids: List[int]) -> List[str]:
@@ -210,12 +216,9 @@ class Database:
             "FROM video_tags vt "
             "LEFT JOIN messages m ON m.entry_id = vt.entry_id "
             f"WHERE vt.tag_name = ? AND m.chat_id IN ({','.join('?' * len(chat_ids))})",
-            (tag_name, *chat_ids)
+            (tag_name, *chat_ids),
         ) as result:
-            tag_values = [
-                row["tag_value"]
-                for row in result
-            ]
+            tag_values = [row["tag_value"] for row in result]
             return tag_values
 
     def save_tags(self, message: MessageData, tags: VideoTags) -> None:
@@ -225,9 +228,8 @@ class Database:
         # Add tags
         for tag in tags.to_entries():
             self._just_execute(
-                "INSERT INTO video_tags (entry_id, tag_name, tag_value) "
-                "VALUES (?, ?, ?)",
-                (entry_id, tag.tag_name, tag.tag_value)
+                "INSERT INTO video_tags (entry_id, tag_name, tag_value) " "VALUES (?, ?, ?)",
+                (entry_id, tag.tag_name, tag.tag_value),
             )
 
     def save_tags_for_key(self, message: MessageData, tags: VideoTags, tag_name: str) -> None:
@@ -237,9 +239,8 @@ class Database:
         # Add tags
         for tag in tags.to_entries_for_tag(tag_name):
             self._just_execute(
-                "INSERT INTO video_tags (entry_id, tag_name, tag_value) "
-                "VALUES (?, ?, ?)",
-                (entry_id, tag.tag_name, tag.tag_value)
+                "INSERT INTO video_tags (entry_id, tag_name, tag_value) " "VALUES (?, ?, ?)",
+                (entry_id, tag.tag_name, tag.tag_value),
             )
 
     def remove_tags(self, message: MessageData) -> None:
@@ -256,16 +257,16 @@ class Database:
         self._remove_menu_by_entry_id(entry_id)
         self._just_execute(
             "DELETE FROM messages WHERE chat_id = ? AND message_id = ? AND is_scheduled = ?",
-            (message.chat_id, message.message_id, message.is_scheduled)
+            (message.chat_id, message.message_id, message.is_scheduled),
         )
 
     def get_hashes_for_message(self, message: MessageData) -> List[str]:
         hashes = []
         with self._execute(
-                "SELECT vh.hash FROM messages m "
-                "LEFT JOIN video_hashes vh on m.entry_id = vh.entry_id "
-                "WHERE m.chat_id = ? AND m.message_id = ? AND m.is_scheduled = ?",
-                (message.chat_id, message.message_id, message.is_scheduled)
+            "SELECT vh.hash FROM messages m "
+            "LEFT JOIN video_hashes vh on m.entry_id = vh.entry_id "
+            "WHERE m.chat_id = ? AND m.message_id = ? AND m.is_scheduled = ?",
+            (message.chat_id, message.message_id, message.is_scheduled),
         ) as result:
             for row in result:
                 if row["hash"] is not None:
@@ -275,12 +276,12 @@ class Database:
     def get_messages_needing_hashing(self) -> List[MessageData]:
         messages = []
         with self._execute(
-                "SELECT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
-                "m.file_path, m.file_mime_type, m.file_size, m.reply_to, m.sender_id, m.is_scheduled, "
-                "m.forwarded_channel_link "
-                "FROM messages m "
-                "LEFT JOIN video_hashes vh ON m.entry_id = vh.entry_id "
-                "WHERE vh.hash IS NULL AND m.file_path IS NOT NULL"
+            "SELECT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
+            "m.file_path, m.file_mime_type, m.file_size, m.reply_to, m.sender_id, m.is_scheduled, "
+            "m.forwarded_channel_link "
+            "FROM messages m "
+            "LEFT JOIN video_hashes vh ON m.entry_id = vh.entry_id "
+            "WHERE vh.hash IS NULL AND m.file_path IS NOT NULL"
         ) as result:
             for row in result:
                 messages.append(message_data_from_row(row))
@@ -292,13 +293,13 @@ class Database:
         image_hash_lists = chunks(image_hashes, 500)
         for image_hash_list in image_hash_lists:
             with self._execute(
-                    "SELECT DISTINCT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
-                    "m.file_path, m.file_mime_type, m.file_size, m.reply_to, m.sender_id, m.is_scheduled, "
-                    "m.forwarded_channel_link "
-                    "FROM video_hashes v "
-                    "LEFT JOIN messages m on v.entry_id = m.entry_id "
-                    f"WHERE v.hash IN ({','.join('?' * len(image_hash_list))}) AND m.datetime IS NOT NULL",
-                    tuple(image_hash_list)
+                "SELECT DISTINCT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
+                "m.file_path, m.file_mime_type, m.file_size, m.reply_to, m.sender_id, m.is_scheduled, "
+                "m.forwarded_channel_link "
+                "FROM video_hashes v "
+                "LEFT JOIN messages m on v.entry_id = m.entry_id "
+                f"WHERE v.hash IN ({','.join('?' * len(image_hash_list))}) AND m.datetime IS NOT NULL",
+                tuple(image_hash_list),
             ) as result:
                 for row in result:
                     messages[row["chat_id"]][row["message_id"]] = message_data_from_row(row)
@@ -310,7 +311,7 @@ class Database:
     def get_entry_id_by_chat_and_message_id(self, chat_id: int, message_id: int, is_scheduled: bool) -> Optional[int]:
         with self._execute(
             "SELECT entry_id FROM messages WHERE chat_id = ? AND message_id = ? AND is_scheduled = ?",
-            (chat_id, message_id, is_scheduled)
+            (chat_id, message_id, is_scheduled),
         ) as result:
             row = next(result, None)
             if row is None:
@@ -322,7 +323,7 @@ class Database:
         for hash_str in hashes:
             self._just_execute(
                 "INSERT INTO video_hashes (hash, entry_id) VALUES (?, ?) ON CONFLICT(hash, entry_id) DO NOTHING;",
-                (hash_str, entry_id)
+                (hash_str, entry_id),
             )
 
     def remove_message_hashes(self, message: MessageData) -> None:
@@ -340,26 +341,22 @@ class Database:
         """
         messages = []
         with self._execute(
-                "WITH RECURSIVE parent(x) AS ("
-                "  SELECT :msg_id "
-                "    UNION ALL "
-                "  SELECT m.reply_to "
-                "  FROM messages m, parent "
-                "  WHERE m.message_id=parent.x AND m.reply_to IS NOT NULL "
-                "    AND m.chat_id = :chat_id AND m.is_scheduled = :scheduled"
-                ") "
-                "SELECT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
-                "  m.file_path, m.file_mime_type, m.file_size, m.reply_to, m.sender_id, m.is_scheduled, "
-                "  m.forwarded_channel_link "
-                "FROM parent p "
-                "LEFT JOIN messages m ON m.message_id = p.x "
-                "WHERE m.chat_id = :chat_id AND m.is_scheduled = :scheduled "
-                "ORDER BY datetime DESC;",
-                {
-                    "msg_id": message.message_id,
-                    "chat_id": message.chat_id,
-                    "scheduled": message.is_scheduled
-                }
+            "WITH RECURSIVE parent(x) AS ("
+            "  SELECT :msg_id "
+            "    UNION ALL "
+            "  SELECT m.reply_to "
+            "  FROM messages m, parent "
+            "  WHERE m.message_id=parent.x AND m.reply_to IS NOT NULL "
+            "    AND m.chat_id = :chat_id AND m.is_scheduled = :scheduled"
+            ") "
+            "SELECT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward, "
+            "  m.file_path, m.file_mime_type, m.file_size, m.reply_to, m.sender_id, m.is_scheduled, "
+            "  m.forwarded_channel_link "
+            "FROM parent p "
+            "LEFT JOIN messages m ON m.message_id = p.x "
+            "WHERE m.chat_id = :chat_id AND m.is_scheduled = :scheduled "
+            "ORDER BY datetime DESC;",
+            {"msg_id": message.message_id, "chat_id": message.chat_id, "scheduled": message.is_scheduled},
         ) as result:
             for row in result:
                 messages.append(message_data_from_row(row))
@@ -374,25 +371,21 @@ class Database:
         """
         messages = []
         with self._execute(
-                "WITH RECURSIVE children(x) AS ("
-                "  SELECT :msg_id "
-                "    UNION ALL "
-                "  SELECT m.message_id "
-                "  FROM messages m, children "
-                "  WHERE m.reply_to = children.x AND m.chat_id = :chat_id AND m.is_scheduled = :scheduled"
-                ") "
-                "SELECT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward,"
-                "  m.file_path, m.file_mime_type, m.file_size, m.reply_to, m.sender_id, m.is_scheduled, "
-                "  m.forwarded_channel_link "
-                "FROM children c "
-                "LEFT JOIN messages m ON m.message_id = c.x "
-                "WHERE m.chat_id = :chat_id AND m.is_scheduled = :scheduled "
-                "ORDER BY m.datetime;",
-                {
-                    "msg_id": message.message_id,
-                    "chat_id": message.chat_id,
-                    "scheduled": message.is_scheduled
-                }
+            "WITH RECURSIVE children(x) AS ("
+            "  SELECT :msg_id "
+            "    UNION ALL "
+            "  SELECT m.message_id "
+            "  FROM messages m, children "
+            "  WHERE m.reply_to = children.x AND m.chat_id = :chat_id AND m.is_scheduled = :scheduled"
+            ") "
+            "SELECT m.chat_id, m.message_id, m.datetime, m.text, m.is_forward,"
+            "  m.file_path, m.file_mime_type, m.file_size, m.reply_to, m.sender_id, m.is_scheduled, "
+            "  m.forwarded_channel_link "
+            "FROM children c "
+            "LEFT JOIN messages m ON m.message_id = c.x "
+            "WHERE m.chat_id = :chat_id AND m.is_scheduled = :scheduled "
+            "ORDER BY m.datetime;",
+            {"msg_id": message.message_id, "chat_id": message.chat_id, "scheduled": message.is_scheduled},
         ) as result:
             for row in result:
                 messages.append(message_data_from_row(row))
@@ -407,7 +400,7 @@ class Database:
             "ON CONFLICT(menu_entry_id) "
             "DO UPDATE SET video_entry_id=excluded.video_entry_id, menu_type=excluded.menu_type, "
             "menu_json_str=excluded.menu_json_str, clicked=excluded.clicked",
-            (menu_entry_id, video_entry_id, menu_data.menu_type, menu_data.menu_json_str, menu_data.clicked)
+            (menu_entry_id, video_entry_id, menu_data.menu_type, menu_data.menu_json_str, menu_data.clicked),
         )
 
     def list_menus(self) -> List[MenuData]:
@@ -427,7 +420,7 @@ class Database:
                         row["menu_msg_id"],
                         row["menu_type"],
                         row["menu_json_str"],
-                        bool(row["clicked"])
+                        bool(row["clicked"]),
                     )
                 )
         return menu_data_entries
@@ -442,8 +435,7 @@ class Database:
     def list_subscriptions(self) -> List[SubscriptionData]:
         sub_entries = []
         with self._execute(
-            "SELECT subscription_id, feed_link, chat_id, last_check_time, check_rate, enabled "
-            "FROM subscriptions"
+            "SELECT subscription_id, feed_link, chat_id, last_check_time, check_rate, enabled " "FROM subscriptions"
         ) as result:
             for row in result:
                 sub_entries.append(
@@ -453,7 +445,7 @@ class Database:
                         row["chat_id"],
                         row["last_check_time"],
                         row["check_rate"],
-                        bool(row["enabled"])
+                        bool(row["enabled"]),
                     )
                 )
         return sub_entries
@@ -461,17 +453,14 @@ class Database:
     def list_item_ids_for_subscription(self, subscription: SubscriptionData) -> List[str]:
         items = []
         with self._execute(
-            "SELECT item_id FROM subscription_items WHERE subscription_id = ?",
-                (subscription.subscription_id, )
+            "SELECT item_id FROM subscription_items WHERE subscription_id = ?", (subscription.subscription_id,)
         ) as result:
             for row in result:
                 items.append(row["item_id"])
         return items
 
     def save_subscription(
-            self,
-            subscription: SubscriptionData,
-            seen_item_ids: Optional[List[str]] = None
+        self, subscription: SubscriptionData, seen_item_ids: Optional[List[str]] = None
     ) -> SubscriptionData:
         seen_item_ids = seen_item_ids or []
         with self._execute(
@@ -480,9 +469,13 @@ class Database:
             " DO UPDATE SET feed_link=excluded.feed_link, chat_id=excluded.chat_id, "
             " last_check_time=excluded.last_check_time, check_rate=excluded.check_rate, enabled=excluded.enabled",
             (
-                subscription.subscription_id, subscription.feed_link, subscription.chat_id,
-                subscription.last_check_time, subscription.check_rate, subscription.enabled
-            )
+                subscription.subscription_id,
+                subscription.feed_link,
+                subscription.chat_id,
+                subscription.last_check_time,
+                subscription.check_rate,
+                subscription.enabled,
+            ),
         ) as result:
             if subscription.subscription_id is None:
                 subscription.subscription_id = result.lastrowid
@@ -490,7 +483,7 @@ class Database:
                 self._just_execute(
                     "INSERT INTO subscription_items (subscription_id, item_id) VALUES (?, ?)"
                     " ON CONFLICT (subscription_id, item_id) DO NOTHING",
-                    (subscription.subscription_id, seen_item_id)
+                    (subscription.subscription_id, seen_item_id),
                 )
         return subscription
 
@@ -499,11 +492,11 @@ class Database:
         self._just_execute("DELETE FROM subscriptions WHERE subscription_id = ?", (sub.subscription_id,))
 
 
-S = TypeVar('S')
+S = TypeVar("S")
 
 
 def chunks(lst: Iterable[S], n: int) -> List[List[S]]:
     """Yield successive n-sized chunks from lst."""
     lst = list(lst)
     for i in range(0, len(lst), n):
-        yield list(lst)[i:i + n]
+        yield list(lst)[i : i + n]

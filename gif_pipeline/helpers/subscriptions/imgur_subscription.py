@@ -19,7 +19,7 @@ class ImgurSearchSubscription(Subscription):
         api_key = f"Client-ID {self.helper.api_keys['imgur']['client_id']}"
         api_resp = requests.get(api_url, headers={"Authorization": api_key})
         api_data = api_resp.json()
-        posts = api_data['data']
+        posts = api_data["data"]
         new_items = []
         for post in posts:
             # Handle galleries
@@ -32,12 +32,7 @@ class ImgurSearchSubscription(Subscription):
                     continue
                 if post_image["id"] in self.seen_item_ids:
                     continue
-                new_item = Item(
-                    post_image["id"],
-                    post_image["mp4"],
-                    post["link"],
-                    post["title"]
-                )
+                new_item = Item(post_image["id"], post_image["mp4"], post["link"], post["title"])
                 new_items.append(new_item)
                 self.seen_item_ids.append(new_item.item_id)
         return new_items

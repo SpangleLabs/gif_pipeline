@@ -18,9 +18,7 @@ from gif_pipeline.telegram_client import TelegramClient, message_data_from_teleg
 from gif_pipeline.video_tags import VideoTags
 
 usage_counter = Counter(
-    "gif_pipeline_helper_usage_total",
-    "Total usage of gif pipeline helpers",
-    labelnames=["class_name"]
+    "gif_pipeline_helper_usage_total", "Total usage of gif pipeline helpers", labelnames=["class_name"]
 )
 
 logger = logging.getLogger(__name__)
@@ -43,7 +41,6 @@ def random_sandbox_video_path(file_ext: str = "mp4"):
 
 
 class Helper(ABC):
-
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         self.database = database
         self.client = client
@@ -51,57 +48,36 @@ class Helper(ABC):
         self.usage_counter = usage_counter.labels(class_name=self.__class__.__name__)
 
     async def send_text_reply(
-            self,
-            chat: Chat,
-            message: Message,
-            text: str,
-            *,
-            buttons: Optional[List[List[Button]]] = None
+        self, chat: Chat, message: Message, text: str, *, buttons: Optional[List[List[Button]]] = None
     ) -> Message:
-        return await self.send_message(
-            chat,
-            text=text,
-            reply_to_msg=message,
-            buttons=buttons
-        )
+        return await self.send_message(chat, text=text, reply_to_msg=message, buttons=buttons)
 
     async def send_video_reply(
-            self,
-            chat: Chat,
-            message: Message,
-            video_path: str,
-            tags: VideoTags,
-            text: str = None,
+        self,
+        chat: Chat,
+        message: Message,
+        video_path: str,
+        tags: VideoTags,
+        text: str = None,
     ) -> Message:
-        return await self.send_message(
-            chat,
-            video_path=video_path,
-            reply_to_msg=message,
-            text=text,
-            tags=tags
-        )
+        return await self.send_message(chat, video_path=video_path, reply_to_msg=message, text=text, tags=tags)
 
     async def send_message(
-            self,
-            chat: Chat,
-            *,
-            text: Optional[str] = None,
-            video_path: Optional[str] = None,
-            reply_to_msg: Optional[Message] = None,
-            buttons: Optional[List[List[Button]]] = None,
-            tags: Optional[VideoTags] = None,
-            video_hashes: Optional[Set[str]] = None,
+        self,
+        chat: Chat,
+        *,
+        text: Optional[str] = None,
+        video_path: Optional[str] = None,
+        reply_to_msg: Optional[Message] = None,
+        buttons: Optional[List[List[Button]]] = None,
+        tags: Optional[VideoTags] = None,
+        video_hashes: Optional[Set[str]] = None,
     ) -> Message:
         reply_id = None
         if reply_to_msg is not None:
             reply_id = reply_to_msg.message_data.message_id
         if video_path is None:
-            msg = await self.client.send_text_message(
-                chat.chat_data,
-                text,
-                reply_to_msg_id=reply_id,
-                buttons=buttons
-            )
+            msg = await self.client.send_text_message(chat.chat_data, text, reply_to_msg_id=reply_id, buttons=buttons)
         else:
             # Set filename
             est_next_msg_id = 1
@@ -113,12 +89,7 @@ class Helper(ABC):
             else:
                 filename = f"gif_pipeline_{est_next_msg_id}.{file_ext}"
             msg = await self.client.send_video_message(
-                chat.chat_data,
-                video_path,
-                text,
-                reply_to_msg_id=reply_id,
-                buttons=buttons,
-                filename=filename
+                chat.chat_data, video_path, text, reply_to_msg_id=reply_id, buttons=buttons, filename=filename
             )
         message_data = message_data_from_telegram(msg)
         if video_path is not None:
@@ -137,12 +108,12 @@ class Helper(ABC):
         return new_message
 
     async def edit_message(
-            self,
-            chat: Chat,
-            message: Message,
-            *,
-            new_text: Optional[str] = None,
-            new_buttons: Optional[List[List[Button]]] = None
+        self,
+        chat: Chat,
+        message: Message,
+        *,
+        new_text: Optional[str] = None,
+        new_buttons: Optional[List[List[Button]]] = None,
     ) -> Message:
         msg = await self.client.edit_message(chat.chat_data, message.message_data, new_text, new_buttons)
         message_data = message_data_from_telegram(msg)
@@ -166,7 +137,7 @@ class Helper(ABC):
                 self.name,
                 message.message_data.message_id,
                 message.message_data.chat_id,
-                exc_info=e
+                exc_info=e,
             )
             await self.send_text_reply(chat, message, f"Command failed. {self.name} tried but failed to process this.")
             raise e
@@ -183,19 +154,19 @@ class Helper(ABC):
         pass
 
     async def on_callback_query(
-            self,
-            callback_query: bytes,
-            menu: SentMenu,
-            sender_id: int,
+        self,
+        callback_query: bytes,
+        menu: SentMenu,
+        sender_id: int,
     ) -> Optional[List[Message]]:
         pass
 
     async def on_stateless_callback(
-            self,
-            callback_query: bytes,
-            chat: Chat,
-            message: Message,
-            sender_id: int,
+        self,
+        callback_query: bytes,
+        chat: Chat,
+        message: Message,
+        sender_id: int,
     ) -> Optional[List[Message]]:
         pass
 
@@ -208,7 +179,6 @@ class Helper(ABC):
 
 
 class ArchiveHelper(Helper):
-
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 

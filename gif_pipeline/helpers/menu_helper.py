@@ -39,15 +39,14 @@ logger = logging.getLogger(__name__)
 
 
 class MenuHelper(Helper):
-
     def __init__(
-            self,
-            database: Database,
-            client: TelegramClient,
-            worker: TaskWorker,
-            pipeline: 'Pipeline',
-            delete_helper: 'DeleteHelper',
-            tag_manager: TagManager,
+        self,
+        database: Database,
+        client: TelegramClient,
+        worker: TaskWorker,
+        pipeline: "Pipeline",
+        delete_helper: "DeleteHelper",
+        tag_manager: TagManager,
     ):
         super().__init__(database, client, worker)
         # Cache of message ID the menu is replying to, to the menu
@@ -78,10 +77,10 @@ class MenuHelper(Helper):
         return None
 
     async def on_callback_query(
-            self,
-            callback_query: bytes,
-            menu: SentMenu,
-            sender_id: int,
+        self,
+        callback_query: bytes,
+        menu: SentMenu,
+        sender_id: int,
     ) -> Optional[List[Message]]:
         # Prevent double clicking menus
         menu.clicked = True
@@ -99,10 +98,7 @@ class MenuHelper(Helper):
                 logger.info("Removing missing menu from database")
                 self.database.remove_menu(menu_data)
 
-    async def create_menu(
-            self,
-            menu_data: MenuData
-    ) -> Optional[SentMenu]:
+    async def create_menu(self, menu_data: MenuData) -> Optional[SentMenu]:
         menu_json = json.loads(menu_data.menu_json_str)
         chat = self.pipeline.chat_by_id(menu_data.chat_id)
         menu_msg = chat.message_by_id(menu_data.menu_msg_id)
@@ -130,13 +126,13 @@ class MenuHelper(Helper):
             EditSingleTagValuesMenu.json_name(),
             EditTextTagValuesMenu.json_name(),
             EditTagValuesMenu.json_name(),
-            EditGnosticTagValuesMenu.json_name()
+            EditGnosticTagValuesMenu.json_name(),
         ]:
             cls = {
                 EditSingleTagValuesMenu.json_name(): EditSingleTagValuesMenu,
                 EditTextTagValuesMenu.json_name(): EditTextTagValuesMenu,
                 EditTagValuesMenu.json_name(): EditTagValuesMenu,
-                EditGnosticTagValuesMenu.json_name(): EditGnosticTagValuesMenu
+                EditGnosticTagValuesMenu.json_name(): EditGnosticTagValuesMenu,
             }.get(menu_data.menu_type)
             send_helper = self.pipeline.helpers[GifSendHelper.__name__]
             channels = self.pipeline.channels
@@ -164,102 +160,94 @@ class MenuHelper(Helper):
         if menu_data.menu_type == ScheduleReminderMenu.json_name():
             send_helper = self.pipeline.helpers[GifSendHelper.__name__]
             channels = self.pipeline.channels
-            menu = ScheduleReminderMenu.from_json(menu_json, self, chat, video_msg, channels, self.tag_manager, send_helper)
+            menu = ScheduleReminderMenu.from_json(
+                menu_json, self, chat, video_msg, channels, self.tag_manager, send_helper
+            )
             return SentMenu(menu, menu_msg, clicked)
         return None
 
-    async def delete_menu_for_video(self, chat: 'Chat', video: Message) -> None:
+    async def delete_menu_for_video(self, chat: "Chat", video: Message) -> None:
         menu = self.menu_cache.get_menu_by_video(video)
         if menu:
             await self.delete_helper.delete_msg(chat, menu.msg.message_data)
 
     async def send_not_gif_warning_menu(
-            self,
-            chat: Chat,
-            cmd: Message,
-            video: Message,
-            send_helper: GifSendHelper,
-            dest_str: str
+        self, chat: Chat, cmd: Message, video: Message, send_helper: GifSendHelper, dest_str: str
     ) -> List[Message]:
         menu = NotGifConfirmationMenu(self, chat, cmd, video, send_helper, dest_str)
         menu_msg = await menu.send()
         return [menu_msg]
 
     async def destination_menu(
-            self,
-            chat: Chat,
-            cmd: Message,
-            video: Message,
-            send_helper: GifSendHelper,
-            channels: List[Channel]
+        self, chat: Chat, cmd: Message, video: Message, send_helper: GifSendHelper, channels: List[Channel]
     ) -> List[Message]:
         menu = DestinationMenu(self, chat, cmd, video, send_helper, channels, self.tag_manager)
         menu_msg = await menu.send()
         return [menu_msg]
 
     async def additional_tags_menu(
-            self,
-            chat: Chat,
-            cmd_msg: Message,
-            video: Message,
-            send_helper: GifSendHelper,
-            destination: Channel,
-            missing_tags: Set[str]
+        self,
+        chat: Chat,
+        cmd_msg: Message,
+        video: Message,
+        send_helper: GifSendHelper,
+        destination: Channel,
+        missing_tags: Set[str],
     ):
         menu = CheckTagsMenu(self, chat, cmd_msg, video, send_helper, destination, missing_tags)
         menu_msg = await menu.send()
         return [menu_msg]
 
     async def edit_tag_select(
-            self,
-            chat: Chat,
-            cmd_msg: Message,
-            video: Message,
-            send_helper: GifSendHelper,
-            destination: Channel,
-            missing_tags: Set[str]
+        self,
+        chat: Chat,
+        cmd_msg: Message,
+        video: Message,
+        send_helper: GifSendHelper,
+        destination: Channel,
+        missing_tags: Set[str],
     ):
         menu = TagSelectMenu(self, chat, cmd_msg, video, send_helper, destination, missing_tags)
         menu_msg = await menu.send()
         return [menu_msg]
 
     async def edit_tag_values(
-            self,
-            chat: Chat,
-            cmd_msg: Message,
-            video: Message,
-            send_helper: GifSendHelper,
-            destination: Channel,
-            tag_name: str
+        self,
+        chat: Chat,
+        cmd_msg: Message,
+        video: Message,
+        send_helper: GifSendHelper,
+        destination: Channel,
+        tag_name: str,
     ):
         menu_class = {
             TagType.NORMAL: EditTagValuesMenu,
             TagType.SINGLE: EditSingleTagValuesMenu,
             TagType.TEXT: EditTextTagValuesMenu,
-            TagType.GNOSTIC: EditGnosticTagValuesMenu
+            TagType.GNOSTIC: EditGnosticTagValuesMenu,
         }[destination.config.tags[tag_name].type]
         menu = menu_class(self, chat, cmd_msg, video, send_helper, destination, self.tag_manager, tag_name)
         menu_msg = await menu.send()
         return [menu_msg]
 
     async def confirmation_menu(
-            self,
-            chat: Chat,
-            cmd_msg: Message,
-            video: Message,
-            send_helper: GifSendHelper,
-            destination: Channel,
+        self,
+        chat: Chat,
+        cmd_msg: Message,
+        video: Message,
+        send_helper: GifSendHelper,
+        destination: Channel,
     ) -> List[Message]:
         menu = SendConfirmationMenu(self, chat, cmd_msg, video, send_helper, destination)
         menu_msg = await menu.send()
         return [menu_msg]
 
     async def after_send_delete_menu(
-            self,
-            chat: Chat,
-            cmd: Optional[Message],
-            video: Message,
-            text: str,
+        self,
+        chat: Chat,
+        cmd: Optional[Message],
+        video: Message,
+        text: str,
     ) -> Optional[Message]:
         sender_id = cmd.message_data.sender_id
         if cmd is not None and not await self.client.user_can_delete_in_chat(sender_id, chat.chat_data):
@@ -270,25 +258,20 @@ class MenuHelper(Helper):
         return message
 
     async def split_scenes_confirmation(
-            self,
-            chat: Chat,
-            cmd: Message,
-            video: Message,
-            threshold: int,
-            scene_list: List[Tuple[FrameTimecode, FrameTimecode]],
-            split_helper: SceneSplitHelper
+        self,
+        chat: Chat,
+        cmd: Message,
+        video: Message,
+        threshold: int,
+        scene_list: List[Tuple[FrameTimecode, FrameTimecode]],
+        split_helper: SceneSplitHelper,
     ) -> Message:
         menu = SplitScenesConfirmationMenu(self, chat, cmd, video, threshold, scene_list, split_helper)
         message = await menu.send()
         return message
 
     async def schedule_reminder_menu(
-            self,
-            chat: Chat,
-            video: 'Message',
-            post_time: datetime,
-            channel: 'Channel',
-            send_helper: 'GifSendHelper'
+        self, chat: Chat, video: "Message", post_time: datetime, channel: "Channel", send_helper: "GifSendHelper"
     ) -> Message:
         menu = ScheduleReminderMenu(self, chat, None, video, post_time, channel, self.tag_manager, send_helper, False)
         message = await menu.send()

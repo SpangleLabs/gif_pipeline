@@ -47,24 +47,18 @@ from gif_pipeline.utils import tqdm_gather
 
 logger = logging.getLogger(__name__)
 
-version_info = Info(
-    "gif_pipeline_version",
-    "Version of gif pipeline currently running"
-)
+version_info = Info("gif_pipeline_version", "Version of gif pipeline currently running")
 
 PROM_PORT = 7180
 
 
 class PipelineConfig:
-
     def __init__(self, config: Dict):
         start_http_server(PROM_PORT)
-        version_info.info({
-            "version": _version.__VERSION__
-        })
+        version_info.info({"version": _version.__VERSION__})
         self.startup_monitor = StartupMonitor()
         self.startup_monitor.set_state(StartupState.LOADING_CONFIG)
-        self.channels = [ChannelConfig.from_json(x) for x in config['channels']]
+        self.channels = [ChannelConfig.from_json(x) for x in config["channels"]]
         self.workshops = [WorkshopConfig.from_json(x) for x in config["workshop_groups"]]
         self.workshops += [chan.queue for chan in self.channels if chan.queue is not None]
         self.api_id = config["api_id"]
@@ -76,7 +70,7 @@ class PipelineConfig:
         # API keys for external services
         self.api_keys = config.get("api_keys", {})
 
-    def initialise_pipeline(self) -> 'Pipeline':
+    def initialise_pipeline(self) -> "Pipeline":
         self.startup_monitor.set_state(StartupState.CREATING_DATABASE)
         database = Database()
         self.startup_monitor.set_state(StartupState.CONNECTING_TELEGRAM)
@@ -88,9 +82,7 @@ class PipelineConfig:
         return pipe
 
     async def initialise_chats(
-            self,
-            database: Database,
-            client: TelegramClient
+        self, database: Database, client: TelegramClient
     ) -> Tuple[List[Channel], List[WorkshopGroup]]:
         download_bottleneck = Bottleneck(3)
         workshop_builder = WorkshopBuilder(database, client, download_bottleneck)
@@ -148,13 +140,13 @@ class PipelineConfig:
 
 class Pipeline:
     def __init__(
-            self,
-            database: Database,
-            client: TelegramClient,
-            channels: List[Channel],
-            workshops: List[WorkshopGroup],
-            api_keys: Dict[str, Dict[str, str]],
-            startup_monitor: StartupMonitor
+        self,
+        database: Database,
+        client: TelegramClient,
+        channels: List[Channel],
+        workshops: List[WorkshopGroup],
+        api_keys: Dict[str, Dict[str, str]],
+        startup_monitor: StartupMonitor,
     ):
         self.database = database
         self.channels = channels
@@ -210,24 +202,11 @@ class Pipeline:
         twitter_keys = self.api_keys.get("twitter", {})
         send_helper = GifSendHelper(self.database, self.client, self.worker, self.channels, menu_helper, twitter_keys)
         schedule_helper = ScheduleHelper(
-            self.database,
-            self.client,
-            self.worker,
-            self.channels,
-            menu_helper,
-            send_helper,
-            delete_helper,
-            tag_manager
+            self.database, self.client, self.worker, self.channels, menu_helper, send_helper, delete_helper, tag_manager
         )
         download_helper = DownloadHelper(self.database, self.client, self.worker)
         subscription_helper = SubscriptionHelper(
-            self.database,
-            self.client,
-            self.worker,
-            self,
-            duplicate_helper,
-            download_helper,
-            self.api_keys
+            self.database, self.client, self.worker, self, duplicate_helper, download_helper, self.api_keys
         )
         helpers = [
             duplicate_helper,
@@ -253,11 +232,12 @@ class Pipeline:
             UpdateYoutubeDlHelper(self.database, self.client, self.worker),
             ChartHelper(self.database, self.client, self.worker, self, tag_manager),
             schedule_helper,
-            subscription_helper
+            subscription_helper,
         ]
         if "imgur" in self.api_keys:
             helpers.append(
-                ImgurGalleryHelper(self.database, self.client, self.worker, self.api_keys["imgur"]["client_id"]))
+                ImgurGalleryHelper(self.database, self.client, self.worker, self.api_keys["imgur"]["client_id"])
+            )
         for helper in helpers:
             self.helpers[helper.name] = helper
         # Check yt-dl install
@@ -275,9 +255,7 @@ class Pipeline:
         logger.info(f"Initialised {len(self.helpers)} helpers")
         # Set up public helpers
         self.startup_monitor.set_state(StartupState.INITIALISING_PUBLIC_HELPERS)
-        public_helpers = [
-            PublicTagHelper(self.database, self.client, self.worker, tag_manager)
-        ]
+        public_helpers = [PublicTagHelper(self.database, self.client, self.worker, tag_manager)]
         for helper in public_helpers:
             self.public_helpers[helper.name] = helper
         logger.info(f"Initialised {len(self.public_helpers)} public helpers")
@@ -345,15 +323,13 @@ class Pipeline:
         helpers = {key: val for key, val in self.helpers.items() if not priority or val.is_priority(chat, new_message)}
         # Call the helpers
         helper_results: Iterable[Union[BaseException, Optional[List[Message]]]] = await asyncio.gather(
-            *(helper.on_new_message(chat, new_message) for helper in helpers.values()),
-            return_exceptions=True
+            *(helper.on_new_message(chat, new_message) for helper in helpers.values()), return_exceptions=True
         )
         # Handle helper results
         for helper, result in zip(helpers.keys(), helper_results):
             if isinstance(result, BaseException):
                 logger.error(
-                    f"Helper {helper} threw an exception trying to handle message {new_message}.",
-                    exc_info=result
+                    f"Helper {helper} threw an exception trying to handle message {new_message}.", exc_info=result
                 )
             elif result:
                 for reply_message in result:
@@ -362,14 +338,12 @@ class Pipeline:
     async def pass_message_to_public_handlers(self, event: events.NewMessage.Event):
         logger.info(f"New public message: {event}")
         helper_results: Iterable[Union[BaseException, Optional[List[MessageData]]]] = await asyncio.gather(
-            *(helper.on_new_message(event.message) for helper in self.public_helpers.values()),
-            return_exceptions=True
+            *(helper.on_new_message(event.message) for helper in self.public_helpers.values()), return_exceptions=True
         )
         for helper, result in zip(self.public_helpers.keys(), helper_results):
             if isinstance(result, BaseException):
                 logger.error(
-                    f"Public helper {helper} threw an exception trying to handle message {event}.",
-                    exc_info=result
+                    f"Public helper {helper} threw an exception trying to handle message {event}.", exc_info=result
                 )
 
     async def on_deleted_message(self, event: events.MessageDeleted.Event):
@@ -379,15 +353,14 @@ class Pipeline:
         for message in messages:
             # Tell helpers
             helper_results = await asyncio.gather(
-                *(helper.on_deleted_message(chat, message) for helper in self.helpers.values()),
-                return_exceptions=True
+                *(helper.on_deleted_message(chat, message) for helper in self.helpers.values()), return_exceptions=True
             )
             results_dict = dict(zip(self.helpers.keys(), helper_results))
             for helper, result in results_dict.items():
                 if isinstance(result, Exception):
                     logger.error(
                         f"Helper {helper} threw an exception trying to handle deleting message {message}.",
-                        exc_info=result
+                        exc_info=result,
                     )
             # If it's a menu, remove that
             self.menu_cache.remove_menu_by_message(message)
@@ -436,14 +409,13 @@ class Pipeline:
         # Hand callback queries to helpers
         helper_results: Iterable[Union[BaseException, Optional[List[Message]]]] = await asyncio.gather(
             *(helper.on_callback_query(event.data, menu, event.sender_id) for helper in self.helpers.values()),
-            return_exceptions=True
+            return_exceptions=True,
         )
         answered = False
         for helper, result in zip(self.helpers.keys(), helper_results):
             if isinstance(result, BaseException):
                 logger.error(
-                    f"Helper {helper} threw an exception trying to handle callback query {event}.",
-                    exc_info=result
+                    f"Helper {helper} threw an exception trying to handle callback query {event}.", exc_info=result
                 )
             elif result:
                 for reply_message in result:
@@ -458,14 +430,14 @@ class Pipeline:
         # Handle callback query
         helper_results: Iterable[Union[BaseException, Optional[List[Message]]]] = await asyncio.gather(
             *(helper.on_stateless_callback(event.data, chat, msg, event.sender_id) for helper in self.helpers.values()),
-            return_exceptions=True
+            return_exceptions=True,
         )
         answered = False
         for helper, result in zip(self.helpers.keys(), helper_results):
             if isinstance(result, BaseException):
                 logger.error(
                     f"Helper {helper} threw an exception trying to handle stateless callback query: {event}.",
-                    exc_info=result
+                    exc_info=result,
                 )
             elif result:
                 for reply_message in result:

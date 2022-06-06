@@ -41,13 +41,13 @@ logger = logging.getLogger(__name__)
 subscription_count = Gauge(
     "gif_pipeline_subscription_helper_subscription_count",
     "Number of active subscriptions in the subscription helper",
-    labelnames=["subscription_class_name", "chat_title"]
+    labelnames=["subscription_class_name", "chat_title"],
 )
 
 subscription_posts = Counter(
     "gif_pipeline_subscription_helper_post_count_total",
     "Total number of posts sent by the subscription helper",
-    labelnames=["subscription_class_name", "chat_title"]
+    labelnames=["subscription_class_name", "chat_title"],
 )
 
 
@@ -71,14 +71,14 @@ class SubscriptionHelper(Helper):
     NAMES = ["subscribe", "sub", "subs", "subscription", "subscriptions"]
 
     def __init__(
-            self,
-            database: "Database",
-            client: "TelegramClient",
-            worker: "TaskWorker",
-            pipeline: "Pipeline",
-            duplicate_helper: "DuplicateHelper",
-            download_helper: "DownloadHelper",
-            api_keys: Dict[str, Dict[str, str]]
+        self,
+        database: "Database",
+        client: "TelegramClient",
+        worker: "TaskWorker",
+        pipeline: "Pipeline",
+        duplicate_helper: "DuplicateHelper",
+        download_helper: "DownloadHelper",
+        api_keys: Dict[str, Dict[str, str]],
     ):
         super().__init__(database, client, worker)
         self.pipeline = pipeline
@@ -103,17 +103,14 @@ class SubscriptionHelper(Helper):
         for sub_class in all_classes:
             for workshop in self.pipeline.workshops:
                 subscription_posts.labels(
-                    subscription_class_name=sub_class.__name__,
-                    chat_title=workshop.chat_data.title
+                    subscription_class_name=sub_class.__name__, chat_title=workshop.chat_data.title
                 )
                 subscription_count.labels(
-                    subscription_class_name=sub_class.__name__,
-                    chat_title=workshop.chat_data.title
+                    subscription_class_name=sub_class.__name__, chat_title=workshop.chat_data.title
                 ).set_function(
-                    lambda cls=sub_class, chat_id=workshop.chat_data.chat_id: len([
-                        s for s in self.subscriptions
-                        if s.is_subscription_type(cls) and s.chat_id == chat_id
-                    ])
+                    lambda cls=sub_class, chat_id=workshop.chat_data.chat_id: len(
+                        [s for s in self.subscriptions if s.is_subscription_type(cls) and s.chat_id == chat_id]
+                    )
                 )
 
     async def initialise(self) -> None:
@@ -145,7 +142,7 @@ class SubscriptionHelper(Helper):
                 await self.send_message(
                     chat,
                     text=f"Subscription to {subscription.feed_url} failed due to: {e}",
-                    buttons=[[Button.inline("Delete error", "delete_me")]]
+                    buttons=[[Button.inline("Delete error", "delete_me")]],
                 )
             else:
                 for item in new_items:
@@ -156,13 +153,13 @@ class SubscriptionHelper(Helper):
                             "Failed to post item %s from %s feed due to:",
                             item.source_link,
                             subscription.feed_url,
-                            exc_info=e
+                            exc_info=e,
                         )
                         feed_url = subscription.feed_url
                         await self.send_message(
                             chat,
                             text=f"Failed to post item {item.source_link} from {feed_url} feed due to: {e}",
-                            buttons=[[Button.inline("Delete error", "delete_me")]]
+                            buttons=[[Button.inline("Delete error", "delete_me")]],
                         )
             subscription.last_check_time = datetime.now()
             if subscription.feed_url in [sub.feed_url for sub in self.subscriptions[:]]:
@@ -173,17 +170,13 @@ class SubscriptionHelper(Helper):
         chat = self.pipeline.chat_by_id(subscription.chat_id)
         # Metrics
         subscription_posts.labels(
-            subscription_class_name=subscription.__class__.__name__,
-            chat_title=chat.chat_data.title
+            subscription_class_name=subscription.__class__.__name__, chat_title=chat.chat_data.title
         ).inc()
         # Construct caption
         title = "-"
         if item.title:
             title = html.escape(item.title)
-        caption = (
-            f"<a href=\"{item.source_link}\">{title}</a>\n\n"
-            f"Feed: {html.escape(subscription.feed_url)}"
-        )
+        caption = f'<a href="{item.source_link}">{title}</a>\n\n' f"Feed: {html.escape(subscription.feed_url)}"
         # If item has video and chat has duplicate detection
         hash_set = None
         file_path = await subscription.download_item(item)
@@ -244,9 +237,7 @@ class SubscriptionHelper(Helper):
         if split_text[1] in ["list"]:
             msg = "List of subscriptions currently posting to this chat are:\n"
             msg += "\n".join(
-                f"- {html.escape(sub.feed_url)}"
-                for sub in self.subscriptions
-                if sub.chat_id == chat.chat_data.chat_id
+                f"- {html.escape(sub.feed_url)}" for sub in self.subscriptions if sub.chat_id == chat.chat_data.chat_id
             )
             return [await self.send_text_reply(chat, message, msg)]
         if split_text[1] in ["remove", "delete"]:
@@ -254,9 +245,11 @@ class SubscriptionHelper(Helper):
             feed_link_out = html.escape(feed_link)
             matching_sub = next((sub for sub in self.subscriptions if sub.feed_url == feed_link), None)
             if not matching_sub:
-                return [await self.send_text_reply(
-                    chat, message, f"Cannot remove subscription, as none match the feed link: {feed_link_out}"
-                )]
+                return [
+                    await self.send_text_reply(
+                        chat, message, f"Cannot remove subscription, as none match the feed link: {feed_link_out}"
+                    )
+                ]
             self.subscriptions.remove(matching_sub)
             self.database.remove_subscription(matching_sub.to_data())
             self.save_subscriptions()
@@ -268,19 +261,22 @@ class SubscriptionHelper(Helper):
             async with self.progress_message(chat, message, "Creating subscription"):
                 subscription = await create_sub_for_link(feed_link, chat.chat_data.chat_id, self, self.sub_classes)
                 if subscription is None:
-                    return [await self.send_text_reply(
-                        chat, message, f"No subscription handler was able to handle {feed_link_out}"
-                    )]
+                    return [
+                        await self.send_text_reply(
+                            chat, message, f"No subscription handler was able to handle {feed_link_out}"
+                        )
+                    ]
                 await subscription.check_for_new_items()
                 self.subscriptions.append(subscription)
                 self.save_subscriptions()
                 return [await self.send_text_reply(chat, message, f"Added subscription for {feed_link_out}")]
         except Exception as e:
             logger.error("Failed to create subscription to %s", feed_link_out, exc_info=e)
-            return [await self.send_text_reply(
-                chat, message,
-                f"Could not add subscription to {feed_link_out}. Encountered error: {repr(e)}"
-            )]
+            return [
+                await self.send_text_reply(
+                    chat, message, f"Could not add subscription to {feed_link_out}. Encountered error: {repr(e)}"
+                )
+            ]
 
     def is_priority(self, chat: Chat, message: Message) -> bool:
         split_text = message.text.strip().split()
@@ -314,7 +310,7 @@ async def load_subs_from_database(database: "Database", helper: SubscriptionHelp
             last_check_time=datetime.fromisoformat(sub_entry.last_check_time) if sub_entry.last_check_time else None,
             check_rate=isodate.parse_duration(sub_entry.check_rate),
             enabled=sub_entry.enabled,
-            seen_item_ids=seen_items
+            seen_item_ids=seen_items,
         )
         if subscription is None:
             raise SubscriptionException(f"Failed to load subscription from database for: {sub_entry.feed_link}")

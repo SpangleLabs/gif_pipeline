@@ -15,14 +15,13 @@ if TYPE_CHECKING:
 
 
 class ChartHelper(Helper):
-
     def __init__(
-            self,
-            database: "Database",
-            client: "TelegramClient",
-            worker: "TaskWorker",
-            pipeline: "Pipeline",
-            tag_manager: "TagManager"
+        self,
+        database: "Database",
+        client: "TelegramClient",
+        worker: "TaskWorker",
+        pipeline: "Pipeline",
+        tag_manager: "TagManager",
     ):
         super().__init__(database, client, worker)
         self.pipeline = pipeline
@@ -34,11 +33,11 @@ class ChartHelper(Helper):
             return None
         target_chat = self.pipeline.channel_by_handle(split_text[1])
         if target_chat is None:
-            return [await self.send_text_reply(
-                chat,
-                message,
-                "Unrecognised chat. Command format: chart {destination} {tag_name}"
-            )]
+            return [
+                await self.send_text_reply(
+                    chat, message, "Unrecognised chat. Command format: chart {destination} {tag_name}"
+                )
+            ]
         async with self.progress_message(chat, message, "Generating chart"):
             tag_name = split_text[2]
             counter = self.tag_manager.tag_value_rates_for_chat(target_chat, tag_name)
@@ -50,9 +49,11 @@ class ChartHelper(Helper):
             filename = random_sandbox_video_path("png")
             plt.savefig(filename)
             plt.clf()
-            return [await self.send_message(
-                chat,
-                reply_to_msg=message,
-                video_path=filename,
-                text=f"Pie chart of tag values for {tag_name} in {target_chat.chat_data.title}"
-            )]
+            return [
+                await self.send_message(
+                    chat,
+                    reply_to_msg=message,
+                    video_path=filename,
+                    text=f"Pie chart of tag values for {tag_name} in {target_chat.chat_data.title}",
+                )
+            ]

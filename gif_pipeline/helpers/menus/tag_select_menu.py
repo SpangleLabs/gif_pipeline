@@ -16,14 +16,14 @@ class TagSelectMenu(Menu):
     cancel_callback = b"cancel"
 
     def __init__(
-            self,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            cmd: Message,
-            video: Message,
-            send_helper: 'GifSendHelper',
-            destination: Channel,
-            missing_tags: Set[str]
+        self,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        cmd: Message,
+        video: Message,
+        send_helper: "GifSendHelper",
+        destination: Channel,
+        missing_tags: Set[str],
     ):
         super().__init__(menu_helper, chat, cmd, video)
         self.send_helper = send_helper
@@ -42,9 +42,9 @@ class TagSelectMenu(Menu):
         ]
 
     async def handle_callback_query(
-            self,
-            callback_query: bytes,
-            sender_id: int,
+        self,
+        callback_query: bytes,
+        sender_id: int,
     ) -> Optional[List[Message]]:
         if callback_query == self.cancel_callback:
             await self.delete()
@@ -63,19 +63,19 @@ class TagSelectMenu(Menu):
         return {
             "cmd_msg_id": self.cmd_msg_id,
             "destination_id": self.destination.chat_data.chat_id,
-            "missing_tags": self.missing_tags
+            "missing_tags": self.missing_tags,
         }
 
     @classmethod
     def from_json(
-            cls,
-            json_data: Dict,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            video: Message,
-            send_helper,
-            all_channels: List[Channel]
-    ) -> 'TagSelectMenu':
+        cls,
+        json_data: Dict,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        video: Message,
+        send_helper,
+        all_channels: List[Channel],
+    ) -> "TagSelectMenu":
         destination = next(filter(lambda x: x.chat_data.chat_id == json_data["destination_id"], all_channels), None)
         return TagSelectMenu(
             menu_helper,
@@ -84,5 +84,5 @@ class TagSelectMenu(Menu):
             video,
             send_helper,
             destination,
-            set(json_data["missing_tags"])
+            set(json_data["missing_tags"]),
         )

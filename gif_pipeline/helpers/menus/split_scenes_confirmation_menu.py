@@ -13,16 +13,11 @@ if TYPE_CHECKING:
 
 
 def timecode_to_json(timecode: FrameTimecode) -> Dict:
-    return {
-        "framerate": timecode.framerate,
-        "frame_num": timecode.frame_num
-    }
+    return {"framerate": timecode.framerate, "frame_num": timecode.frame_num}
 
 
 def json_to_timecode(json_data: Dict) -> FrameTimecode:
-    return FrameTimecode(
-        json_data["frame_num"], json_data["framerate"]
-    )
+    return FrameTimecode(json_data["frame_num"], json_data["framerate"])
 
 
 class SplitScenesConfirmationMenu(Menu):
@@ -30,14 +25,14 @@ class SplitScenesConfirmationMenu(Menu):
     cmd_cancel = b"split_clear_menu"
 
     def __init__(
-            self,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            cmd: Message,
-            video: Message,
-            threshold: int,
-            scene_list: List[Tuple[FrameTimecode, FrameTimecode]],
-            split_helper: 'SceneSplitHelper'
+        self,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        cmd: Message,
+        video: Message,
+        threshold: int,
+        scene_list: List[Tuple[FrameTimecode, FrameTimecode]],
+        split_helper: "SceneSplitHelper",
     ):
         super().__init__(menu_helper, chat, cmd, video)
         self.threshold = threshold
@@ -49,22 +44,21 @@ class SplitScenesConfirmationMenu(Menu):
     def text(self) -> str:
         scene_count = len(self.scene_list)
         if not self.cleared:
-            return f"Using a threshold of {self.threshold}, this video would be split into {scene_count} scenes. " \
-               f"Would you like to proceed with cutting?"
+            return (
+                f"Using a threshold of {self.threshold}, this video would be split into {scene_count} scenes. "
+                f"Would you like to proceed with cutting?"
+            )
         return f"Using a threshold of {self.threshold}, this video would have been split into {scene_count} scenes."
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
         if not self.cleared:
-            return [
-                [Button.inline("Yes please", self.cmd_split)],
-                [Button.inline("No thank you", self.cmd_cancel)]
-            ]
+            return [[Button.inline("Yes please", self.cmd_split)], [Button.inline("No thank you", self.cmd_cancel)]]
 
     async def handle_callback_query(
-            self,
-            callback_query: bytes,
-            sender_id: int,
+        self,
+        callback_query: bytes,
+        sender_id: int,
     ) -> Optional[List[Message]]:
         if callback_query == self.cmd_cancel:
             self.cleared = True
@@ -82,38 +76,24 @@ class SplitScenesConfirmationMenu(Menu):
 
     def to_json(self) -> Dict:
         scene_list = [
-            {
-                "start": timecode_to_json(scene[0]),
-                "end": timecode_to_json(scene[1])
-            } for scene in self.scene_list
+            {"start": timecode_to_json(scene[0]), "end": timecode_to_json(scene[1])} for scene in self.scene_list
         ]
         return {
             "cmd_msg_id": self.cmd_msg_id,
             "threshold": self.threshold,
             "scene_list": scene_list,
-            "cleared": self.cleared
+            "cleared": self.cleared,
         }
 
     @classmethod
     def from_json(
-            cls,
-            json_data: Dict,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            video: Message,
-            split_helper: 'SceneSplitHelper'
-    ) -> 'SplitScenesConfirmationMenu':
+        cls, json_data: Dict, menu_helper: "MenuHelper", chat: Chat, video: Message, split_helper: "SceneSplitHelper"
+    ) -> "SplitScenesConfirmationMenu":
         # Handling old scene lists which were doublly-enclosed lists, due to a bug
         scene_list_data = json_data["scene_list"]
         if len(scene_list_data) > 0 and isinstance(scene_list_data[0], list):
             scene_list_data = scene_list_data[0]
-        scene_list = [
-            (
-                json_to_timecode(scene["start"]),
-                json_to_timecode(scene["end"])
-            )
-            for scene in scene_list_data
-        ]
+        scene_list = [(json_to_timecode(scene["start"]), json_to_timecode(scene["end"])) for scene in scene_list_data]
         menu = SplitScenesConfirmationMenu(
             menu_helper,
             chat,
@@ -121,6 +101,6 @@ class SplitScenesConfirmationMenu(Menu):
             video,
             json_data["threshold"],
             scene_list,
-            split_helper
+            split_helper,
         )
         return menu

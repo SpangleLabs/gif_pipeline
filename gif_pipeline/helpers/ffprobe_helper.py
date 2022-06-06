@@ -17,57 +17,59 @@ class FFProbeHelper(Helper):
                 async with self.progress_message(chat, message, "Getting video stats"):
                     stats = await self.stats_for_video(video.message_data.file_path)
                     return [await self.send_text_reply(chat, message, stats)]
-            return [await self.send_text_reply(
-                chat,
-                message,
-                "Cannot work out which video you want stats about. "
-                "Please reply to the video you want to get stats for with the message \"ffprobe\"."
-            )]
+            return [
+                await self.send_text_reply(
+                    chat,
+                    message,
+                    "Cannot work out which video you want stats about. "
+                    'Please reply to the video you want to get stats for with the message "ffprobe".',
+                )
+            ]
         if clean_text.startswith("duration"):
             self.usage_counter.inc()
             if video is not None:
                 async with self.progress_message(chat, message, "Getting video duration"):
                     duration = await self.duration_video(video.message_data.file_path)
                     return [await self.send_text_reply(chat, message, f"{duration} seconds")]
-            return [await self.send_text_reply(
-                chat,
-                message,
-                "Cannot work out which video you want the duration of. "
-                "Please reply to the video you want to know the duration of with the message \"duration\"."
-            )]
+            return [
+                await self.send_text_reply(
+                    chat,
+                    message,
+                    "Cannot work out which video you want the duration of. "
+                    'Please reply to the video you want to know the duration of with the message "duration".',
+                )
+            ]
         if clean_text.startswith("resolution") or clean_text.startswith("size"):
             self.usage_counter.inc()
             if video is not None:
                 async with self.progress_message(chat, message, "Getting video resolution"):
                     resolution = await self.video_resolution(video.message_data.file_path)
                     return [await self.send_text_reply(chat, message, f"{resolution[0]} x {resolution[1]}")]
-            return [await self.send_text_reply(
-               chat,
-               message,
-               "Cannot work out which video you want the resolution of."
-               "Please reply to the video you want to know the resolution of with the message \"resolution\"."
-            )]
+            return [
+                await self.send_text_reply(
+                    chat,
+                    message,
+                    "Cannot work out which video you want the resolution of."
+                    'Please reply to the video you want to know the resolution of with the message "resolution".',
+                )
+            ]
         # Otherwise, ignore
         return
 
     async def stats_for_video(self, video_path: str) -> str:
-        probe_task = FFprobeTask(
-            global_options=["-v error -show_format -show_streams "],
-            inputs={video_path: ""}
-        )
+        probe_task = FFprobeTask(global_options=["-v error -show_format -show_streams "], inputs={video_path: ""})
         return await self.worker.await_task(probe_task)
 
     async def duration_video(self, video_path: str) -> float:
         probe_task = FFprobeTask(
             global_options=["-v error"],
-            inputs={video_path: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
+            inputs={video_path: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"},
         )
         return float(await self.worker.await_task(probe_task))
-    
+
     async def video_resolution(self, video_path: str) -> Tuple[int, int]:
         probe_task = FFprobeTask(
-            global_options=["-v error"],
-            inputs={video_path: "-show_entries stream=width,height -of csv=p=0:s=x"}
+            global_options=["-v error"], inputs={video_path: "-show_entries stream=width,height -of csv=p=0:s=x"}
         )
         resolution_str = await self.worker.await_task(probe_task)
         resolution_split = resolution_str.split("x")

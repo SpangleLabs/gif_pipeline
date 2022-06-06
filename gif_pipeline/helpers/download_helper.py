@@ -18,23 +18,23 @@ logger = logging.getLogger(__name__)
 
 class DownloadHelper(Helper):
     # Scheme (HTTP, HTTPS, FTP and SFTP):
-    LINK_REGEX = r'(?:(https?|s?ftp):\/\/)?'
+    LINK_REGEX = r"(?:(https?|s?ftp):\/\/)?"
     # www:
-    LINK_REGEX += r'(?:www\.)?'
+    LINK_REGEX += r"(?:www\.)?"
     # Capture domain name or IP. [Group 1...]
-    LINK_REGEX += r'('
+    LINK_REGEX += r"("
     # Domain and subdomains (Each up to 64 chars, hyphens not allowed on either end)
-    LINK_REGEX += r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+)'
+    LINK_REGEX += r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+)"
     # TLD: [Group 2]
-    LINK_REGEX += r'([A-Z]{2,63})'
+    LINK_REGEX += r"([A-Z]{2,63})"
     # IP Address:
-    LINK_REGEX += r'|(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+    LINK_REGEX += r"|(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
     # End domain name [...Group 1]
-    LINK_REGEX += r')'
+    LINK_REGEX += r")"
     # Port: [Group 3]
-    LINK_REGEX += r'(?::(\d{1,5}))?'
+    LINK_REGEX += r"(?::(\d{1,5}))?"
     # Query path:
-    LINK_REGEX += r'(?:[^()\s[\]]*)'
+    LINK_REGEX += r"(?:[^()\s[\]]*)"
 
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
@@ -71,10 +71,12 @@ class DownloadHelper(Helper):
     def link_is_monitored(link: str) -> bool:
         exclude_list = [
             "e621.net",  # Handled by MSGHelper
-            "imgur.com/a/", "imgur.com/gallery/",  # Handled by ImgurGalleryHelper
+            "imgur.com/a/",
+            "imgur.com/gallery/",  # Handled by ImgurGalleryHelper
             "://t.me/",  # Ignored, try to stop telegram loops
             "furaffinity.net/view/",  # Handled FAHelper
-            "reddit.com/user/", "reddit.com/u/",  # Ignored, tends to just download 12 second clips
+            "reddit.com/user/",
+            "reddit.com/u/",  # Ignored, tends to just download 12 second clips
         ]
         return not link.endswith(".gif") and all(exclude not in link for exclude in exclude_list)
 

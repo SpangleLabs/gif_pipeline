@@ -25,12 +25,7 @@ def message_to_items(msg: "MessageData", handle: Union[str, int]) -> List[Item]:
     except ValueError:
         msg_link = f"https://t.me/{handle}/{msg.message_id}"
     if msg.has_video:
-        return [Item(
-            str(msg.message_id),
-            raw_msg_link,
-            msg_link,
-            msg.text
-        )]
+        return [Item(str(msg.message_id), raw_msg_link, msg_link, msg.text)]
     if not msg.text:
         return []
     links = [match.group(0) for match in re.finditer(DownloadHelper.LINK_REGEX, msg.text, re.IGNORECASE)]
@@ -39,13 +34,7 @@ def message_to_items(msg: "MessageData", handle: Union[str, int]) -> List[Item]:
     items = []
     for link in links:
         if any(url in link for url in ["youtu", "twitter.com", "imgur.com"]):
-            items.append(Item(
-                str(msg.message_id),
-                link,
-                msg_link,
-                msg.text,
-                _tag_source=link
-            ))
+            items.append(Item(str(msg.message_id), link, msg_link, msg.text, _tag_source=link))
     return items
 
 
@@ -81,11 +70,7 @@ class TelegramSubscription(Subscription):
             try:
                 return await super().download_item(item)
             except Exception as e:
-                logger.warning(
-                    "Telegram subscription failed to download link: %s",
-                    item.download_link,
-                    exc_info=e
-                )
+                logger.warning("Telegram subscription failed to download link: %s", item.download_link, exc_info=e)
                 return None
 
     @classmethod
@@ -108,4 +93,3 @@ class TelegramSubscription(Subscription):
         async for msg in helper.client.list_messages_since(telegram_handle, limit=10):
             message_to_items(msg, telegram_handle)
         return True
-

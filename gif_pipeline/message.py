@@ -23,20 +23,20 @@ def mime_type_is_video(mime_type: str) -> bool:
 
 class MessageData:
     def __init__(
-            self,
-            chat_id: int,
-            message_id: int,
-            msg_datetime: datetime.datetime,
-            text: str,
-            is_forward: bool,
-            has_file: bool,
-            file_path: Optional[str],
-            file_mime_type: Optional[str],
-            file_size: Optional[int],
-            reply_to: Optional[int],
-            sender_id: int,
-            is_scheduled: bool,
-            forwarded_channel_link: Optional[str] = None
+        self,
+        chat_id: int,
+        message_id: int,
+        msg_datetime: datetime.datetime,
+        text: str,
+        is_forward: bool,
+        has_file: bool,
+        file_path: Optional[str],
+        file_mime_type: Optional[str],
+        file_size: Optional[int],
+        reply_to: Optional[int],
+        sender_id: int,
+        is_scheduled: bool,
+        forwarded_channel_link: Optional[str] = None,
     ):
         self.chat_id = chat_id
         self.message_id = message_id
@@ -56,11 +56,12 @@ class MessageData:
         return f"MessageData(chat_id={self.chat_id or self.chat_id}, message_id={self.message_id})"
 
     def __eq__(self, other: object) -> bool:
-        return \
-            isinstance(other, MessageData) \
-            and self.chat_id == other.chat_id \
-            and self.message_id == other.message_id \
+        return (
+            isinstance(other, MessageData)
+            and self.chat_id == other.chat_id
+            and self.message_id == other.message_id
             and self.is_scheduled == other.is_scheduled
+        )
 
     def __ne__(self, other: object) -> bool:
         return not self.__eq__(other)
@@ -81,7 +82,6 @@ class MessageData:
 
 
 class Message:
-
     def __init__(self, message_data: MessageData, chat_data: ChatData):
         self.chat_data = chat_data
         self.message_data = message_data
@@ -100,7 +100,7 @@ class Message:
         return self.message_data.text
 
     @classmethod
-    async def from_message_data(cls, message_data: MessageData, chat_data: 'ChatData', client: 'TelegramClient'):
+    async def from_message_data(cls, message_data: MessageData, chat_data: "ChatData", client: "TelegramClient"):
         logger.debug(f"Creating message: {message_data}")
         # Update file path if not set
         video_path = message_data.expected_file_path(chat_data)
@@ -140,7 +140,7 @@ class Message:
                     return True
         return False
 
-    def delete(self, database: 'Database') -> None:
+    def delete(self, database: "Database") -> None:
         if self.message_data.file_path:
             try:
                 os.remove(self.message_data.file_path)
@@ -148,7 +148,7 @@ class Message:
                 pass
         database.remove_message(self.message_data)
 
-    def tags(self, database: 'Database') -> VideoTags:
+    def tags(self, database: "Database") -> VideoTags:
         if not self._tags:
             tag_entries = database.get_tags_for_message(self.message_data)
             self._tags = VideoTags.from_database(tag_entries)

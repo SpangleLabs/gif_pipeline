@@ -14,17 +14,16 @@ if TYPE_CHECKING:
 
 
 class EditGnosticTagValuesMenu(EditTagValuesMenu):
-
     def __init__(
-            self,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            cmd: Message,
-            video: Message,
-            send_helper: 'GifSendHelper',
-            destination: Channel,
-            tag_manager: 'TagManager',
-            tag_name: str
+        self,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        cmd: Message,
+        video: Message,
+        send_helper: "GifSendHelper",
+        destination: Channel,
+        tag_manager: "TagManager",
+        tag_name: str,
     ):
         super().__init__(menu_helper, chat, cmd, video, send_helper, destination, tag_manager, tag_name)
         # We need to make a copy of the tags, so that edits elsewhere won't cause these to get saved to database early
@@ -44,11 +43,15 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
     @property
     def text(self) -> str:
         if not self.known_tag_values:
-            return f"There are no known previous values for the tag \"{self.tag_name}\" going to that destination.\n" \
-                   f"Please reply to this menu with a tag value to add."
-        return f"Select which tags this video should have for \"{self.tag_name}\".\n" \
-               f"Any you do not select, will be assumed to be rejected tags for this video.\n" \
-               f"Press cancel to leave without saving changes."
+            return (
+                f'There are no known previous values for the tag "{self.tag_name}" going to that destination.\n'
+                f"Please reply to this menu with a tag value to add."
+            )
+        return (
+            f'Select which tags this video should have for "{self.tag_name}".\n'
+            f"Any you do not select, will be assumed to be rejected tags for this video.\n"
+            f"Press cancel to leave without saving changes."
+        )
 
     def page_center_buttons(self) -> List[Button]:
         return [self.button_done(), self.button_cancel()]
@@ -108,20 +111,20 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
             "tag_name": self.tag_name,
             "page_num": self.page_num,
             "current_tags": self.current_tags.to_json(),
-            "new_tags": list(self.new_tags)
+            "new_tags": list(self.new_tags),
         }
 
     @classmethod
     def from_json(
-            cls,
-            json_data: Dict,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            video: Message,
-            send_helper: 'GifSendHelper',
-            all_channels: List[Channel],
-            tag_manager: 'TagManager'
-    ) -> 'EditTagValuesMenu':
+        cls,
+        json_data: Dict,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        video: Message,
+        send_helper: "GifSendHelper",
+        all_channels: List[Channel],
+        tag_manager: "TagManager",
+    ) -> "EditTagValuesMenu":
         destination = next(filter(lambda x: x.chat_data.chat_id == json_data["destination_id"], all_channels), None)
         menu = EditGnosticTagValuesMenu(
             menu_helper,
@@ -131,7 +134,7 @@ class EditGnosticTagValuesMenu(EditTagValuesMenu):
             send_helper,
             destination,
             tag_manager,
-            json_data["tag_name"]
+            json_data["tag_name"],
         )
         menu.current_tags = VideoTags.from_json(json_data["current_tags"])
         menu.page_num = json_data["page_num"]

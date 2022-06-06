@@ -16,13 +16,13 @@ class NotGifConfirmationMenu(Menu):
     send_str = "send_str"
 
     def __init__(
-            self,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            cmd_msg: Message,
-            video: Message,
-            send_helper: 'GifSendHelper',
-            dest_str: str
+        self,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        cmd_msg: Message,
+        video: Message,
+        send_helper: "GifSendHelper",
+        dest_str: str,
     ):
         super().__init__(menu_helper, chat, cmd_msg, video)
         self.send_helper = send_helper
@@ -35,15 +35,12 @@ class NotGifConfirmationMenu(Menu):
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
         button_data = f"{self.send_str}:{self.dest_str}"
-        return [
-            [Button.inline("Yes, I am sure", button_data)],
-            [Button.inline("No thanks!", self.clear_menu)]
-        ]
+        return [[Button.inline("Yes, I am sure", button_data)], [Button.inline("No thanks!", self.clear_menu)]]
 
     async def handle_callback_query(
-            self,
-            callback_query: bytes,
-            sender_id: int,
+        self,
+        callback_query: bytes,
+        sender_id: int,
     ) -> Optional[List[Message]]:
         if callback_query == self.clear_menu:
             await self.delete()
@@ -52,34 +49,19 @@ class NotGifConfirmationMenu(Menu):
         split_data = callback_query.decode().split(":")
         if split_data[0] == self.send_str:
             _, dest_str = split_data
-            return await self.send_helper.handle_dest_str(
-                self.chat, self.cmd, self.video, dest_str, sender_id
-            )
+            return await self.send_helper.handle_dest_str(self.chat, self.cmd, self.video, dest_str, sender_id)
 
     @classmethod
     def json_name(cls) -> str:
         return "not_gif_confirmation_menu"
 
     def to_json(self) -> Dict:
-        return {
-            "cmd_msg_id": self.cmd_msg_id,
-            "dest_str": self.dest_str
-        }
+        return {"cmd_msg_id": self.cmd_msg_id, "dest_str": self.dest_str}
 
     @classmethod
     def from_json(
-            cls,
-            json_data: Dict,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            video: Message,
-            send_helper: 'GifSendHelper'
-    ) -> 'Menu':
+        cls, json_data: Dict, menu_helper: "MenuHelper", chat: Chat, video: Message, send_helper: "GifSendHelper"
+    ) -> "Menu":
         return NotGifConfirmationMenu(
-            menu_helper,
-            chat,
-            chat.message_by_id(json_data["cmd_msg_id"]),
-            video,
-            send_helper,
-            json_data["dest_str"]
+            menu_helper, chat, chat.message_by_id(json_data["cmd_msg_id"]), video, send_helper, json_data["dest_str"]
         )

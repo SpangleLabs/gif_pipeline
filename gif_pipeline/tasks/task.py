@@ -5,7 +5,7 @@ from asyncio import StreamReader
 from asyncio.subprocess import Process
 from typing import Generic, Optional, Tuple, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
 logger = logging.getLogger(__name__)
 DEFAULT_TIMEOUT = 5 * 60
 CLOSE_TIMEOUT = 10
@@ -16,10 +16,7 @@ class TaskException(Exception):
 
 
 async def log_output(proc: Process, timeout: int = DEFAULT_TIMEOUT) -> Tuple[str, str]:
-    return await asyncio.gather(
-        log_stream(proc.stdout, timeout, "stdout"),
-        log_stream(proc.stderr, timeout, "stderr")
-    )
+    return await asyncio.gather(log_stream(proc.stdout, timeout, "stdout"), log_stream(proc.stderr, timeout, "stderr"))
 
 
 async def log_stream(stream: StreamReader, timeout: int = DEFAULT_TIMEOUT, prefix: Optional[str] = None) -> str:
@@ -70,7 +67,6 @@ async def run_subprocess(args, timeout: int = DEFAULT_TIMEOUT) -> str:
 
 
 class Task(ABC, Generic[T]):
-
     @abstractmethod
     async def run(self) -> T:
         pass

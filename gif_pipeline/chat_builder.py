@@ -50,10 +50,7 @@ class ChatBuilder(ABC, Generic[Conf, Data]):
         chat_data_list = []
         logger.info(f"Creating {self.chat_type} data")
         for conf in tqdm(chat_confs, desc=f"Creating {self.chat_type} data"):
-            matching_chat_data = next(
-                (chat for chat in db_data if chat.matches_config(conf)),
-                None
-            )
+            matching_chat_data = next((chat for chat in db_data if chat.matches_config(conf)), None)
             if matching_chat_data:
                 db_data.remove(matching_chat_data)
                 if matching_chat_data.is_complete():
@@ -68,9 +65,7 @@ class ChatBuilder(ABC, Generic[Conf, Data]):
         return chat_data_list
 
     async def get_message_inits(
-            self,
-            chat_confs: List[Conf],
-            chat_data_list: List[Data]
+        self, chat_confs: List[Conf], chat_data_list: List[Data]
     ) -> List[List[Awaitable[Message]]]:
         message_inits = []
         total = len(chat_confs)
@@ -78,8 +73,9 @@ class ChatBuilder(ABC, Generic[Conf, Data]):
         for chat_conf, chat_data in tqdm(zip(chat_confs, chat_data_list), title, total=total):
             new_inits = [
                 self.download_bottleneck.await_run(message_init)
-                for message_init
-                in await Chat.list_message_initialisers(chat_data, chat_conf, self.client, self.database)
+                for message_init in await Chat.list_message_initialisers(
+                    chat_data, chat_conf, self.client, self.database
+                )
             ]
             message_inits.append(new_inits)
         return message_inits

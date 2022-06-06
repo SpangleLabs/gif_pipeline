@@ -18,13 +18,13 @@ class SendConfirmationMenu(Menu):
     send_queue = b"queue"
 
     def __init__(
-            self,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            cmd_msg: Message,
-            video: Message,
-            send_helper: 'GifSendHelper',
-            destination: Channel
+        self,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        cmd_msg: Message,
+        video: Message,
+        send_helper: "GifSendHelper",
+        destination: Channel,
     ):
         super().__init__(menu_helper, chat, cmd_msg, video)
         self.send_helper = send_helper
@@ -53,57 +53,41 @@ class SendConfirmationMenu(Menu):
             [Button.inline("I am sure", self.send_callback)],
         ]
         if self.destination.has_queue:
-            buttons.append(
-                [Button.inline("Send to queue", self.send_queue)]
-            )
-        buttons.append(
-            [Button.inline("No thanks", self.clear_confirm_menu)]
-        )
+            buttons.append([Button.inline("Send to queue", self.send_queue)])
+        buttons.append([Button.inline("No thanks", self.clear_confirm_menu)])
         return buttons
 
     async def handle_callback_query(
-            self,
-            callback_query: bytes,
-            sender_id: int,
+        self,
+        callback_query: bytes,
+        sender_id: int,
     ) -> Optional[List[Message]]:
         if callback_query == self.clear_confirm_menu:
             await self.delete()
             return []
         if callback_query == self.send_callback:
-            return await self.send_helper.send_video(
-                self.chat, self.video, self.cmd, self.destination, sender_id
-            )
+            return await self.send_helper.send_video(self.chat, self.video, self.cmd, self.destination, sender_id)
         if callback_query == self.send_queue:
-            return await self.send_helper.send_video(
-                self.chat, self.video, self.cmd, self.destination.queue, sender_id
-            )
+            return await self.send_helper.send_video(self.chat, self.video, self.cmd, self.destination.queue, sender_id)
 
     @classmethod
     def json_name(cls) -> str:
         return "send_confirmation_menu"
 
     def to_json(self) -> Dict:
-        return {
-            "cmd_msg_id": self.cmd_msg_id,
-            "destination_id": self.destination.chat_data.chat_id
-        }
+        return {"cmd_msg_id": self.cmd_msg_id, "destination_id": self.destination.chat_data.chat_id}
 
     @classmethod
     def from_json(
-            cls,
-            json_data: Dict,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            video: Message,
-            send_helper: 'GifSendHelper',
-            all_channels: List[Channel]
-    ) -> 'Menu':
+        cls,
+        json_data: Dict,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        video: Message,
+        send_helper: "GifSendHelper",
+        all_channels: List[Channel],
+    ) -> "Menu":
         destination = next(filter(lambda x: x.chat_data.chat_id == json_data["destination_id"], all_channels), None)
         return SendConfirmationMenu(
-            menu_helper,
-            chat,
-            chat.message_by_id(json_data["cmd_msg_id"]),
-            video,
-            send_helper,
-            destination
+            menu_helper, chat, chat.message_by_id(json_data["cmd_msg_id"]), video, send_helper, destination
         )

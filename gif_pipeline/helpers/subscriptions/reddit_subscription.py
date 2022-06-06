@@ -14,12 +14,12 @@ if TYPE_CHECKING:
 
 @contextlib.asynccontextmanager
 async def reddit_client(helper: "SubscriptionHelper") -> asyncpraw.Reddit:
-    username = helper.api_keys['reddit']['owner_username']
+    username = helper.api_keys["reddit"]["owner_username"]
     user_agent = f"line:gif_pipeline:v{_version.__VERSION__} (by u/{username})"
     reddit = asyncpraw.Reddit(
         client_id=helper.api_keys["reddit"]["client_id"],
         client_secret=helper.api_keys["reddit"]["client_secret"],
-        user_agent=user_agent
+        user_agent=user_agent,
     )
     yield reddit
     await reddit.close()
@@ -40,12 +40,7 @@ class RedditSubscription(Subscription):
                 if submission.is_self:
                     continue
                 link = f"https://reddit.com{submission.permalink}"
-                new_item = Item(
-                    submission.id,
-                    link,
-                    link,
-                    submission.title
-                )
+                new_item = Item(submission.id, link, link, submission.title)
                 new_items.append(new_item)
                 self.seen_item_ids.append(new_item.item_id)
         return new_items

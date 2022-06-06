@@ -30,12 +30,7 @@ class InstagramSubscription(Subscription):
             entry_link = self.link_to_insta_link(entry.link)
             if entry_id in self.seen_item_ids:
                 continue
-            new_item = Item(
-                entry_id,
-                entry_link,
-                entry_link,
-                bleach.clean(entry.title, tags=[], strip=True)
-            )
+            new_item = Item(entry_id, entry_link, entry_link, bleach.clean(entry.title, tags=[], strip=True))
             new_items.append(new_item)
             self.seen_item_ids.append(new_item.item_id)
         return new_items
@@ -51,10 +46,5 @@ class InstagramSubscription(Subscription):
         if not feed.entries:
             return False
         for entry in feed.entries:
-            Item(
-                entry.id,
-                entry.link,
-                entry.link,
-                bleach.clean(entry.title, tags=[], strip=True)
-            )
+            Item(entry.id, entry.link, entry.link, bleach.clean(entry.title, tags=[], strip=True))
         return True

@@ -39,7 +39,7 @@ class DuplicateHelper(Helper):
         messages_needing_hashes = self.database.get_messages_needing_hashing()
         await tqdm_gather(
             [self.initialise_message(message_data, workshop_ids) for message_data in messages_needing_hashes],
-            desc="Hashing messages"
+            desc="Hashing messages",
         )
 
     async def initialise_message(self, message_data: MessageData, workshop_dict: Dict[int, WorkshopGroup]) -> None:
@@ -55,9 +55,7 @@ class DuplicateHelper(Helper):
             if workshop is not None:
                 message = workshop.message_by_id(message_data.message_id)
                 await self.send_text_reply(
-                    workshop,
-                    message,
-                    "During startup, duplicate helper failed to check this video"
+                    workshop, message, "During startup, duplicate helper failed to check this video"
                 )
             return
         # Send alerts for workshop messages
@@ -99,10 +97,7 @@ class DuplicateHelper(Helper):
         return hash_set
 
     async def check_hash_in_store(
-            self,
-            chat: WorkshopGroup,
-            image_hashes: Set[str],
-            message: Message
+        self, chat: WorkshopGroup, image_hashes: Set[str], message: Message
     ) -> Optional[Message]:
         if not image_hashes:
             return None
@@ -120,11 +115,7 @@ class DuplicateHelper(Helper):
             warning_msg = await self.post_duplicate_warning(chat, message, warning_messages, has_blank_frame)
         return warning_msg
 
-    def get_duplicate_warnings(
-            self,
-            potential_matches: Set[MessageData],
-            has_blank_frame: bool
-    ) -> List[str]:
+    def get_duplicate_warnings(self, potential_matches: Set[MessageData], has_blank_frame: bool) -> List[str]:
         warning_messages = []
         if has_blank_frame:
             warning_messages.append("This video contains at least one blank frame.")
@@ -137,11 +128,7 @@ class DuplicateHelper(Helper):
         return warning_messages
 
     async def post_duplicate_warning(
-            self,
-            chat: Chat,
-            new_message: Message,
-            potential_matches: Set[MessageData],
-            has_blank_frame: bool
+        self, chat: Chat, new_message: Message, potential_matches: Set[MessageData], has_blank_frame: bool
     ) -> Message:
         warning_messages = self.get_duplicate_warnings(potential_matches, has_blank_frame)
         return await self.send_text_reply(chat, new_message, "\n".join(warning_messages))
@@ -159,7 +146,7 @@ class DuplicateHelper(Helper):
         task = FfmpegTask(
             inputs={video_path: None},
             outputs={f"{decompose_dir_path}/out%d.png": "-vf fps=5 -vsync 0"},
-            global_options="-y"
+            global_options="-y",
         )
         await self.worker.await_task(task)
 

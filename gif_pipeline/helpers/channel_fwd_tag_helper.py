@@ -10,7 +10,6 @@ from gif_pipeline.video_tags import VideoTags
 
 
 class ChannelFwdTagHelper(Helper):
-
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
 
@@ -31,8 +30,8 @@ class ChannelFwdTagHelper(Helper):
         # Save the tags
         self.database.save_tags(message.message_data, tags)
         # Say source tag was added
-        return [await self.send_text_reply(
-            chat,
-            message,
-            f"Added source tag: {message.message_data.forwarded_channel_link}"
-        )]
+        return [
+            await self.send_text_reply(
+                chat, message, f"Added source tag: {message.message_data.forwarded_channel_link}"
+            )
+        ]

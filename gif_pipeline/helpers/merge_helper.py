@@ -92,26 +92,21 @@ class MergeHelper(Helper):
         return await self.merge_messages(chat, message, messages_to_merge)
 
     async def merge_messages(
-            self,
-            chat: Chat,
-            cmd_message: Message,
-            messages_to_merge: List[Message]
+        self, chat: Chat, cmd_message: Message, messages_to_merge: List[Message]
     ) -> Optional[List[Message]]:
         if len(messages_to_merge) < 2:
-            error_text = \
-                "Merge commands require at least 2 videos to merge. " \
+            error_text = (
+                "Merge commands require at least 2 videos to merge. "
                 "Please reply to a message, and provide telegram links to the other messages"
+            )
             return [await self.send_text_reply(chat, cmd_message, error_text)]
         num_files = len(messages_to_merge)
         filter_args = "".join([f"[{x}:v][{x}:a]" for x in range(num_files)]) + f" concat=n={num_files}:v=1:a=1 [v] [a]"
-        output_args = f"-filter_complex \"{filter_args}\" -map \"[v]\" -map \"[a]\" -vsync 2"
+        output_args = f'-filter_complex "{filter_args}" -map "[v]" -map "[a]" -vsync 2'
         async with self.progress_message(chat, cmd_message, "Merging videos"):
             file_paths = await self.align_video_dimensions([m.message_data.file_path for m in messages_to_merge])
             output_path = random_sandbox_video_path()
-            task = FfmpegTask(
-                inputs={file_path: None for file_path in file_paths},
-                outputs={output_path: output_args}
-            )
+            task = FfmpegTask(inputs={file_path: None for file_path in file_paths}, outputs={output_path: output_args})
             await self.worker.await_task(task)
             tags = messages_to_merge[0].tags(self.database)
             tags.merge_all([msg.tags(self.database) for msg in messages_to_merge[1:]])
@@ -138,9 +133,7 @@ class MergeHelper(Helper):
         return output_paths
 
     async def get_video_dimensions(self, file_path: str) -> Tuple[int, int]:
-        task = FFprobeTask(
-            inputs={file_path: "-v error -show_entries stream=width,height -of csv=p=0:s=x"}
-        )
+        task = FFprobeTask(inputs={file_path: "-v error -show_entries stream=width,height -of csv=p=0:s=x"})
         return tuple((await self.worker.await_task(task)).split("x"))
 
     async def scale_and_pad_to_dimensions(self, file_path: str, dimensions: Tuple[int, int]) -> str:
@@ -149,11 +142,8 @@ class MergeHelper(Helper):
             return file_path
         output_path = random_sandbox_video_path()
         x, y = dimensions
-        args = f"-vf \"scale={x}:{y}:force_original_aspect_ratio=decrease,pad={x}:{y}:(ow-iw)/2:(oh-ih)/2,setsar=1\""
-        task = FfmpegTask(
-            inputs={file_path: None},
-            outputs={output_path: args}
-        )
+        args = f'-vf "scale={x}:{y}:force_original_aspect_ratio=decrease,pad={x}:{y}:(ow-iw)/2:(oh-ih)/2,setsar=1"'
+        task = FfmpegTask(inputs={file_path: None}, outputs={output_path: args})
         await self.worker.await_task(task)
         return output_path
 

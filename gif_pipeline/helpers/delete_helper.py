@@ -10,8 +10,7 @@ from gif_pipeline.telegram_client import TelegramClient
 
 
 class DeleteHelper(Helper):
-
-    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, menu_cache: 'MenuCache'):
+    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, menu_cache: "MenuCache"):
         super().__init__(database, client, worker)
         self.menu_cache = menu_cache
 
@@ -54,10 +53,10 @@ class DeleteHelper(Helper):
         self.menu_cache.remove_menu_by_message(msg)
 
     async def on_callback_query(
-            self,
-            callback_query: bytes,
-            menu: SentMenu,
-            sender_id: int,
+        self,
+        callback_query: bytes,
+        menu: SentMenu,
+        sender_id: int,
     ) -> Optional[List[Message]]:
         query_split = callback_query.decode().split(":")
         if query_split[0] != "delete":
@@ -70,11 +69,11 @@ class DeleteHelper(Helper):
         return resp
 
     async def on_stateless_callback(
-            self,
-            callback_query: bytes,
-            chat: Chat,
-            message: Message,
-            sender_id: int,
+        self,
+        callback_query: bytes,
+        chat: Chat,
+        message: Message,
+        sender_id: int,
     ) -> Optional[List[Message]]:
         if callback_query.decode() != "delete_me":
             return None
