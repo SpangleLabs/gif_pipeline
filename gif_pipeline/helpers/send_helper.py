@@ -1,13 +1,14 @@
 from __future__ import annotations
+
 import asyncio
 import logging
 import shutil
-from typing import Optional, List, Union, TYPE_CHECKING, Set, Dict
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Union
 
 import tweepy
 
+from gif_pipeline.chat import Channel, Chat
 from gif_pipeline.database import Database
-from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.task_worker import TaskWorker
@@ -15,8 +16,8 @@ from gif_pipeline.telegram_client import TelegramClient, message_data_from_teleg
 from gif_pipeline.video_tags import VideoTags
 
 if TYPE_CHECKING:
-    from gif_pipeline.helpers.menu_helper import MenuHelper
     from gif_pipeline.chat_config import TwitterAccountConfig
+    from gif_pipeline.helpers.menu_helper import MenuHelper
 
 logger = logging.getLogger(__name__)
 

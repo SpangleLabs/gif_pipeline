@@ -1,7 +1,7 @@
 import logging
-from typing import List, TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, List, Type
 
-from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item, create_sub_for_link
+from gif_pipeline.helpers.subscriptions.subscription import Item, Subscription, create_sub_for_link
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.subscription_helper import SubscriptionHelper

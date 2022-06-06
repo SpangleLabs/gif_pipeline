@@ -1,4 +1,4 @@
-from typing import Optional, List, TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from telethon import Button
 
@@ -7,8 +7,8 @@ from gif_pipeline.helpers.menus.menu import Menu
 from gif_pipeline.message import Message
 
 if TYPE_CHECKING:
-    from gif_pipeline.helpers.send_helper import GifSendHelper
     from gif_pipeline.helpers.menu_helper import MenuHelper
+    from gif_pipeline.helpers.send_helper import GifSendHelper
 
 
 class NotGifConfirmationMenu(Menu):

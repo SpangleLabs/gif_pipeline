@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 import asyncio
-from typing import Optional, List, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
-from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetector, FrameTimecode
+from scenedetect import ContentDetector, FrameTimecode, SceneManager, StatsManager, VideoManager
 
-from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
+from gif_pipeline.database import Database
 from gif_pipeline.helpers.helpers import find_video_for_message
 from gif_pipeline.helpers.video_cut_helper import VideoCutHelper
 from gif_pipeline.message import Message

@@ -1,5 +1,5 @@
 import asyncio
-from typing import TypeVar, List, Awaitable
+from typing import Awaitable, List, TypeVar
 
 from tqdm import tqdm
 

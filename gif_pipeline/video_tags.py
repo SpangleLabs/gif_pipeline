@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Optional, Dict, List, Set
+from typing import Dict, List, Optional, Set
 
 from gif_pipeline.chat_config import TagConfig, TagType
 

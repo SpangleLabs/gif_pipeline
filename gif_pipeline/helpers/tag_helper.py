@@ -1,5 +1,5 @@
-from typing import Optional, List
 import html
+from typing import List, Optional
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.database import Database

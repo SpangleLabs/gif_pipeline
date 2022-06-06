@@ -1,6 +1,6 @@
 import re
 
-from gif_pipeline.tasks.task import Task, run_subprocess, TaskException
+from gif_pipeline.tasks.task import Task, TaskException, run_subprocess
 from gif_pipeline.tasks.youtube_dl_task import yt_dl_pkg
 
 yt_dl_github_repo = "https://github.com/yt-dlp/yt-dlp/"

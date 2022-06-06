@@ -4,19 +4,18 @@ import asyncio
 import logging
 import os
 from abc import ABC
-from typing import TYPE_CHECKING, Awaitable
-from typing import TypeVar, List, Optional
+from typing import TYPE_CHECKING, Awaitable, List, Optional, TypeVar
 
-from prometheus_client.metrics import Gauge, Counter
+from prometheus_client.metrics import Counter, Gauge
 
-from gif_pipeline.chat_config import ChatConfig, ChannelConfig, WorkshopConfig, ScheduleConfig
-from gif_pipeline.chat_data import ChatData, ChannelData, WorkshopData
+from gif_pipeline.chat_config import ChannelConfig, ChatConfig, ScheduleConfig, WorkshopConfig
+from gif_pipeline.chat_data import ChannelData, ChatData, WorkshopData
 from gif_pipeline.message import Message
 
 if TYPE_CHECKING:
-    from gif_pipeline.telegram_client import TelegramClient
     from gif_pipeline.database import Database
     from gif_pipeline.message import MessageData
+    from gif_pipeline.telegram_client import TelegramClient
 T = TypeVar('T', bound='Group')
 
 

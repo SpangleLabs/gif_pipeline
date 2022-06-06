@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, List, Optional
 
 import matplotlib.pyplot as plt
 

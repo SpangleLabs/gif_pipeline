@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional, TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from scenedetect import FrameTimecode
 from telethon import Button
@@ -8,8 +8,8 @@ from gif_pipeline.helpers.menus.menu import Menu
 from gif_pipeline.message import Message
 
 if TYPE_CHECKING:
-    from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
     from gif_pipeline.helpers.menu_helper import MenuHelper
+    from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
 
 
 def timecode_to_json(timecode: FrameTimecode) -> Dict:

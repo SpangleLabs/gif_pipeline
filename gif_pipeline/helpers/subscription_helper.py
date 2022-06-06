@@ -5,7 +5,7 @@ import logging
 import os
 import shutil
 from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING, Dict, Set, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Type
 
 import isodate
 from PIL import Image
@@ -13,13 +13,13 @@ from prometheus_client import Counter, Gauge
 from telethon import Button
 
 from gif_pipeline.chat import Chat
-from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.helpers.duplicate_helper import hash_image
+from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.helpers.subscriptions.imgur_subscription import ImgurSearchSubscription
 from gif_pipeline.helpers.subscriptions.instagram_subscription import InstagramSubscription
 from gif_pipeline.helpers.subscriptions.reddit_subscription import RedditSubscription
 from gif_pipeline.helpers.subscriptions.rss_subscription import RSSSubscription
-from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item, create_sub_for_link
+from gif_pipeline.helpers.subscriptions.subscription import Item, Subscription, create_sub_for_link
 from gif_pipeline.helpers.subscriptions.telegram_subscription import TelegramSubscription
 from gif_pipeline.helpers.subscriptions.twitter_subscription import TwitterSubscription
 from gif_pipeline.helpers.subscriptions.unitialised_subscription import UninitialisedSubscription
@@ -30,11 +30,11 @@ from gif_pipeline.video_tags import VideoTags
 
 if TYPE_CHECKING:
     from gif_pipeline.database import Database
-    from gif_pipeline.helpers.duplicate_helper import DuplicateHelper
     from gif_pipeline.helpers.download_helper import DownloadHelper
+    from gif_pipeline.helpers.duplicate_helper import DuplicateHelper
+    from gif_pipeline.pipeline import Pipeline
     from gif_pipeline.tasks.task_worker import TaskWorker
     from gif_pipeline.telegram_client import TelegramClient
-    from gif_pipeline.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 

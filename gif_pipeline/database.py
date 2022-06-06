@@ -5,11 +5,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from sqlite3 import Cursor
 from threading import RLock
-from typing import List, Optional, Type, TypeVar, Set, Iterable, Dict, Tuple, Union, ContextManager
+from typing import ContextManager, Dict, Iterable, List, Optional, Set, Tuple, Type, TypeVar, Union
 
 import dateutil.parser
 
-from gif_pipeline.chat_data import ChatData, ChannelData, WorkshopData
+from gif_pipeline.chat_data import ChannelData, ChatData, WorkshopData
 from gif_pipeline.message import MessageData
 from gif_pipeline.video_tags import TagEntry, VideoTags
 

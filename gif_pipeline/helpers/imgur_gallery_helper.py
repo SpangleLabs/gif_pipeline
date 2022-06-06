@@ -1,16 +1,16 @@
 import asyncio
 import re
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 
 import requests
 
-from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
+from gif_pipeline.database import Database
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.message import Message
-from gif_pipeline.video_tags import VideoTags
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
+from gif_pipeline.video_tags import VideoTags
 
 
 class ImgurGalleryHelper(Helper):

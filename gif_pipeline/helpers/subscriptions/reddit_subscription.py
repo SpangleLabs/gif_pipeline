@@ -1,12 +1,12 @@
 import contextlib
 import re
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import asyncpraw
 import asyncprawcore
 
 from gif_pipeline import _version
-from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item
+from gif_pipeline.helpers.subscriptions.subscription import Item, Subscription
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.subscription_helper import SubscriptionHelper

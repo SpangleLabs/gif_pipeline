@@ -1,11 +1,11 @@
 import asyncio
-import random
 import logging
+import random
 from dataclasses import dataclass
-from datetime import timedelta, datetime, timezone
-from typing import Optional, List, TYPE_CHECKING, Dict
+from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING, Dict, List, Optional
 
-from gif_pipeline.chat import Chat, Channel
+from gif_pipeline.chat import Channel, Chat
 from gif_pipeline.chat_config import ScheduleOrder
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message
 from gif_pipeline.helpers.menus.schedule_reminder_menu import ScheduleReminderMenu, next_video_from_list

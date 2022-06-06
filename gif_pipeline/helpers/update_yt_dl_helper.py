@@ -1,11 +1,11 @@
-from typing import Optional, List
+from typing import List, Optional
 
-from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
+from gif_pipeline.database import Database
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.message import Message
-from gif_pipeline.tasks.update_youtube_dl_task import UpdateYoutubeDLTask
 from gif_pipeline.tasks.task_worker import TaskWorker
+from gif_pipeline.tasks.update_youtube_dl_task import UpdateYoutubeDLTask
 from gif_pipeline.telegram_client import TelegramClient
 
 

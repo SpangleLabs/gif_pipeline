@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Optional, List, TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, List, Optional, Type
 
 import isodate
 

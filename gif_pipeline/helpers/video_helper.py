@@ -1,5 +1,5 @@
 import os
-from typing import Optional, List
+from typing import List, Optional
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path

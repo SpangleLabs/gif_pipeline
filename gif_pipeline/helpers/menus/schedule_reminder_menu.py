@@ -1,6 +1,6 @@
-from datetime import datetime, timezone
 import random
-from typing import Dict, TYPE_CHECKING, Optional, List, Set
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Dict, List, Optional, Set
 
 import dateutil.parser
 from telethon import Button
@@ -8,7 +8,7 @@ from telethon import Button
 from gif_pipeline.helpers.menus.menu import Menu
 
 if TYPE_CHECKING:
-    from gif_pipeline.chat import Chat, Channel
+    from gif_pipeline.chat import Channel, Chat
     from gif_pipeline.helpers.menu_helper import MenuHelper
     from gif_pipeline.helpers.send_helper import GifSendHelper
     from gif_pipeline.message import Message

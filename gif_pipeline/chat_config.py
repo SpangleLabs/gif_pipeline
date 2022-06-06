@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import timedelta
 from enum import Enum
-from typing import Union, Dict, Any, Optional
+from typing import Any, Dict, Optional, Union
 
 import isodate
 

@@ -2,9 +2,9 @@ import asyncio
 import json
 import logging
 from json import JSONDecodeError
-from typing import List, Optional, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional
 
-from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item
+from gif_pipeline.helpers.subscriptions.subscription import Item, Subscription
 from gif_pipeline.tasks.youtube_dl_task import YoutubeDLDumpJsonTask
 
 if TYPE_CHECKING:

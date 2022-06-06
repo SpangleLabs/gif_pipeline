@@ -2,7 +2,7 @@ import asyncio
 import mimetypes
 import shutil
 import zipfile
-from typing import Optional, List
+from typing import List, Optional
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import random_sandbox_video_path

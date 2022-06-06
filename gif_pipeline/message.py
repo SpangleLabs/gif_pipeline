@@ -3,15 +3,15 @@ from __future__ import annotations
 import datetime
 import logging
 import os
-from typing import Optional
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from gif_pipeline.video_tags import VideoTags
 
 if TYPE_CHECKING:
     from telegram_client import TelegramClient
-    from gif_pipeline.database import Database
+
     from gif_pipeline.chat_data import ChatData
+    from gif_pipeline.database import Database
 
 
 logger = logging.getLogger(__name__)

@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message

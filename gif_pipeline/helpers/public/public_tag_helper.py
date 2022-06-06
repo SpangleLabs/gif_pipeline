@@ -1,5 +1,6 @@
-from telethon.tl.types import Message
 import html
+
+from telethon.tl.types import Message
 
 from gif_pipeline.database import Database
 from gif_pipeline.helpers.public.public_helpers import PublicHelper

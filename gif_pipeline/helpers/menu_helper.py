@@ -1,27 +1,27 @@
 import json
-from datetime import datetime
 import logging
-from typing import Optional, List, Tuple, Set, TYPE_CHECKING
+from datetime import datetime
+from typing import TYPE_CHECKING, List, Optional, Set, Tuple
 
 from scenedetect import FrameTimecode
 from tqdm import tqdm
 
+from gif_pipeline.chat import Channel, Chat
 from gif_pipeline.chat_config import TagType
 from gif_pipeline.database import Database, MenuData
-from gif_pipeline.chat import Chat, Channel
 from gif_pipeline.helpers.helpers import Helper
+from gif_pipeline.helpers.menus.check_tags_menu import CheckTagsMenu
+from gif_pipeline.helpers.menus.delete_menu import DeleteMenu
+from gif_pipeline.helpers.menus.destination_menu import DestinationMenu
 from gif_pipeline.helpers.menus.edit_gnostic_tag_values_menu import EditGnosticTagValuesMenu
 from gif_pipeline.helpers.menus.edit_single_tag_values_menu import EditSingleTagValuesMenu
-from gif_pipeline.helpers.menus.edit_text_tag_values_menu import EditTextTagValuesMenu
-from gif_pipeline.helpers.menus.schedule_reminder_menu import ScheduleReminderMenu
-from gif_pipeline.helpers.menus.split_scenes_confirmation_menu import SplitScenesConfirmationMenu
-from gif_pipeline.helpers.menus.delete_menu import DeleteMenu
-from gif_pipeline.helpers.menus.send_confirmation_menu import SendConfirmationMenu
 from gif_pipeline.helpers.menus.edit_tag_values_menu import EditTagValuesMenu
-from gif_pipeline.helpers.menus.tag_select_menu import TagSelectMenu
-from gif_pipeline.helpers.menus.check_tags_menu import CheckTagsMenu
-from gif_pipeline.helpers.menus.destination_menu import DestinationMenu
+from gif_pipeline.helpers.menus.edit_text_tag_values_menu import EditTextTagValuesMenu
 from gif_pipeline.helpers.menus.not_gif_confirmation_menu import NotGifConfirmationMenu
+from gif_pipeline.helpers.menus.schedule_reminder_menu import ScheduleReminderMenu
+from gif_pipeline.helpers.menus.send_confirmation_menu import SendConfirmationMenu
+from gif_pipeline.helpers.menus.split_scenes_confirmation_menu import SplitScenesConfirmationMenu
+from gif_pipeline.helpers.menus.tag_select_menu import TagSelectMenu
 from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
 from gif_pipeline.helpers.send_helper import GifSendHelper
 from gif_pipeline.menu_cache import SentMenu

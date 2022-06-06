@@ -1,18 +1,18 @@
 import logging
 from asyncio import Future
-from typing import Callable, Coroutine, Union, Generator, Optional, TypeVar, Any, List
+from typing import Any, Callable, Coroutine, Generator, List, Optional, TypeVar, Union
 
 import telethon
-from telethon import events, Button
+from telethon import Button, events
 from telethon.errors import UserNotParticipantError
 from telethon.tl.custom import message
 from telethon.tl.custom.participantpermissions import ParticipantPermissions
 from telethon.tl.functions.channels import EditAdminRequest, GetFullChannelRequest
-from telethon.tl.functions.messages import MigrateChatRequest, GetScheduledHistoryRequest
-from telethon.tl.types import ChatAdminRights, ChannelParticipantsAdmins, ChannelParticipantCreator, ChannelForbidden, \
-    DocumentAttributeFilename
+from telethon.tl.functions.messages import GetScheduledHistoryRequest, MigrateChatRequest
+from telethon.tl.types import (ChannelForbidden, ChannelParticipantCreator, ChannelParticipantsAdmins, ChatAdminRights,
+                               DocumentAttributeFilename)
 
-from gif_pipeline.chat_data import ChatData, ChannelData, WorkshopData
+from gif_pipeline.chat_data import ChannelData, ChatData, WorkshopData
 from gif_pipeline.message import MessageData
 
 R = TypeVar("R")

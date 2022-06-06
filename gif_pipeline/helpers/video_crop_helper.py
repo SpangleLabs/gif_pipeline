@@ -1,9 +1,9 @@
 import re
 from typing import Optional
 
-from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
-from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path, find_video_for_message
+from gif_pipeline.database import Database
+from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
 from gif_pipeline.tasks.task_worker import TaskWorker

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar, Optional, Union
+from typing import Optional, TypeVar, Union
 
-from gif_pipeline.chat_config import ChatConfig, ChannelConfig, WorkshopConfig
+from gif_pipeline.chat_config import ChannelConfig, ChatConfig, WorkshopConfig
 from gif_pipeline.message import MessageData
 
 C = TypeVar('C', bound='ChatData')

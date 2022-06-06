@@ -1,11 +1,11 @@
 import logging
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import bleach
 import feedparser
 import requests
 
-from gif_pipeline.helpers.subscriptions.subscription import Subscription, Item
+from gif_pipeline.helpers.subscriptions.subscription import Item, Subscription
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.subscription_helper import SubscriptionHelper

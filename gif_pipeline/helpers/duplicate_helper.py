@@ -3,20 +3,19 @@ import logging
 import os
 import shutil
 from multiprocessing.pool import ThreadPool
-from typing import Optional, List, Set, Dict
+from typing import Dict, List, Optional, Set
 
 import imagehash
 from PIL import Image
 
+from gif_pipeline.chat import Chat, WorkshopGroup
 from gif_pipeline.database import Database
-from gif_pipeline.chat import WorkshopGroup, Chat
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.message import Message, MessageData
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
 from gif_pipeline.utils import tqdm_gather
-
 
 logger = logging.getLogger(__name__)
 

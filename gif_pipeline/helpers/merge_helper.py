@@ -1,10 +1,10 @@
 import asyncio
 import shutil
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
-from gif_pipeline.helpers.video_helper import video_has_audio_track_task, add_audio_track_task
+from gif_pipeline.helpers.video_helper import add_audio_track_task, video_has_audio_track_task
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
 from gif_pipeline.tasks.ffmprobe_task import FFprobeTask

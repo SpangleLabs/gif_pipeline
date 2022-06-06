@@ -1,11 +1,11 @@
-from typing import List, Optional, Union, Set
 from collections import Counter
+from typing import List, Optional, Set, Union
 
-from gif_pipeline.chat import Channel, WorkshopGroup, Chat
+from gif_pipeline.chat import Channel, Chat, WorkshopGroup
 from gif_pipeline.chat_config import TagType
 from gif_pipeline.database import Database
 from gif_pipeline.message import Message
-from gif_pipeline.video_tags import gnostic_tag_name_positive, gnostic_tag_name_negative
+from gif_pipeline.video_tags import gnostic_tag_name_negative, gnostic_tag_name_positive
 
 
 class TagManager:

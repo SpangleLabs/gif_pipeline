@@ -1,16 +1,16 @@
-from typing import List, TYPE_CHECKING, Optional, Dict
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from telethon import Button
 
-from gif_pipeline.chat import Chat, Channel
+from gif_pipeline.chat import Channel, Chat
 from gif_pipeline.helpers.menus.edit_tag_values_menu import EditTagValuesMenu
 from gif_pipeline.message import Message
-from gif_pipeline.video_tags import gnostic_tag_name_positive, gnostic_tag_name_negative, VideoTags
+from gif_pipeline.video_tags import VideoTags, gnostic_tag_name_negative, gnostic_tag_name_positive
 
 if TYPE_CHECKING:
-    from gif_pipeline.tag_manager import TagManager
-    from gif_pipeline.helpers.send_helper import GifSendHelper
     from gif_pipeline.helpers.menu_helper import MenuHelper
+    from gif_pipeline.helpers.send_helper import GifSendHelper
+    from gif_pipeline.tag_manager import TagManager
 
 
 class EditGnosticTagValuesMenu(EditTagValuesMenu):

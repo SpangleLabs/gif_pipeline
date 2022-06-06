@@ -1,9 +1,9 @@
 import json
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Optional, Dict, TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Dict, List, Optional
 
-from gif_pipeline.database import MenuData, Database
+from gif_pipeline.database import Database, MenuData
 
 if TYPE_CHECKING:
     from gif_pipeline.helpers.menus.menu import Menu

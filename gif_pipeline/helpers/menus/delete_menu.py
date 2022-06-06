@@ -1,4 +1,4 @@
-from typing import Optional, List, TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from telethon import Button
 

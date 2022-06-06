@@ -1,16 +1,16 @@
 import asyncio
 import logging
-from typing import Dict, List, Iterator, Optional, Iterable, Union, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
 from prometheus_client import Info, start_http_server
 from telethon import events
 from tqdm import tqdm
 
 from gif_pipeline import _version
+from gif_pipeline.chat import Channel, Chat, WorkshopGroup
 from gif_pipeline.chat_builder import ChannelBuilder, WorkshopBuilder
-from gif_pipeline.database import Database
-from gif_pipeline.chat import Chat, Channel, WorkshopGroup
 from gif_pipeline.chat_config import ChannelConfig, WorkshopConfig
+from gif_pipeline.database import Database
 from gif_pipeline.helpers.channel_fwd_tag_helper import ChannelFwdTagHelper
 from gif_pipeline.helpers.chart_helper import ChartHelper
 from gif_pipeline.helpers.delete_helper import DeleteHelper
@@ -41,8 +41,8 @@ from gif_pipeline.menu_cache import MenuCache
 from gif_pipeline.message import Message, MessageData
 from gif_pipeline.startup_monitor import StartupMonitor, StartupState
 from gif_pipeline.tag_manager import TagManager
-from gif_pipeline.tasks.task_worker import TaskWorker, Bottleneck
-from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram, chat_id_from_telegram
+from gif_pipeline.tasks.task_worker import Bottleneck, TaskWorker
+from gif_pipeline.telegram_client import TelegramClient, chat_id_from_telegram, message_data_from_telegram
 from gif_pipeline.utils import tqdm_gather
 
 logger = logging.getLogger(__name__)

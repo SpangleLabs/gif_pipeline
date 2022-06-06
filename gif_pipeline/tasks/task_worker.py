@@ -1,9 +1,9 @@
 import asyncio
-from typing import List, Awaitable
+from typing import Awaitable, List
 
 from prometheus_client import Gauge
 
-from gif_pipeline.tasks.task import Task, T
+from gif_pipeline.tasks.task import T, Task
 
 worker_queue_length = Gauge(
     "gif_pipeline_taskworker_tasks_in_progress",

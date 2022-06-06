@@ -3,12 +3,12 @@ import os
 import re
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Optional, List, ClassVar, Tuple
+from typing import ClassVar, List, Optional, Tuple
 
 import requests
 
-from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
+from gif_pipeline.database import Database
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
