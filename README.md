@@ -99,6 +99,9 @@ Just sets the source tag for any videos forwarded from a public channel.
 ### Chart helper
 Takes commands of the form: `chart {destination} {tag_name}` where `{destination}` is the handle of a telegram channel the bot is managing, and `{tag_name}` is the name of a tag field. It will then generate a pie chart of from the frequency distribution of all the values of that tag in that channel.
 
+### Chunk split helper
+Cuts a video into regularly sized chunks with commands of the form `chunk {duration}`. The duration can either be given as a number (iterpreted as a number of seconds), or an iso8601 duration.
+
 ### Delete helper
 Takes commands of the form: `delete family` or `delete branch`, as a reply to another message. This helper checks that the user has telegram permissions to delete things in this chat.  
 If `delete branch` is specified, it will delete the message the comamnd is replying to, as well as any messages which are replies to that, or replies to that, all the way down. This includes the command message.  

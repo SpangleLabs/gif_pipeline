@@ -6,7 +6,7 @@ from scenedetect import StatsManager, SceneManager, VideoManager, ContentDetecto
 
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
-from gif_pipeline.helpers.helpers import find_video_for_message
+from gif_pipeline.helpers.helpers import find_video_for_message, ordered_post_task
 from gif_pipeline.helpers.video_cut_helper import VideoCutHelper
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.task_worker import TaskWorker
@@ -79,14 +79,13 @@ class SceneSplitHelper(VideoCutHelper):
             video: Message,
             scene_list: List[Tuple[FrameTimecode, FrameTimecode]]
     ) -> Optional[List[Message]]:
-        cut_videos = await asyncio.gather(*[
-            self.cut_video(
-                video,
-                start_time.get_timecode(),
-                end_time.previous_frame().get_timecode()
-            ) for (start_time, end_time) in scene_list
-        ])
-        video_replies = []
-        for new_path in cut_videos:
-            video_replies.append(await self.send_video_reply(chat, message, new_path, video.tags(self.database)))
-        return video_replies
+        return await ordered_post_task(
+            [
+                self.cut_video(
+                    video,
+                    start_time.get_timecode(),
+                    end_time.previous_frame().get_timecode()
+                ) for (start_time, end_time) in scene_list
+            ],
+            lambda path: self.send_video_reply(chat, message, path, video.tags(self.database))
+        )

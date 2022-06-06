@@ -13,6 +13,7 @@ from gif_pipeline.chat import Chat, Channel, WorkshopGroup
 from gif_pipeline.chat_config import ChannelConfig, WorkshopConfig
 from gif_pipeline.helpers.channel_fwd_tag_helper import ChannelFwdTagHelper
 from gif_pipeline.helpers.chart_helper import ChartHelper
+from gif_pipeline.helpers.chunk_split_helper import ChunkSplitHelper
 from gif_pipeline.helpers.delete_helper import DeleteHelper
 from gif_pipeline.helpers.download_helper import DownloadHelper
 from gif_pipeline.helpers.duplicate_helper import DuplicateHelper
@@ -229,6 +230,7 @@ class Pipeline:
             download_helper,
             self.api_keys
         )
+        ffprobe_helper = FFProbeHelper(self.database, self.client, self.worker)
         helpers = [
             duplicate_helper,
             menu_helper,
@@ -242,11 +244,12 @@ class Pipeline:
             MSGHelper(self.database, self.client, self.worker),
             FAHelper(self.database, self.client, self.worker),
             SceneSplitHelper(self.database, self.client, self.worker, menu_helper),
+            ChunkSplitHelper(self.database, self.client, self.worker, ffprobe_helper),
             send_helper,
             delete_helper,
             MergeHelper(self.database, self.client, self.worker),
             ReverseHelper(self.database, self.client, self.worker),
-            FFProbeHelper(self.database, self.client, self.worker),
+            ffprobe_helper,
             ZipHelper(self.database, self.client, self.worker),
             TagHelper(self.database, self.client, self.worker, tag_manager),
             ChannelFwdTagHelper(self.database, self.client, self.worker),
