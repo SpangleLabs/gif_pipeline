@@ -5,7 +5,7 @@ description = "Telegram application to edit videos and create telegram-gifs, in 
 authors = ["Joshua Coales <joshua@coales.co.uk>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 Telethon = "^1.23.0"
 tqdm = "^4.62.3"
 ImageHash = "^4.2.1"
@@ -27,7 +27,23 @@ tweepy = "^4.5.0"
 Jinja2 = "^3.1.2"
 
 [tool.poetry.dev-dependencies]
+isort = "^5.10.1"
+flake8 = "^4.0.1"
+flake8-black = "^0.3.3"
+mypy = "^0.961"
+black = "^22.3.0"
+flake8-type-checking = "^1.5.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+
+[tool.mypy]
+mypy_path = "gif_pipeline/stubs"
+files = "gif_pipeline"
+
+[tool.isort]
+line_length = 120
