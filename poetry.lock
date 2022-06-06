@@ -789,6 +789,14 @@ socks = ["requests[socks] (>=2.27.0,<3)"]
 test = ["vcrpy (>=1.10.3)"]
 
 [[package]]
+name = "types-python-dateutil"
+version = "2.8.17"
+description = "Typing stubs for python-dateutil"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "typing-extensions"
 version = "3.10.0.2"
 description = "Backported and Experimental Type Hints for Python 3.5+"
@@ -848,7 +856,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "bb91b82a22b7ad5e1a12a6b4f1a6d32294a9b59c03dae3c317374227bf7d73bb"
+content-hash = "489bc285f2e453c29683d59613ac36c0d093627b2252d9f2bcffbae1e8fc97a4"
 
 [metadata.files]
 aiofiles = [
@@ -1704,6 +1712,10 @@ tqdm = [
 tweepy = [
     {file = "tweepy-4.5.0-py2.py3-none-any.whl", hash = "sha256:1efe228d5994e0d996577bd052b73c59dada96ff8045e176bf46c175afe61859"},
     {file = "tweepy-4.5.0.tar.gz", hash = "sha256:12cc4b0a3d7b745928b08c3eb55a992236895e00028584d11fa41258f07df1b9"},
+]
+types-python-dateutil = [
+    {file = "types-python-dateutil-2.8.17.tar.gz", hash = "sha256:6c54265a221681dd87f61df6743bd5eab060cf1b4086ff65c1a8fd763ed6370e"},
+    {file = "types_python_dateutil-2.8.17-py3-none-any.whl", hash = "sha256:0be7435b4d382d1cd00b8c55a8a90f4e515aaad8a96f8f0bc20c22df046792e5"},
 ]
 typing-extensions = [
     {file = "typing_extensions-3.10.0.2-py2-none-any.whl", hash = "sha256:d8226d10bc02a29bcc81df19a26e56a9647f8b0a6d4a83924139f4a8b01f17b7"},

@@ -131,7 +131,7 @@ class TelegramGifHelper(Helper):
             )
             return [reply]
         # Otherwise, ignore
-        return
+        return None
 
     async def convert_gif_link(self, chat: Chat, message: Message, gif_link: str) -> Message:
         resp = requests.get(gif_link)

@@ -101,7 +101,7 @@ class GifSendHelper(Helper):
     async def send_two_way_forward(
         self, chat: Chat, cmd_message: Message, video: Message, destination1: str, destination2: str, sender_id: int
     ) -> List[Message]:
-        messages = []
+        messages: List["Message"] = []
         messages += (await self.send_forward(chat, cmd_message, video, destination1, destination2, sender_id),)
         messages += await self.send_forward(chat, cmd_message, video, destination2, destination1, sender_id)
         return messages
