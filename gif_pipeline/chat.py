@@ -47,6 +47,11 @@ queue_duration = Gauge(
     "Estimated duration of queue, based on schedule and videos in queue",
     labelnames=["chat_title"]
 )
+channel_latest_post = Gauge(
+    "gif_pipeline_channel_latest_post_unixtime",
+    "Unix timestamp of the latest post in the channel",
+    labelnames=["chat_title"]
+)
 
 
 class Chat(ABC):
@@ -162,11 +167,17 @@ class Channel(Chat):
         self.sub_count = subscriber_count.labels(
             chat_title=self.chat_data.title
         )
+        # Set up queue duration metrics
         self.queue_duration = None
         if self.config.queue is not None and self.config.queue.schedule is not None:
             self.queue_duration = queue_duration.labels(
                 chat_title=self.chat_data.title
             ).set_function(lambda: self.config.queue.schedule.avg_time.total_seconds() * self.queue.count_videos())
+        # Set up latest post metrics
+        self.latest_post = channel_latest_post.labels(
+            chat_title=self.chat_data.title
+        ).set_function(lambda: self.latest_message().msg_datetime.timestamp() if self.latest_message() else 0)
+        # Start task to update subscriber counts
         asyncio.ensure_future(self.periodically_update_sub_count())
 
     async def periodically_update_sub_count(self) -> None:
