@@ -176,7 +176,7 @@ class Channel(Chat):
         # Set up latest post metrics
         self.latest_post = channel_latest_post.labels(
             chat_title=self.chat_data.title
-        ).set_function(lambda: self.latest_message().message_data.msg_datetime.timestamp() if self.latest_message() else 0)
+        ).set_function(lambda: self.latest_message().message_data.datetime.timestamp() if self.latest_message() else 0)
         # Start task to update subscriber counts
         asyncio.ensure_future(self.periodically_update_sub_count())
 
