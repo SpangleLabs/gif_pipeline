@@ -1,9 +1,10 @@
 import asyncio
-from typing import Awaitable, List
+from typing import Awaitable, List, TYPE_CHECKING
 
 from prometheus_client import Gauge
 
-from gif_pipeline.tasks.task import T, Task
+if TYPE_CHECKING:
+    from gif_pipeline.tasks.task import T, Task
 
 worker_queue_length = Gauge("gif_pipeline_taskworker_tasks_in_progress", "Number of tasks currently in progress")
 

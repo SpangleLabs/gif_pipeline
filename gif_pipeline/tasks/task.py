@@ -1,9 +1,12 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from asyncio import StreamReader
-from asyncio.subprocess import Process
-from typing import Generic, Optional, Tuple, TypeVar
+from typing import Generic, Optional, Tuple, TypeVar, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from asyncio import StreamReader
+    from asyncio.subprocess import Process
+
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
