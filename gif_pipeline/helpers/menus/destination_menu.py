@@ -15,29 +15,50 @@ if TYPE_CHECKING:
 class DestinationMenu(Menu):
     confirm_send = "confirm_send"
     folder = "send_folder"
+    choose_destination = "choose_manual"
 
     def __init__(
-            self,
-            menu_helper: 'MenuHelper',
-            chat: Chat,
-            cmd_msg: Message,
-            video: Message,
-            send_helper: 'GifSendHelper',
-            channels: List[Channel],
-            tag_manager: TagManager
+        self,
+        menu_helper: "MenuHelper",
+        chat: Chat,
+        cmd_msg: Message,
+        video: Message,
+        send_helper: "GifSendHelper",
+        channels: List[Channel],
+        tag_manager: TagManager,
+        manual_select: bool = False
     ):
         super().__init__(menu_helper, chat, cmd_msg, video)
         self.send_helper = send_helper
         self.channels = channels
         self.tag_manager = tag_manager
         self.current_folder = None
+        self.manual_select = manual_select
+
+    @property
+    def default_destination(self) -> Optional[Channel]:
+        default_handle = self.chat.config.default_dest_handle
+        if default_handle is None:
+            return None
+        default_chats = [channel for channel in self.channels if channel.chat_data.matches_handle(default_handle)]
+        if len(default_chats) == 1:
+            return default_chats[0]
+        return None
 
     @property
     def text(self) -> str:
+        if self.default_destination and not self.manual_select:
+            default_title = self.default_destination.chat_data.title
+            return f"This chat has a default destination of: {default_title}\nWould you like to send this video there?"
         return "Which channel should this video be sent to?"
 
     @property
     def buttons(self) -> Optional[List[List[Button]]]:
+        if self.default_destination and not self.manual_select:
+            return [
+                [Button.inline("Yes", f"{self.confirm_send}:{self.default_destination.chat_data.chat_id}")],
+                [Button.inline("No, choose a destination", f"{self.choose_destination}")]
+            ]
         buttons = []
         folders = set()
         channels = set()
@@ -79,6 +100,9 @@ class DestinationMenu(Menu):
             sender_id: int,
     ) -> Optional[List[Message]]:
         split_data = callback_query.decode().split(":")
+        if split_data[0] == self.choose_destination:
+            self.manual_select = True
+            return [await self.send()]
         if split_data[0] == self.confirm_send:
             destination_id = split_data[1]
             destination = self.send_helper.get_destination_from_name(destination_id)
@@ -112,7 +136,8 @@ class DestinationMenu(Menu):
         return {
             "cmd_msg_id": self.cmd_msg_id,
             "channel_ids": [channel.chat_data.chat_id for channel in self.channels],
-            "current_folder": self.current_folder
+            "current_folder": self.current_folder,
+            "manual_select": self.manual_select,
         }
 
     @classmethod
@@ -138,7 +163,8 @@ class DestinationMenu(Menu):
             video,
             send_helper,
             channels,
-            tag_manager
+            tag_manager,
+            json_data.get("manual_select", True),
         )
         menu.current_folder = json_data["current_folder"]
         return menu
