@@ -73,7 +73,8 @@ Workshops are group chats where a user can interact with the gif pipeline to edi
 - `handle`: (`str|int`) The telegram handle for the workshop group. Should be the public username (if it's a public groupchat) or an integer chat ID, which should be positive and without "100" prefix.
 - `_note`: `str` (optional), Not parsed, but can be used to clarify the purpose of workshops, especially useful for private groupchats, with otherwise only have a numeric ID in the config file.
 - `duplicate_detection`: (`boolean`) Whether to enable duplicate detection notifications (and video hashing) for the workshop
- 
+- `default_destination`: (`str|int`) (optional), If set, is the telegram handle for the default channel videos sent from this workshop will go to.ß
+
 ### API key configuration
 This section stores various API keys or other details for third party services. Generally used by helpers. Most helpers should check for the presence of the API keys they require before attempting to support those services.
 - `imgur`: API key details for Imgur, an image hosting service
