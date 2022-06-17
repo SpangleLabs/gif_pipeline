@@ -173,7 +173,7 @@ class SubscriptionHelper(Helper):
         chat = self.pipeline.chat_by_id(subscription.chat_id)
         # Metrics
         subscription_posts.labels(
-            subscription_class_name=subscription.__class__.__name__,
+            subscription_class_name=subscription.subscription_type.__name__,
             chat_title=chat.chat_data.title
         ).inc()
         # Construct caption
