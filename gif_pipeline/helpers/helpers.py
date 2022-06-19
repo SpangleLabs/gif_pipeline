@@ -3,19 +3,22 @@ import os
 import shutil
 import uuid
 from abc import ABC, abstractmethod
-from typing import List, Optional, Set
+from typing import List, Optional, Set, TYPE_CHECKING
 
 from async_generator import asynccontextmanager
 from prometheus_client import Counter
-from telethon import Button
 
-from gif_pipeline.chat import Chat
-from gif_pipeline.database import Database
-from gif_pipeline.menu_cache import SentMenu
 from gif_pipeline.message import Message
-from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram
-from gif_pipeline.video_tags import VideoTags
+
+if TYPE_CHECKING:
+    from telethon import Button
+
+    from gif_pipeline.chat import Chat
+    from gif_pipeline.database import Database
+    from gif_pipeline.menu_cache import SentMenu
+    from gif_pipeline.tasks.task_worker import TaskWorker
+    from gif_pipeline.video_tags import VideoTags
 
 usage_counter = Counter(
     "gif_pipeline_helper_usage_total", "Total usage of gif pipeline helpers", labelnames=["class_name"]

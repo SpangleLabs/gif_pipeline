@@ -5,16 +5,16 @@ from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from scenedetect import ContentDetector, FrameTimecode, SceneManager, StatsManager, VideoManager
 
-from gif_pipeline.chat import Chat
-from gif_pipeline.database import Database
 from gif_pipeline.helpers.helpers import find_video_for_message
 from gif_pipeline.helpers.video_cut_helper import VideoCutHelper
-from gif_pipeline.message import Message
-from gif_pipeline.tasks.task_worker import TaskWorker
-from gif_pipeline.telegram_client import TelegramClient
 
 if TYPE_CHECKING:
+    from gif_pipeline.chat import Chat
+    from gif_pipeline.database import Database
     from gif_pipeline.helpers.menu_helper import MenuHelper
+    from gif_pipeline.message import Message
+    from gif_pipeline.tasks.task_worker import TaskWorker
+    from gif_pipeline.telegram_client import TelegramClient
 
 
 class SceneSplitHelper(VideoCutHelper):
@@ -51,7 +51,8 @@ class SceneSplitHelper(VideoCutHelper):
                 await self.send_text_reply(
                     chat,
                     message,
-                    "I am not sure which video you would like to split. Please reply to the video with your split command.",
+                    "I am not sure which video you would like to split. "
+                    "Please reply to the video with your split command.",
                 )
             ]
         async with self.progress_message(chat, message, "Calculating scene list"):

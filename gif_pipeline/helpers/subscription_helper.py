@@ -12,7 +12,6 @@ from PIL import Image
 from prometheus_client import Counter, Gauge
 from telethon import Button
 
-from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.duplicate_helper import hash_image
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.helpers.subscriptions.imgur_subscription import ImgurSearchSubscription
@@ -25,13 +24,14 @@ from gif_pipeline.helpers.subscriptions.twitter_subscription import TwitterSubsc
 from gif_pipeline.helpers.subscriptions.unitialised_subscription import UninitialisedSubscription
 from gif_pipeline.helpers.subscriptions.youtube_dl_subscription import YoutubeDLSubscription
 from gif_pipeline.helpers.video_helper import video_to_video
-from gif_pipeline.message import Message
 from gif_pipeline.video_tags import VideoTags
 
 if TYPE_CHECKING:
+    from gif_pipeline.chat import Chat
     from gif_pipeline.database import Database
     from gif_pipeline.helpers.download_helper import DownloadHelper
     from gif_pipeline.helpers.duplicate_helper import DuplicateHelper
+    from gif_pipeline.message import Message
     from gif_pipeline.pipeline import Pipeline
     from gif_pipeline.tasks.task_worker import TaskWorker
     from gif_pipeline.telegram_client import TelegramClient

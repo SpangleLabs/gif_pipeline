@@ -4,19 +4,18 @@ import asyncio
 import logging
 import os
 from abc import ABC
-from typing import TYPE_CHECKING, Awaitable, List, Optional, TypeVar
+from typing import TYPE_CHECKING, Awaitable, List, Optional
 
 from prometheus_client.metrics import Counter, Gauge
 
-from gif_pipeline.chat_config import ChannelConfig, ChatConfig, ScheduleConfig, WorkshopConfig
-from gif_pipeline.chat_data import ChannelData, ChatData, WorkshopData
 from gif_pipeline.message import Message
 
 if TYPE_CHECKING:
+    from gif_pipeline.chat_config import ChannelConfig, ChatConfig, ScheduleConfig, WorkshopConfig
+    from gif_pipeline.chat_data import ChannelData, ChatData, WorkshopData
     from gif_pipeline.database import Database
     from gif_pipeline.message import MessageData
     from gif_pipeline.telegram_client import TelegramClient
-T = TypeVar("T", bound="Group")
 
 
 logger = logging.getLogger(__name__)

@@ -1,9 +1,11 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, TYPE_CHECKING
 
-from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message
-from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmprobe_task import FFprobeTask
+
+if TYPE_CHECKING:
+    from gif_pipeline.chat import Chat
+    from gif_pipeline.message import Message
 
 
 class FFProbeHelper(Helper):

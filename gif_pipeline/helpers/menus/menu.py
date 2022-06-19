@@ -1,15 +1,17 @@
-import datetime
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Dict, List, Optional
 
-from telethon import Button
 
-from gif_pipeline.chat import Chat
 from gif_pipeline.menu_cache import SentMenu
-from gif_pipeline.message import Message
 
 if TYPE_CHECKING:
+    import datetime
+
+    from telethon import Button
+
+    from gif_pipeline.chat import Chat
     from gif_pipeline.helpers.menu_helper import MenuHelper
+    from gif_pipeline.message import Message
 
 
 def delta_to_string(delta: datetime.timedelta) -> str:

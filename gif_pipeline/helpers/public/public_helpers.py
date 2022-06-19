@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
-from telethon.tl.types import Message
+if TYPE_CHECKING:
+    from telethon.tl.types import Message
 
-from gif_pipeline.database import Database
-from gif_pipeline.message import MessageData
-from gif_pipeline.tasks.task_worker import TaskWorker
-from gif_pipeline.telegram_client import TelegramClient
+    from gif_pipeline.database import Database
+    from gif_pipeline.message import MessageData
+    from gif_pipeline.tasks.task_worker import TaskWorker
+    from gif_pipeline.telegram_client import TelegramClient
 
 
 class PublicHelper(ABC):

@@ -3,19 +3,22 @@ import logging
 import os
 import shutil
 from multiprocessing.pool import ThreadPool
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, TYPE_CHECKING
 
 import imagehash
 from PIL import Image
 
 from gif_pipeline.chat import Chat, WorkshopGroup
-from gif_pipeline.database import Database
 from gif_pipeline.helpers.helpers import Helper
-from gif_pipeline.message import Message, MessageData
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
-from gif_pipeline.tasks.task_worker import TaskWorker
-from gif_pipeline.telegram_client import TelegramClient
 from gif_pipeline.utils import tqdm_gather
+
+if TYPE_CHECKING:
+    from gif_pipeline.database import Database
+    from gif_pipeline.message import Message, MessageData
+    from gif_pipeline.tasks.task_worker import TaskWorker
+    from gif_pipeline.telegram_client import TelegramClient
+
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +53,8 @@ class DuplicateHelper(Helper):
         # Create hashes for message
         try:
             new_hashes = await self.create_message_hashes(message_data)
-        except:
-            logger.error(f"Duplicate helper failed to check video during startup: {message_data}")
+        except Exception as e:
+            logger.error(f"Duplicate helper failed to check video during startup: {message_data}", exc_info=e)
             if workshop is not None:
                 message = workshop.message_by_id(message_data.message_id)
                 await self.send_text_reply(

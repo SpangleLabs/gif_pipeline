@@ -1,13 +1,15 @@
 import re
-from typing import Match, Optional, Tuple
+from typing import Match, Optional, Tuple, TYPE_CHECKING
 
-from gif_pipeline.chat import Chat
-from gif_pipeline.database import Database
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path
-from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
-from gif_pipeline.tasks.task_worker import TaskWorker
-from gif_pipeline.telegram_client import TelegramClient
+
+if TYPE_CHECKING:
+    from gif_pipeline.chat import Chat
+    from gif_pipeline.database import Database
+    from gif_pipeline.message import Message
+    from gif_pipeline.tasks.task_worker import TaskWorker
+    from gif_pipeline.telegram_client import TelegramClient
 
 
 class VideoCutHelper(Helper):
@@ -41,8 +43,8 @@ class VideoCutHelper(Helper):
                 await self.send_text_reply(
                     chat,
                     message,
-                    "Start and end was not understood for this cut. "
-                    "Please provide start and end in the format MM:SS or as a number of seconds, with a space between them.",
+                    "Start and end was not understood for this cut. Please provide start and end in the format MM:SS "
+                    "or as a number of seconds, with a space between them.",
                 )
             ]
         if cut_out and (start is None or end is None):

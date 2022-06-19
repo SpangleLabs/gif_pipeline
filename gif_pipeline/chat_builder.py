@@ -2,17 +2,19 @@ import logging
 import os
 import shutil
 from abc import ABC, abstractmethod
-from typing import Awaitable, Generic, List, TypeVar
+from typing import Awaitable, Generic, List, TypeVar, TYPE_CHECKING
 
 from tqdm import tqdm
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.chat_config import ChannelConfig, ChatConfig, WorkshopConfig
 from gif_pipeline.chat_data import ChannelData, ChatData, WorkshopData
-from gif_pipeline.database import Database
-from gif_pipeline.message import Message
-from gif_pipeline.tasks.task_worker import Bottleneck
-from gif_pipeline.telegram_client import TelegramClient
+
+if TYPE_CHECKING:
+    from gif_pipeline.database import Database
+    from gif_pipeline.message import Message
+    from gif_pipeline.tasks.task_worker import Bottleneck
+    from gif_pipeline.telegram_client import TelegramClient
 
 logger = logging.getLogger(__name__)
 

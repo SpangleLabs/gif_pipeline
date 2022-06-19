@@ -1,14 +1,10 @@
 import json
 import logging
-from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, Set, Tuple
 
-from scenedetect import FrameTimecode
 from tqdm import tqdm
 
-from gif_pipeline.chat import Channel, Chat
 from gif_pipeline.chat_config import TagType
-from gif_pipeline.database import Database, MenuData
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.helpers.menus.check_tags_menu import CheckTagsMenu
 from gif_pipeline.helpers.menus.delete_menu import DeleteMenu
@@ -25,14 +21,20 @@ from gif_pipeline.helpers.menus.tag_select_menu import TagSelectMenu
 from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
 from gif_pipeline.helpers.send_helper import GifSendHelper
 from gif_pipeline.menu_cache import SentMenu
-from gif_pipeline.message import Message
-from gif_pipeline.tag_manager import TagManager
-from gif_pipeline.tasks.task_worker import TaskWorker
-from gif_pipeline.telegram_client import TelegramClient
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
+    from scenedetect import FrameTimecode
+
+    from gif_pipeline.chat import Channel, Chat
+    from gif_pipeline.database import Database, MenuData
     from gif_pipeline.helpers.delete_helper import DeleteHelper
+    from gif_pipeline.message import Message
     from gif_pipeline.pipeline import Pipeline
+    from gif_pipeline.tag_manager import TagManager
+    from gif_pipeline.tasks.task_worker import TaskWorker
+    from gif_pipeline.telegram_client import TelegramClient
 
 
 logger = logging.getLogger(__name__)

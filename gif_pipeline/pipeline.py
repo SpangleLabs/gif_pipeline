@@ -1,9 +1,8 @@
 import asyncio
 import logging
-from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Union, TYPE_CHECKING
 
 from prometheus_client import Info, start_http_server
-from telethon import events
 from tqdm import tqdm
 
 from gif_pipeline import _version
@@ -44,6 +43,10 @@ from gif_pipeline.tag_manager import TagManager
 from gif_pipeline.tasks.task_worker import Bottleneck, TaskWorker
 from gif_pipeline.telegram_client import TelegramClient, chat_id_from_telegram, message_data_from_telegram
 from gif_pipeline.utils import tqdm_gather
+
+if TYPE_CHECKING:
+    from telethon import events
+
 
 logger = logging.getLogger(__name__)
 

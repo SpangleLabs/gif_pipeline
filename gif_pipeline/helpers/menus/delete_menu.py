@@ -2,12 +2,12 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 from telethon import Button
 
-from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.menus.menu import Menu
-from gif_pipeline.message import Message
 
 if TYPE_CHECKING:
+    from gif_pipeline.chat import Chat
     from gif_pipeline.helpers.menu_helper import MenuHelper
+    from gif_pipeline.message import Message
 
 
 class DeleteMenu(Menu):
@@ -28,7 +28,7 @@ class DeleteMenu(Menu):
             return None
         return [
             [Button.inline("Yes please", f"delete:{self.video.message_data.message_id}")],
-            [Button.inline("No thanks", f"clear_delete_menu")],
+            [Button.inline("No thanks", "clear_delete_menu")],
         ]
 
     async def handle_callback_query(

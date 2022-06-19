@@ -2,13 +2,13 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Set
 
 from telethon import Button
 
-from gif_pipeline.chat import Channel, Chat
 from gif_pipeline.helpers.menus.menu import Menu
-from gif_pipeline.message import Message
 
 if TYPE_CHECKING:
+    from gif_pipeline.chat import Channel, Chat
     from gif_pipeline.helpers.menu_helper import MenuHelper
     from gif_pipeline.helpers.send_helper import GifSendHelper
+    from gif_pipeline.message import Message
 
 
 class CheckTagsMenu(Menu):
@@ -35,7 +35,7 @@ class CheckTagsMenu(Menu):
     @property
     def text(self) -> str:
         dest_tags = self.destination.config.tags
-        msg = f"The destination suggests videos should be tagged with:\n"
+        msg = "The destination suggests videos should be tagged with:\n"
         for tag in dest_tags.keys():
             if tag in self.missing_tags:
                 msg += f" - <b>{tag}</b>\n"

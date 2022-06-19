@@ -1,24 +1,25 @@
 import logging
-from asyncio import Future
-from typing import Any, Callable, Coroutine, Generator, List, Optional, TypeVar, Union
+from typing import Any, Callable, Coroutine, Generator, List, Optional, TypeVar, Union, TYPE_CHECKING
 
 import telethon
 from telethon import Button, events
 from telethon.errors import UserNotParticipantError
-from telethon.tl.custom import message
-from telethon.tl.custom.participantpermissions import ParticipantPermissions
 from telethon.tl.functions.channels import EditAdminRequest, GetFullChannelRequest
 from telethon.tl.functions.messages import GetScheduledHistoryRequest, MigrateChatRequest
 from telethon.tl.types import (
     ChannelForbidden,
-    ChannelParticipantCreator,
-    ChannelParticipantsAdmins,
     ChatAdminRights,
     DocumentAttributeFilename,
 )
 
 from gif_pipeline.chat_data import ChannelData, ChatData, WorkshopData
 from gif_pipeline.message import MessageData
+
+if TYPE_CHECKING:
+    from asyncio import Future
+
+    from telethon.tl.custom.participantpermissions import ParticipantPermissions
+
 
 R = TypeVar("R")
 

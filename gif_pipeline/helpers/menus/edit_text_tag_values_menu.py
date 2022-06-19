@@ -1,9 +1,11 @@
-from typing import List, Optional
-
-from telethon import Button
+from typing import List, Optional, TYPE_CHECKING
 
 from gif_pipeline.helpers.menus.edit_tag_values_menu import EditTagValuesMenu
-from gif_pipeline.message import Message
+
+if TYPE_CHECKING:
+    from telethon import Button
+
+    from gif_pipeline.message import Message
 
 
 class EditTextTagValuesMenu(EditTagValuesMenu):

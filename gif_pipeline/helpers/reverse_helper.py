@@ -1,9 +1,11 @@
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
-from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path
-from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
+
+if TYPE_CHECKING:
+    from gif_pipeline.chat import Chat
+    from gif_pipeline.message import Message
 
 
 class ReverseHelper(Helper):

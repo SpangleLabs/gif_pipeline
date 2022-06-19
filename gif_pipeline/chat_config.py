@@ -1,11 +1,13 @@
 from abc import ABC, abstractmethod
-from datetime import timedelta
 from enum import Enum
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, TYPE_CHECKING
 
 import isodate
 
 from gif_pipeline.text_formatter import TextFormatter
+
+if TYPE_CHECKING:
+    from datetime import timedelta
 
 
 class TagType(Enum):

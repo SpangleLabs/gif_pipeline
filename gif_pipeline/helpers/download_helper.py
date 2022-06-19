@@ -1,17 +1,20 @@
 import logging
 import re
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
-from gif_pipeline.chat import Chat
-from gif_pipeline.database import Database
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
-from gif_pipeline.message import Message
 from gif_pipeline.tasks.task import TaskException
-from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.tasks.update_youtube_dl_task import UpdateYoutubeDLTask
 from gif_pipeline.tasks.youtube_dl_task import YoutubeDLTask
-from gif_pipeline.telegram_client import TelegramClient
 from gif_pipeline.video_tags import VideoTags
+
+if TYPE_CHECKING:
+    from gif_pipeline.chat import Chat
+    from gif_pipeline.database import Database
+    from gif_pipeline.message import Message
+    from gif_pipeline.tasks.task_worker import TaskWorker
+    from gif_pipeline.telegram_client import TelegramClient
+
 
 logger = logging.getLogger(__name__)
 

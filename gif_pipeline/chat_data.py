@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Optional, TypeVar, Union
+from typing import Optional, TypeVar, Union, TYPE_CHECKING
 
 from gif_pipeline.chat_config import ChannelConfig, ChatConfig, WorkshopConfig
-from gif_pipeline.message import MessageData
+
+if TYPE_CHECKING:
+    from gif_pipeline.message import MessageData
 
 C = TypeVar("C", bound="ChatData")
 

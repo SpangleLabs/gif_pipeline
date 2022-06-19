@@ -1,12 +1,16 @@
 import html
+from typing import TYPE_CHECKING
 
-from telethon.tl.types import Message
 
-from gif_pipeline.database import Database
 from gif_pipeline.helpers.public.public_helpers import PublicHelper
-from gif_pipeline.tag_manager import TagManager
-from gif_pipeline.tasks.task_worker import TaskWorker
-from gif_pipeline.telegram_client import TelegramClient
+
+if TYPE_CHECKING:
+    from telethon.tl.types import Message
+
+    from gif_pipeline.database import Database
+    from gif_pipeline.tag_manager import TagManager
+    from gif_pipeline.tasks.task_worker import TaskWorker
+    from gif_pipeline.telegram_client import TelegramClient
 
 
 class PublicTagHelper(PublicHelper):
