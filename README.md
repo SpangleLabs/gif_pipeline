@@ -124,6 +124,10 @@ When a command is sent as a reply to a video, this helper uses ffprobe to get in
 - `duration` will return the video duration, in seconds.
 - `resolution` or `size` will return the video resolution in pixels.
 
+### Find helper
+This hander will attempt to find a video in a playlist, which matches the video which the user is replying to.
+Use `find {playlist link}` and it will search the playlist for a matching video, and respond with the video and link.
+
 ### Imgur gallery helper
 A specific handler for downloading entire imgur galleries and posts. All gifs and videos in an image gallery will be turned into videos and posted as a reply to the message with the gallery link.
 
