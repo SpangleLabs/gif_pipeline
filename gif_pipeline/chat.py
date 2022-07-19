@@ -50,7 +50,7 @@ queue_duration = Gauge(
 channel_latest_post = Gauge(
     "gif_pipeline_channel_latest_post_unixtime",
     "Unix timestamp of the latest post in the channel",
-    labelnames=["chat_title"]
+    labelnames=["chat_title", "read_only"]
 )
 
 
@@ -175,7 +175,8 @@ class Channel(Chat):
             ).set_function(lambda: self.config.queue.schedule.avg_time.total_seconds() * self.queue.count_videos())
         # Set up latest post metrics
         self.latest_post = channel_latest_post.labels(
-            chat_title=self.chat_data.title
+            chat_title=self.chat_data.title,
+            read_only=self.config.read_only,
         ).set_function(lambda: self.latest_message().message_data.datetime.timestamp() if self.latest_message() else 0)
         # Start task to update subscriber counts
         asyncio.ensure_future(self.periodically_update_sub_count())
