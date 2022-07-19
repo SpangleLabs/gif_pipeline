@@ -73,7 +73,8 @@ Workshops are group chats where a user can interact with the gif pipeline to edi
 - `handle`: (`str|int`) The telegram handle for the workshop group. Should be the public username (if it's a public groupchat) or an integer chat ID, which should be positive and without "100" prefix.
 - `_note`: `str` (optional), Not parsed, but can be used to clarify the purpose of workshops, especially useful for private groupchats, with otherwise only have a numeric ID in the config file.
 - `duplicate_detection`: (`boolean`) Whether to enable duplicate detection notifications (and video hashing) for the workshop
- 
+- `default_destination`: (`str|int`) (optional), If set, is the telegram handle for the default channel videos sent from this workshop will go to.ß
+
 ### API key configuration
 This section stores various API keys or other details for third party services. Generally used by helpers. Most helpers should check for the presence of the API keys they require before attempting to support those services.
 - `imgur`: API key details for Imgur, an image hosting service
@@ -98,6 +99,9 @@ Just sets the source tag for any videos forwarded from a public channel.
 
 ### Chart helper
 Takes commands of the form: `chart {destination} {tag_name}` where `{destination}` is the handle of a telegram channel the bot is managing, and `{tag_name}` is the name of a tag field. It will then generate a pie chart of from the frequency distribution of all the values of that tag in that channel.
+
+### Chunk split helper
+Cuts a video into regularly sized chunks with commands of the form `chunk {duration}`. The duration can either be given as a number (iterpreted as a number of seconds), or an iso8601 duration.
 
 ### Delete helper
 Takes commands of the form: `delete family` or `delete branch`, as a reply to another message. This helper checks that the user has telegram permissions to delete things in this chat.  

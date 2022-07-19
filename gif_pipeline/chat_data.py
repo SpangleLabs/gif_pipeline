@@ -58,7 +58,8 @@ class ChatData(ABC):
     def matches_config(self, conf: ChatConfig) -> bool:
         return self.matches_handle(str(conf.handle))
 
-    def matches_handle(self, handle: str) -> bool:
+    def matches_handle(self, handle: Union[str, int]) -> bool:
+        handle = str(handle)
         return chat_username_matches(self.username, handle) or chat_id_matches(self.chat_id, handle)
     
     def __repr__(self) -> str:

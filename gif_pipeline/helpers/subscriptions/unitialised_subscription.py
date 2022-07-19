@@ -52,6 +52,12 @@ class UninitialisedSubscription(Subscription):
         if self.found_sub is not None:
             return await self.found_sub.download_item(item)
         raise ValueError("Could not download new item, as this subscription is uninitialised")
+    
+    @property
+    def subscription_type(self) -> Type["Subscription"]:
+        if self.found_sub is None:
+            return type(self)
+        return type(self.found_sub)
 
     def is_subscription_type(self, cls: Type["Subscription"]):
         if self.found_sub is None:

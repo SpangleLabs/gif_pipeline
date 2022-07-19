@@ -1,9 +1,10 @@
+import asyncio
 import logging
 import os
 import shutil
 import uuid
 from abc import ABC, abstractmethod
-from typing import Optional, List, Set
+from typing import Optional, List, Set, Callable, TypeVar, Awaitable
 
 from async_generator import asynccontextmanager
 from prometheus_client import Counter
@@ -40,6 +41,38 @@ def find_video_for_message(chat: Chat, message: Message) -> Optional[Message]:
 def random_sandbox_video_path(file_ext: str = "mp4") -> str:
     os.makedirs("sandbox", exist_ok=True)
     return f"sandbox/{uuid.uuid4()}.{file_ext}"
+
+
+T = TypeVar("T")
+S = TypeVar("S")
+
+
+async def ordered_post_task(tasks: List[Awaitable[T]], after_task: Callable[[T], Awaitable[S]]) -> List[S]:
+    async def wrap_awaitable(i, f):
+        return i, await f
+
+    completed_tasks = {}
+    results = {}
+
+    async def process_tasks():
+        for j in range(len(tasks)):
+            if j in results:
+                continue
+            if j not in completed_ids:
+                break
+            results[j] = await after_task(completed_tasks[j])
+
+    wrapped_tasks = [wrap_awaitable(i, f) for i, f in enumerate(tasks)]
+    for coro in asyncio.as_completed(wrapped_tasks):
+        i, result = await coro
+        completed_tasks[i] = result
+        required_ids = set(range(i))
+        completed_ids = set(completed_tasks.keys())
+        if len(required_ids - completed_ids) > 0:
+            continue
+        await process_tasks()
+    await process_tasks()
+    return [result for _, result in sorted(list(results.items()))]
 
 
 def cleanup_file(file_path: str) -> None:

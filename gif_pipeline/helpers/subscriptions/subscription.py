@@ -65,6 +65,10 @@ class Subscription(ABC):
             self.enabled
         )
 
+    @property
+    def subscription_type(self) -> Type["Subscription"]:
+        return type(self)
+
     def is_subscription_type(self, cls: Type["Subscription"]):
         return isinstance(self, cls)
 

@@ -143,13 +143,15 @@ class ChatConfig(ABC):
             self,
             handle: Union[str, int],
             *,
-            duplicate_detection: bool = True
+            duplicate_detection: bool = True,
+            default_destination: Optional[Union[str, int]] = None,
     ):
         self.handle = handle
         self.duplicate_detection = duplicate_detection
         self.read_only = False
         self.twitter_config: Optional[TwitterConfig] = None
         self.caption_format = TextFormatter("")
+        self.default_dest_handle = default_destination
 
     @staticmethod
     @abstractmethod
@@ -213,10 +215,11 @@ class ChannelConfig(ChatConfig):
 class WorkshopConfig(ChatConfig):
 
     @staticmethod
-    def from_json(json_dict) -> 'WorkshopConfig':
+    def from_json(json_dict) -> "WorkshopConfig":
         return WorkshopConfig(
-            json_dict['handle'],
-            duplicate_detection=json_dict.get("duplicate_detection", True)
+            json_dict["handle"],
+            duplicate_detection=json_dict.get("duplicate_detection", True),
+            default_destination=json_dict.get("default_destination"),
         )
 
 
@@ -229,7 +232,11 @@ class QueueConfig(WorkshopConfig):
             duplicate_detection: bool = True,
             schedule: ScheduleConfig = None
     ):
-        super().__init__(handle, duplicate_detection=duplicate_detection)
+        super().__init__(
+            handle,
+            duplicate_detection=duplicate_detection,
+            default_destination=channel_handle
+        )
         self.channel_handle = channel_handle
         self.schedule = schedule
 
