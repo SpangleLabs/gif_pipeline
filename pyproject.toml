@@ -5,13 +5,13 @@ description = "Telegram application to edit videos and create telegram-gifs, in 
 authors = ["Joshua Coales <joshua@coales.co.uk>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 Telethon = "^1.23.0"
 tqdm = "^4.62.3"
 ImageHash = "^4.2.1"
-Pillow = "^8.4.0"
+Pillow = "^9"
 cryptg = "^0.2.post4"
-ffmpy3 = "^0.2.4"
+ffmpy3 = {git = "https://github.com/wchill/ffmpy3.git", rev = "master"}
 requests = "^2.26.0"
 async_generator = "^1.10"
 python-dateutil = "^2.8.2"
@@ -25,6 +25,7 @@ bleach = "^4.1.0"
 matplotlib = "^3.5.0"
 tweepy = "^4.5.0"
 Jinja2 = "^3.1.2"
+vidhash = "0.2.0"
 
 [tool.poetry.dev-dependencies]
 

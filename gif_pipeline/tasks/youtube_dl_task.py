@@ -21,14 +21,17 @@ class YoutubeDLTask(Task[str]):
 
 class YoutubeDLDumpJsonTask(Task[str]):
 
-    def __init__(self, link: str, max_items: Optional[int] = None):
+    def __init__(self, link: str, end: Optional[int] = None, start: Optional[int] = None):
         self.link = link
-        self.max_items = max_items
+        self.end = end
+        self.start = start
 
     async def run(self) -> str:
         args = [yt_dl_pkg, "--dump-json"]
-        if self.max_items:
-            args += [f"--playlist-end", f"{self.max_items}"]
+        if self.start:
+            args += ["--playlist-start", f"{self.start}"]
+        if self.end:
+            args += [f"--playlist-end", f"{self.end}"]
         args.append(self.link)
         resp = await run_subprocess(args)
         return resp

@@ -38,7 +38,7 @@ def find_video_for_message(chat: Chat, message: Message) -> Optional[Message]:
     return None
 
 
-def random_sandbox_video_path(file_ext: str = "mp4"):
+def random_sandbox_video_path(file_ext: str = "mp4") -> str:
     os.makedirs("sandbox", exist_ok=True)
     return f"sandbox/{uuid.uuid4()}.{file_ext}"
 
@@ -73,6 +73,15 @@ async def ordered_post_task(tasks: List[Awaitable[T]], after_task: Callable[[T],
         await process_tasks()
     await process_tasks()
     return [result for _, result in sorted(list(results.items()))]
+
+
+def cleanup_file(file_path: str) -> None:
+    if file_path is None:
+        return
+    try:
+        os.remove(file_path)
+    except FileNotFoundError:
+        pass
 
 
 class Helper(ABC):

@@ -1,9 +1,6 @@
 import asyncio
-import glob
 import html
 import logging
-import os
-import shutil
 from datetime import datetime
 from typing import List, Optional, TYPE_CHECKING, Dict, Set, Type
 
@@ -14,7 +11,6 @@ from telethon import Button
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
-from gif_pipeline.helpers.duplicate_helper import hash_image
 from gif_pipeline.helpers.subscriptions.imgur_subscription import ImgurSearchSubscription
 from gif_pipeline.helpers.subscriptions.instagram_subscription import InstagramSubscription
 from gif_pipeline.helpers.subscriptions.reddit_subscription import RedditSubscription
@@ -211,19 +207,7 @@ class SubscriptionHelper(Helper):
     async def get_item_hash_set(self, file_path: str, item_id: str, subscription: "Subscription") -> Set[str]:
         # Hash video
         message_decompose_path = f"sandbox/decompose/subs/{subscription.subscription_id}/{item_id}/"
-        # Decompose video into images
-        os.makedirs(message_decompose_path, exist_ok=True)
-        await self.duplicate_helper.decompose_video(file_path, message_decompose_path)
-        # Hash the images
-        image_files = glob.glob(f"{message_decompose_path}/*.png")
-        hash_list = self.duplicate_helper.hash_pool.map(hash_image, image_files)
-        hash_set = set(hash_list)
-        # Delete the images
-        try:
-            shutil.rmtree(message_decompose_path)
-        except FileNotFoundError:
-            pass
-        return hash_set
+        return await self.duplicate_helper.create_message_hashes_in_dir(file_path, message_decompose_path)
 
     async def check_item_duplicate(self, hash_set: Set[str]) -> List[str]:
         # Find duplicates

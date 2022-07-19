@@ -19,6 +19,7 @@ from gif_pipeline.helpers.download_helper import DownloadHelper
 from gif_pipeline.helpers.duplicate_helper import DuplicateHelper
 from gif_pipeline.helpers.fa_helper import FAHelper
 from gif_pipeline.helpers.ffprobe_helper import FFProbeHelper
+from gif_pipeline.helpers.find_helper import FindHelper
 from gif_pipeline.helpers.imgur_gallery_helper import ImgurGalleryHelper
 from gif_pipeline.helpers.menu_helper import MenuHelper
 from gif_pipeline.helpers.merge_helper import MergeHelper
@@ -256,7 +257,8 @@ class Pipeline:
             UpdateYoutubeDlHelper(self.database, self.client, self.worker),
             ChartHelper(self.database, self.client, self.worker, self, tag_manager),
             schedule_helper,
-            subscription_helper
+            subscription_helper,
+            FindHelper(self.database, self.client, self.worker, duplicate_helper, download_helper)
         ]
         if "imgur" in self.api_keys:
             helpers.append(

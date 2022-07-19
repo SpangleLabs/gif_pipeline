@@ -82,21 +82,26 @@ class DuplicateHelper(Helper):
         if not message_data.has_video:
             return set()
         message_decompose_path = f"sandbox/decompose/{message_data.chat_id}-{message_data.message_id}/"
+        # Hash video
+        hash_set = await self.create_message_hashes_in_dir(message_data.file_path, message_decompose_path)
+        # Save hashes
+        self.database.save_hashes(message_data, hash_set)
+        # Return hashes
+        return hash_set
+
+    async def create_message_hashes_in_dir(self, video_path: str, decompose_path: str) -> Set[str]:
         # Decompose video into images
-        os.makedirs(message_decompose_path, exist_ok=True)
-        await self.decompose_video(message_data.file_path, message_decompose_path)
+        os.makedirs(decompose_path, exist_ok=True)
+        await self.decompose_video(video_path, decompose_path)
         # Hash the images
-        image_files = glob.glob(f"{message_decompose_path}/*.png")
+        image_files = glob.glob(f"{decompose_path}/*.png")
         hash_list = self.hash_pool.map(hash_image, image_files)
         hash_set = set(hash_list)
         # Delete the images
         try:
-            shutil.rmtree(message_decompose_path)
+            shutil.rmtree(decompose_path)
         except FileNotFoundError:
             pass
-        # Save hashes
-        self.database.save_hashes(message_data, hash_set)
-        # Return hashes
         return hash_set
 
     async def check_hash_in_store(
