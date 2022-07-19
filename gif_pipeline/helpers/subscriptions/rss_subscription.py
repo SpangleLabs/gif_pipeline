@@ -18,7 +18,8 @@ class RSSSubscription(Subscription):
 
     async def check_for_new_items(self) -> List["Item"]:
         new_items = []
-        feed = feedparser.parse(self.feed_url)
+        feed_data = requests.get(self.feed_url, timeout=10).text
+        feed = feedparser.parse(feed_data)
         for entry in feed.entries:
             if entry.id in self.seen_item_ids:
                 continue
