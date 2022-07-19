@@ -49,6 +49,14 @@ python-versions = ">=3.6"
 typing_extensions = ">=3.7.2"
 
 [[package]]
+name = "aspy.refactor-imports"
+version = "3.0.2"
+description = "Utilities for refactoring imports in python-like syntax."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
 name = "async-generator"
 version = "1.10"
 description = "Async generators and context managers for Python 3.5+"
@@ -287,13 +295,14 @@ tomli = "*"
 
 [[package]]
 name = "flake8-type-checking"
-version = "1.5.0"
+version = "2.0.6"
 description = "A flake8 plugin for managing type-checking imports & forward references"
 category = "dev"
 optional = false
 python-versions = ">=3.8,<4.0"
 
 [package.dependencies]
+"aspy.refactor-imports" = "*"
 flake8 = "*"
 
 [[package]]
@@ -856,7 +865,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "489bc285f2e453c29683d59613ac36c0d093627b2252d9f2bcffbae1e8fc97a4"
+content-hash = "d471f486cb1298e3a49933c7720056c257a63a08e5b9524a0efba39ccd096570"
 
 [metadata.files]
 aiofiles = [
@@ -945,6 +954,7 @@ aiosqlite = [
     {file = "aiosqlite-0.17.0-py3-none-any.whl", hash = "sha256:6c49dc6d3405929b1d08eeccc72306d3677503cc5e5e43771efc1e00232e8231"},
     {file = "aiosqlite-0.17.0.tar.gz", hash = "sha256:f0e6acc24bc4864149267ac82fb46dfb3be4455f99fe21df82609cc6e6baee51"},
 ]
+"aspy.refactor-imports" = []
 async-generator = [
     {file = "async_generator-1.10-py3-none-any.whl", hash = "sha256:01c7bf666359b4967d2cda0000cc2e4af16a0ae098cbffcb8472fb9e8ad6585b"},
     {file = "async_generator-1.10.tar.gz", hash = "sha256:6ebb3d106c12920aaae42ccb6f787ef5eefdcdd166ea3d628fa8476abe712144"},
@@ -1122,10 +1132,7 @@ flake8-black = [
     {file = "flake8-black-0.3.3.tar.gz", hash = "sha256:8211f5e20e954cb57c709acccf2f3281ce27016d4c4b989c3e51f878bb7ce12a"},
     {file = "flake8_black-0.3.3-py3-none-any.whl", hash = "sha256:7d667d0059fd1aa468de1669d77cc934b7f1feeac258d57bdae69a8e73c4cd90"},
 ]
-flake8-type-checking = [
-    {file = "flake8-type-checking-1.5.0.tar.gz", hash = "sha256:d01234fc2d3ffc9661dd797fb1bed19e2d92a1fb4041a4e8dc0200ea14f357c0"},
-    {file = "flake8_type_checking-1.5.0-py3-none-any.whl", hash = "sha256:b9873f011e18e20dee60e2b633f2c675f2aa1318499e5294b46c860fc75bdcd6"},
-]
+flake8-type-checking = []
 fonttools = [
     {file = "fonttools-4.28.2-py3-none-any.whl", hash = "sha256:eff1da7ea274c54cb8842853005a139f711646cbf6f1bcfb6c9b86a627f35ff0"},
     {file = "fonttools-4.28.2.zip", hash = "sha256:dca694331af74c8ad47acc5171e57f6b78fac5692bf050f2ab572964577ac0dd"},
