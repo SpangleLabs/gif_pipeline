@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, List
 
 import bleach
 import feedparser
+import requests
 
 from gif_pipeline.helpers.subscriptions.subscription import Item, Subscription
 
@@ -23,8 +24,9 @@ class InstagramSubscription(Subscription):
     async def check_for_new_items(self) -> List["Item"]:
         search_term = self.SEARCH_PATTERN.search(self.feed_url)
         rss_link = f"{self.bibliogram_url}/u/{search_term.group(1)}/rss.xml"
+        rss_data = requests.get(rss_link, timeout=10).text
         new_items = []
-        feed = feedparser.parse(rss_link)
+        feed = feedparser.parse(rss_data)
         for entry in feed.entries:
             entry_id = self.link_to_insta_link(entry.id)
             entry_link = self.link_to_insta_link(entry.link)
@@ -47,7 +49,8 @@ class InstagramSubscription(Subscription):
         if not search_term or not bibliogram_url:
             return False
         rss_link = f"{bibliogram_url}/u/{search_term.group(1)}/rss.xml"
-        feed = feedparser.parse(rss_link)
+        rss_data = requests.get(rss_link, timeout=10).text
+        feed = feedparser.parse(rss_data)
         if not feed.entries:
             return False
         for entry in feed.entries:
