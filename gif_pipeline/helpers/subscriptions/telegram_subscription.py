@@ -49,8 +49,14 @@ def message_to_items(msg: "MessageData", handle: Union[str, int]) -> List[Item]:
     return items
 
 
+def highest_msg_ids(msg_ids: List[str], count: int) -> List[str]:
+    numeric_ids = sorted([int(x) for x in msg_ids], reverse=True)
+    return [str(x) for x in numeric_ids[:count]]
+
+
 class TelegramSubscription(Subscription):
     SEARCH_PATTERN = re.compile(r"t.me/(?:c/)?([^\\&#\n/]+)", re.IGNORECASE)
+    ID_STORE_LENGTH = 10
 
     async def check_for_new_items(self) -> List["Item"]:
         telegram_handle = self.parse_feed_url(self.feed_url)
@@ -67,7 +73,7 @@ class TelegramSubscription(Subscription):
             items = message_to_items(msg, telegram_handle)
             new_items += items
             self.seen_item_ids.append(str(msg.message_id))
-        self.seen_item_ids = [max([int(i) for i in self.seen_item_ids])]
+        self.seen_item_ids = highest_msg_ids(self.seen_item_ids, self.ID_STORE_LENGTH)
         return new_items
 
     async def download_item(self, item: "Item") -> Optional[str]:
