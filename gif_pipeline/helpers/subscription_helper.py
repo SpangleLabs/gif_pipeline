@@ -137,12 +137,10 @@ class SubscriptionHelper(Helper):
             try:
                 new_items = await subscription.check_for_new_items()
             except Exception as e:
-                logger.error("Subscription to %s failed due to:", subscription.feed_url, exc_info=e)
-                await self.send_message(
-                    chat,
-                    text=f"Subscription to {subscription.feed_url} failed due to: {e}",
-                    buttons=[[Button.inline("Delete error", "delete_me")]]
-                )
+                logger.warning("Subscription to %s failed due to:", subscription.feed_url, exc_info=e)
+                # Just increment a counter please
+                subscription.failures += 1
+                self.save_subscription(subscription)
             else:
                 for item in new_items:
                     try:
