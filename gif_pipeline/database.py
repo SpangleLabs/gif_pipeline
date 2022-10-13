@@ -63,6 +63,7 @@ class SubscriptionData:
     last_check_time: Optional[str]
     check_rate: Optional[str]
     enabled: Optional[bool]
+    failures: int
 
 
 class Database:
@@ -442,7 +443,7 @@ class Database:
     def list_subscriptions(self) -> List[SubscriptionData]:
         sub_entries = []
         with self._execute(
-            "SELECT subscription_id, feed_link, chat_id, last_check_time, check_rate, enabled "
+            "SELECT subscription_id, feed_link, chat_id, last_check_time, check_rate, enabled, failures "
             "FROM subscriptions"
         ) as result:
             for row in result:
@@ -453,7 +454,8 @@ class Database:
                         row["chat_id"],
                         row["last_check_time"],
                         row["check_rate"],
-                        bool(row["enabled"])
+                        bool(row["enabled"]),
+                        row["failures"]
                     )
                 )
         return sub_entries
@@ -475,13 +477,15 @@ class Database:
     ) -> SubscriptionData:
         seen_item_ids = seen_item_ids or []
         with self._execute(
-            "INSERT INTO subscriptions (subscription_id, feed_link, chat_id, last_check_time, check_rate, enabled)"
-            " VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (subscription_id)"
+            "INSERT INTO subscriptions (subscription_id, feed_link, chat_id, last_check_time, check_rate, enabled, "
+            "failures)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (subscription_id)"
             " DO UPDATE SET feed_link=excluded.feed_link, chat_id=excluded.chat_id, "
-            " last_check_time=excluded.last_check_time, check_rate=excluded.check_rate, enabled=excluded.enabled",
+            " last_check_time=excluded.last_check_time, check_rate=excluded.check_rate, enabled=excluded.enabled, "
+            "failures=excluded.failures",
             (
                 subscription.subscription_id, subscription.feed_link, subscription.chat_id,
-                subscription.last_check_time, subscription.check_rate, subscription.enabled
+                subscription.last_check_time, subscription.check_rate, subscription.enabled, subscription.failures
             )
         ) as result:
             if subscription.subscription_id is None:

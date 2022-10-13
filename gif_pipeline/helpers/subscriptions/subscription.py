@@ -26,7 +26,8 @@ class Subscription(ABC):
             last_check_time: Optional[datetime] = None,
             check_rate: Optional[timedelta] = None,
             enabled: bool = True,
-            seen_item_ids: Optional[List[str]] = None
+            seen_item_ids: Optional[List[str]] = None,
+            failures: int = 0,
     ):
         self.subscription_id = subscription_id
         self.chat_id = chat_id
@@ -35,6 +36,7 @@ class Subscription(ABC):
         self.last_check_time = last_check_time
         self.check_rate = check_rate or isodate.parse_duration("PT1H")
         self.enabled = enabled
+        self.failures = failures
         self.seen_item_ids = seen_item_ids or []
 
     def needs_check(self) -> bool:
@@ -62,7 +64,8 @@ class Subscription(ABC):
             self.chat_id,
             self.last_check_time.isoformat() if self.last_check_time else None,
             isodate.duration_isoformat(self.check_rate),
-            self.enabled
+            self.enabled,
+            self.failures
         )
 
     @property
