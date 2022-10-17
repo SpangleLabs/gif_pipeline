@@ -160,8 +160,7 @@ class SubscriptionHelper(Helper):
                         )
                 subscription.failures = 0
             subscription.last_check_time = datetime.now()
-            if subscription.feed_url in [sub.feed_url for sub in self.subscriptions[:]]:
-                self.save_subscription(subscription)
+            self.save_subscription(subscription)
 
     async def post_item(self, item: "Item", subscription: "Subscription") -> None:
         # Get chat
@@ -281,6 +280,9 @@ class SubscriptionHelper(Helper):
 
     def save_subscription(self, subscription: Subscription) -> None:
         new_sub = subscription.subscription_id is None
+        current_sub_ids = [sub.subscription_id for sub in self.subscriptions]
+        if not new_sub and subscription.subscription_id not in current_sub_ids:
+            return
         saved_data = self.database.save_subscription(subscription.to_data(), subscription.seen_item_ids)
         if new_sub:
             subscription.subscription_id = saved_data.subscription_id
