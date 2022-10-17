@@ -158,7 +158,7 @@ class SubscriptionHelper(Helper):
                             text=f"Failed to post item {item.source_link} from {feed_url} feed due to: {e}",
                             buttons=[[Button.inline("Delete error", "delete_me")]]
                         )
-            subscription.failures = 0
+                subscription.failures = 0
             subscription.last_check_time = datetime.now()
             if subscription.feed_url in [sub.feed_url for sub in self.subscriptions[:]]:
                 self.save_subscription(subscription)
