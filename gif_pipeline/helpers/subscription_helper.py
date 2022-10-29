@@ -137,12 +137,10 @@ class SubscriptionHelper(Helper):
             try:
                 new_items = await subscription.check_for_new_items()
             except Exception as e:
-                logger.error("Subscription to %s failed due to:", subscription.feed_url, exc_info=e)
-                await self.send_message(
-                    chat,
-                    text=f"Subscription to {subscription.feed_url} failed due to: {e}",
-                    buttons=[[Button.inline("Delete error", "delete_me")]]
-                )
+                logger.warning("Subscription to %s failed due to:", subscription.feed_url, exc_info=e)
+                # Just increment a counter please
+                subscription.failures += 1
+                self.save_subscription(subscription)
             else:
                 for item in new_items:
                     try:
@@ -160,9 +158,9 @@ class SubscriptionHelper(Helper):
                             text=f"Failed to post item {item.source_link} from {feed_url} feed due to: {e}",
                             buttons=[[Button.inline("Delete error", "delete_me")]]
                         )
+                subscription.failures = 0
             subscription.last_check_time = datetime.now()
-            if subscription.feed_url in [sub.feed_url for sub in self.subscriptions[:]]:
-                self.save_subscription(subscription)
+            self.save_subscription(subscription)
 
     async def post_item(self, item: "Item", subscription: "Subscription") -> None:
         # Get chat
@@ -227,11 +225,15 @@ class SubscriptionHelper(Helper):
             return [await self.send_text_reply(chat, message, "Please specify a feed link to subscribe to.")]
         if split_text[1] in ["list"]:
             msg = "List of subscriptions currently posting to this chat are:\n"
-            msg += "\n".join(
-                f"- {html.escape(sub.feed_url)}"
-                for sub in self.subscriptions
-                if sub.chat_id == chat.chat_data.chat_id
-            )
+            lines = []
+            for sub in self.subscriptions:
+                if sub.chat_id != chat.chat_data.chat_id:
+                    continue
+                line = f"- {html.escape(sub.feed_url)}"
+                if sub.failures > 0:
+                    line += f" (Failed last {sub.failures} checks)"
+                lines.append(line)
+            msg += "\n".join(lines)
             return [await self.send_text_reply(chat, message, msg)]
         if split_text[1] in ["remove", "delete"]:
             feed_link = split_text[2]
@@ -278,6 +280,9 @@ class SubscriptionHelper(Helper):
 
     def save_subscription(self, subscription: Subscription) -> None:
         new_sub = subscription.subscription_id is None
+        current_sub_ids = [sub.subscription_id for sub in self.subscriptions]
+        if not new_sub and subscription.subscription_id not in current_sub_ids:
+            return
         saved_data = self.database.save_subscription(subscription.to_data(), subscription.seen_item_ids)
         if new_sub:
             subscription.subscription_id = saved_data.subscription_id

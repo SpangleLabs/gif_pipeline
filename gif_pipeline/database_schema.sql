@@ -97,7 +97,8 @@ create table if not exists subscriptions
             on update restrict on delete cascade,
     last_check_time text,
     check_rate text,
-    enabled boolean
+    enabled boolean,
+    failures integer default 0
 );
 
 create unique index if not exists subscription_id_uindex
