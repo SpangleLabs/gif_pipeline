@@ -78,3 +78,28 @@ class ChunkSplitHelper(VideoCutHelper):
                 [self.cut_video(video, start, end) for start, end in timestamps],
                 lambda path: self.send_video_reply(chat, message, path, video.tags(self.database))
             )
+    
+    @property
+    def help_docs(self) -> HelpDocs:
+        return HelpDocs(
+            "chunk",
+            "Split a video into fixed length chunks",
+            "Cuts a video into a series of videos with a maximum specified chunk length. Final video will be whatever remainder length.",
+            [
+                HelpTemplate(
+                    "chunk <length>",
+                    "Split the video into a series of videos <length> seconds long. Length can be specified as a number of seconds, or in ISO8601 duration format",
+                    [
+                        HelpExample(
+                            "chunk 30",
+                            "Splits a video into a series of 30 second long videos. (And a shorter video of the remaining part of the video)"
+                        ),
+                        HelpExample(
+                            "chunk PT1M",
+                            "Splits a video into a series of 1 minute chunks"
+                        )
+                    ]
+                ),
+            ],
+            other_names = ["split chunks", "chunksplit", "chunk split", "chunks"],
+        )

@@ -9,7 +9,7 @@ import requests
 
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
-from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path
+from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path, HelpDocs, HelpTemplate, HelpExample
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
 from gif_pipeline.tasks.ffmprobe_task import FFprobeTask
@@ -208,3 +208,61 @@ class TelegramGifHelper(Helper):
         )
         await self.worker.await_task(task2)
         return two_pass_filename
+    
+    @property
+    def help_docs(self) -> HelpDocs:
+        return HelpDocs(
+            "gif",
+            "Converts a video into a Telegram gif",
+            "Converts a video into a format which should be displayed in Telegram as a \"gif\". In practical terms this means it will be an mp4 file without an audio track, under 1280px wide and tall, under 8MB, 30fps, and with certain other encoding options. It can also download .gif files from the internet and convert them into Telegram gifs.",
+            [
+                HelpTemplate(
+                    "gif",
+                    "Convert a specified video into a Telegram gif",
+                ),
+                HelpTemplate(
+                    "{URL to a .gif file}",
+                    "Downloads a .gif file and converts it into a Telegram gif. The URL needs to end with \".gif\".",
+                    [
+                        HelpExample(
+                            "",  # TODO
+                            "Downloads the gif file from the URL and converts it into a Telegram gif"
+                        ),
+                    ]
+                ),
+                HelpTemplate(
+                    "gif <width>x<height>",
+                    "Converts a specified video into a Telegram gif with a maximum bounding box of <width> by <height>. Scaling is preserved.",
+                    [
+                        HelpExample(
+                            "gif 720x720",
+                            "Converts to a Telegram gif will be no wider or taller than 720 pixels"
+                        )
+                    ]
+                ),
+                HelpTemplate(
+                    "gif <bitrate>bps",
+                    "Converts a specified video into a Telegram gif, with a target video bitrate of the specified bitrate. \"kbps\" or \"mbps\" can also be used.",
+                    [
+                        HelpExample(
+                            "gif 5mbps",
+                            "Converts video to a Telegram gif with a target video bitrate of 5 megabits per second"
+                        )
+                    ]
+                ),
+                HelpTemplate(
+                    "gif <framerate>fps",
+                    "Converts a specified video into a Telegram gif with a specified framerate.",
+                    [
+                        HelpExample(
+                            "gif 24fps",
+                            "Converts to a Telegram gif with 24 frames per second"
+                        )
+                    ]
+                ),
+                HelpTemplate(
+                    "gif <width>x<height> <bitrate>bps <framerate>fps",
+                    "The bounding box, birate, and framerate can all be specified, in any order"
+                )
+            ]
+        )

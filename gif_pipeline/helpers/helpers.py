@@ -103,6 +103,7 @@ class HelpDocs:
     brief: str
     description: str
     templates: List[HelpTemplate]
+    other_names: Optional[List[str]] = None
 
 
 class Helper(ABC):
