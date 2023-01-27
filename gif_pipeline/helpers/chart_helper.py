@@ -2,8 +2,7 @@ from typing import TYPE_CHECKING, Optional, List
 
 import matplotlib.pyplot as plt
 
-from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
-
+from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path, HelpDocs, HelpTemplate, HelpExample
 if TYPE_CHECKING:
     from gif_pipeline.chat import Chat
     from gif_pipeline.database import Database
@@ -56,3 +55,23 @@ class ChartHelper(Helper):
                 video_path=filename,
                 text=f"Pie chart of tag values for {tag_name} in {target_chat.chat_data.title}"
             )]
+    
+    @property
+    def help_docs(self) -> HelpDocs:
+        return HelpDocs(
+            "chart",
+            "Produce charts of video tag values",
+            "Produces pie charts of how many videos have different tag values for a given tag name in a given chat.\nThis is most useful for normal and single tags, it gets messier for gnostic tags, and is not useful for freeform text tags.",
+            [
+                HelpTemplate(
+                    "chart {destination} {tag_name}",
+                    "Specify the destination (as a username or telegram chat ID), and the tag name to create a chart of.",
+                    [
+                        HelpExample(
+                            "chart deergifs species",
+                            "Produces a chart of the species of deer found in the deergifs channel",
+                        ),
+                    ]
+                ),
+            ]
+        )
