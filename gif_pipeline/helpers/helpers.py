@@ -94,7 +94,7 @@ class HelpExample:
 class HelpTemplate:
     template: str
     explanation: str
-    examples: List[HelpExample]
+    examples: List[HelpExample] = dataclasses.field(default_factory=list)
 
 
 @dataclasses.dataclass
