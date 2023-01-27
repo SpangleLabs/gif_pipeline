@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import logging
 import os
 import shutil
@@ -82,6 +83,26 @@ def cleanup_file(file_path: str) -> None:
         os.remove(file_path)
     except FileNotFoundError:
         pass
+
+@dataclasses.dataclass
+class HelpExample:
+    example: str
+    explanation: str
+
+
+@dataclasses.dataclass
+class HelpTemplate:
+    template: str
+    explanation: str
+    examples: List[HelpExample]
+
+
+@dataclasses.dataclass
+class HelpDocs:
+    name: str
+    brief: str
+    description: str
+    templates: List[HelpTemplate]
 
 
 class Helper(ABC):
@@ -247,6 +268,10 @@ class Helper(ABC):
     @property
     def name(self) -> str:
         return self.__class__.__name__
+
+    @property
+    def help_docs(self) -> Optional[HelpDocs]:
+        return None
 
 
 class ArchiveHelper(Helper):
