@@ -42,9 +42,16 @@ class DeleteHelper(Helper):
 
     async def delete_branch(self, chat: Chat, message: MessageData) -> Optional[List[Message]]:
         message_family = self.database.get_message_family(message)
-        for msg_data in message_family:
-            await self.delete_msg(chat, msg_data)
+        await self.delete_msgs(chat, message_family)
         return []
+
+    async def delete_msgs(self, chat: Chat, msg_data: List[MessageData]) -> None:
+        copies = [chat.message_by_id(msg.message_id) for msg in msg_data]
+        await self.client.delete_messages(msg_data)
+        for msg, copy in zip(msg_data, copies):
+            copy.delete(self.database)
+            chat.remove_message(msg)
+            self.menu_cache.remove_menu_by_message(copy)
 
     async def delete_msg(self, chat: Chat, msg_data: MessageData) -> None:
         msg = chat.message_by_id(msg_data.message_id)
