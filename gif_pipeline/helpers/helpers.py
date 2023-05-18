@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 import shutil
@@ -9,11 +10,14 @@ from typing import Optional, List, Set, Callable, TypeVar, Awaitable
 from async_generator import asynccontextmanager
 from prometheus_client import Counter
 from telethon import Button
+from telethon.tl.types import DocumentAttributeVideo, TypeDocumentAttribute
 
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
 from gif_pipeline.menu_cache import SentMenu
 from gif_pipeline.message import Message
+from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
+from gif_pipeline.tasks.ffmprobe_task import FFprobeTask
 from gif_pipeline.video_tags import VideoTags
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient, message_data_from_telegram
@@ -115,12 +119,19 @@ class Helper(ABC):
             tags: VideoTags,
             text: str = None,
     ) -> Message:
+        extra_attributes = []
+        video_metadata = await self._gather_video_metadata_attribute(video_path)
+        if video_metadata:
+            extra_attributes.append(video_metadata)
+        video_thumb = await self._create_video_thumbnail(video_path)
         return await self.send_message(
             chat,
             video_path=video_path,
             reply_to_msg=message,
             text=text,
-            tags=tags
+            tags=tags,
+            extra_attributes=extra_attributes,
+            thumb=video_thumb,
         )
 
     async def send_message(
@@ -133,6 +144,8 @@ class Helper(ABC):
             buttons: Optional[List[List[Button]]] = None,
             tags: Optional[VideoTags] = None,
             video_hashes: Optional[Set[str]] = None,
+            extra_attributes: Optional[List[TypeDocumentAttribute]] = None,
+            thumb: Optional[str] = None,
     ) -> Message:
         reply_id = None
         if reply_to_msg is not None:
@@ -160,7 +173,9 @@ class Helper(ABC):
                 text,
                 reply_to_msg_id=reply_id,
                 buttons=buttons,
-                filename=filename
+                filename=filename,
+                document_attributes=extra_attributes,
+                thumb=thumb,
             )
         message_data = message_data_from_telegram(msg)
         if video_path is not None:
@@ -247,6 +262,43 @@ class Helper(ABC):
     @property
     def name(self) -> str:
         return self.__class__.__name__
+
+    async def _gather_video_metadata_attribute(self, video_path: str) -> Optional[DocumentAttributeVideo]:
+        try:
+            metadata_task = FFprobeTask(
+                global_options=["-of json -v error"],
+                inputs={video_path: "-show_entries format=duration:stream=width,height,bit_rate,codec_type"}
+            )
+            metadata_str = await self.worker.await_task(metadata_task)
+            metadata_json = json.loads(metadata_str)
+            duration = float(metadata_json.get("format", {}).get("duration", "0"))
+            video_streams = [
+                stream for stream in metadata_json.get("streams", []) if stream.get("codec_type") == "video"
+            ]
+            width = 0
+            height = 0
+            if video_streams:
+                width = video_streams[0].get("width", 0)
+                height = video_streams[0].get("height", 0)
+            return DocumentAttributeVideo(int(duration), width, height)
+        except Exception:
+            return None
+
+    async def _create_video_thumbnail(self, video_path: str) -> Optional[str]:
+        try:
+            thumb_path = random_sandbox_video_path("png")
+            thumb_task = FfmpegTask(
+                inputs={
+                    video_path: None,
+                },
+                outputs={
+                    thumb_path: "-ss 00:00:01.000 -vframes 1"
+                }
+            )
+            await self.worker.await_task(thumb_task)
+            return thumb_path
+        except Exception:
+            return None
 
 
 class ArchiveHelper(Helper):
