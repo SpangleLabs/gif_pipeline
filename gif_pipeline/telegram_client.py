@@ -259,6 +259,16 @@ class TelegramClient:
     async def delete_message(self, message_data: MessageData) -> None:
         await self.client.delete_messages(message_data.chat_id, message_data.message_id)
 
+    async def delete_messages(self, messages: List[MessageData]) -> None:
+        msg_ids_by_chat = {}
+        for msg in messages:
+            chat_id = msg.chat_id
+            if chat_id not in msg_ids_by_chat:
+                msg_ids_by_chat[chat_id] = []
+            msg_ids_by_chat[chat_id].append(msg.message_id)
+        for chat_id, message_ids in msg_ids_by_chat.items():
+            await self.client.delete_messages(chat_id, message_ids)
+
     async def forward_message(self, chat: ChatData, message_data: MessageData) -> telethon.tl.custom.message.Message:
         return await self.pipeline_bot_client.forward_messages(
             chat.chat_id,
