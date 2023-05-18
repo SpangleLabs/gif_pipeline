@@ -244,7 +244,7 @@ class TelegramClient:
             document_attributes: Optional[List[TypeDocumentAttribute]] = None,
             thumb: Optional[str] = None,
     ) -> telethon.tl.custom.message.Message:
-        attributes = document_attributes
+        attributes = document_attributes or []
         if filename:
             attributes.append(DocumentAttributeFilename(filename))
         return await self.pipeline_bot_client.send_file(
