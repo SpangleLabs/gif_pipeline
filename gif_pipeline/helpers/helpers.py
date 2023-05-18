@@ -10,7 +10,7 @@ from typing import Optional, List, Set, Callable, TypeVar, Awaitable
 from async_generator import asynccontextmanager
 from prometheus_client import Counter
 from telethon import Button
-from telethon.tl.types import DocumentAttributeVideo, TypeDocumentAttribute
+from telethon.tl.types import DocumentAttributeVideo
 
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
@@ -89,6 +89,7 @@ def cleanup_file(file_path: str) -> None:
 
 
 class Helper(ABC):
+    VIDEO_EXTENSIONS = ["mp4", "mov", "mkv", "webm", "avi", "wmv", "ogg", "vob", "flv", "gifv", "mpeg"]
 
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         self.database = database
@@ -119,19 +120,12 @@ class Helper(ABC):
             tags: VideoTags,
             text: str = None,
     ) -> Message:
-        extra_attributes = []
-        video_metadata = await self._gather_video_metadata_attribute(video_path)
-        if video_metadata:
-            extra_attributes.append(video_metadata)
-        video_thumb = await self._create_video_thumbnail(video_path)
         return await self.send_message(
             chat,
             video_path=video_path,
             reply_to_msg=message,
             text=text,
             tags=tags,
-            extra_attributes=extra_attributes,
-            thumb=video_thumb,
         )
 
     async def send_message(
@@ -144,8 +138,6 @@ class Helper(ABC):
             buttons: Optional[List[List[Button]]] = None,
             tags: Optional[VideoTags] = None,
             video_hashes: Optional[Set[str]] = None,
-            extra_attributes: Optional[List[TypeDocumentAttribute]] = None,
-            thumb: Optional[str] = None,
     ) -> Message:
         reply_id = None
         if reply_to_msg is not None:
@@ -167,6 +159,13 @@ class Helper(ABC):
                 filename = f"{chat.chat_data.username}_{est_next_msg_id}.{file_ext}"
             else:
                 filename = f"gif_pipeline_{est_next_msg_id}.{file_ext}"
+            extra_attributes = []
+            thumb = None
+            if file_ext.lower() in self.VIDEO_EXTENSIONS:
+                video_metadata = await self._gather_video_metadata_attribute(video_path)
+                if video_metadata:
+                    extra_attributes.append(video_metadata)
+                thumb = await self._create_video_thumbnail(video_path)
             msg = await self.client.send_video_message(
                 chat.chat_data,
                 video_path,
