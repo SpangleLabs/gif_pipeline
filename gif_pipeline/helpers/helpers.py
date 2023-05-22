@@ -295,7 +295,9 @@ class Helper(ABC):
                 }
             )
             await self.worker.await_task(thumb_task)
-            return thumb_path
+            if os.path.isfile(thumb_path):
+                return thumb_path
+            return None
         except Exception:
             return None
 
