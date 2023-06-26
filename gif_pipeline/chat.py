@@ -127,9 +127,12 @@ class Chat(ABC):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.chat_data.title})"
+    
+    def video_messages(self) -> List[Message]:
+        return [msg for msg in self.messages if msg.has_video]
 
     def count_videos(self) -> int:
-        return len([True for msg in self.messages if msg.has_video])
+        return len(self.video_messages)
 
     def sum_file_size(self) -> int:
         return sum([msg.message_data.file_size for msg in self.messages if msg.message_data.has_file])
