@@ -93,7 +93,7 @@ def next_post_time_for_channel(channel: 'Channel') -> datetime:
 
 def next_video_for_channel(channel: 'Channel') -> Optional['Message']:
     messages = []
-    queue_messages = channel.queue.video_messages
+    queue_messages = channel.queue.video_messages()
     if channel.schedule_config.order == ScheduleOrder.OLDEST_FIRST:
         messages = sorted(queue_messages, key=lambda msg: msg.message_data.datetime, reverse=False)
     if channel.schedule_config.order == ScheduleOrder.NEWEST_FIRST:
