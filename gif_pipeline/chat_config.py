@@ -45,22 +45,28 @@ class ScheduleConfig:
             *,
             max_time: timedelta = None,
             order: ScheduleOrder = None,
+            target_length: timedelta = None,
+            schedule_variability_percent: int = 15,
     ):
         self.min_time = min_time
         self.max_time = max_time
         self.order = order or ScheduleOrder.RANDOM
+        self.target_length = target_length
+        self.schedule_variability_percent = schedule_variability_percent
 
     @property
     def avg_time(self) -> timedelta:
         if self.max_time is None:
             return self.min_time
-        return (self.max_time + self.min_time) / 2
+        return (self.max_time + self.min_time) / 2 # TODO
 
     @staticmethod
     def from_json(json_dict: Dict[str, Any]) -> 'ScheduleConfig':
         min_time_str = json_dict["min_time"]
         max_time_str = json_dict.get("max_time")
         order_str = json_dict.get("order")
+        target_length_str = json_dict.get("target_queue_length")
+        schedule_variability = json_dict.get("schedule_variability_percent", 15)
         min_time = isodate.parse_duration(min_time_str)
         max_time = None
         if max_time_str:
@@ -71,10 +77,15 @@ class ScheduleConfig:
                 order = ScheduleOrder[order_str.upper()]
             except KeyError as e:
                 raise KeyError(f"Invalid schedule order, \"{order_str}\": {e}")
+        target_length = None
+        if target_length_str:
+            target_length = isodate.parse_duration(target_length_str)
         return ScheduleConfig(
             min_time=min_time,
             max_time=max_time,
-            order=order
+            order=order,
+            target_length=target_length,
+            schedule_variability_percent=schedule_variability,
         )
 
 

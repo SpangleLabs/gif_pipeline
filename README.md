@@ -33,7 +33,7 @@ Each channel is a dictionary in the base `channels` list. They have these keys:
 - `note_time`: `boolean` (optional, default: False). If provided, and true, the send confirmation menu will note to the user when the last message was sent to the destination channel.
 - `tags`: `Tags` (optional). If provided, this will provide configuration for suggested tags for videos sent to the given channel, see below for details.
 - `twitter`: `Twitter` (optional). If provided, videos sent to this channel will also be sent to twitter. See below for details
-- `caption`: `str` (optiona), If provided, used as a jinja2 template string, which is passed a dictionary of tag names to lists of tag values, to format a caption for the destination.
+- `caption`: `str` (optional), If provided, used as a jinja2 template string, which is passed a dictionary of tag names to lists of tag values, to format a caption for the destination.
 
 #### Queue configuration
 Configuration for a channel queue. Must be a group chat, rather than another channel.
@@ -46,6 +46,8 @@ Provided to a queue, this will cause it to prompt to automatically post from the
 - `min_time`: `str`, an [iso8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) string, the minimum time between automatically prompted posts in the channel.
 - `max_time`: `str` (optional), an iso8601 duration string which, if provided, will serve as the maximum time between posts in the channel, and the automatic prompt will pick a random time between the minimum time and maximum time.
 - `order`: `str` (optional, default: "random"). Can be one of: `random`, `oldest_first`, `newest_first`, and will decide whether the automatic posting helper will suggest posting the oldest video in the queue first, the newest video, or will select a video at random.
+- `target_queue_length`: `str` (optional), an iso8601 duration string which, if provided, changes the behaviour of max and min time, and instead of being a random time between those bounds, will cause the delay to be such the number of posts in the queue should aim to last as long as the target length.
+- `schedule_variability_percent`: `int` (optional, default: 15), If provided along with a target queue length, this will be how much randomness to add to the calculated delay required to make the queue reach the target length.
 
 #### Tags configuration
 The tag configuration is the suggested tags for videos being posted to a given channel. The keys of the dictionary should be the names of the tags, and then the values should be a dictionary with the following keys, or an empty dictionary to default to defaults:
