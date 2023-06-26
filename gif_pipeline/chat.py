@@ -218,7 +218,7 @@ class Channel(Chat):
     def est_queue_length(self) -> Optional[int]:
         if self.config.queue is None or self.config.queue.schedule is None:
             return None
-        avg_time = schedule_config.avg_time.
+        avg_time = schedule_config.avg_time
         schedule_config = self.config.queue.schedule
         if self.config.queue.schedule.target_length and self.queue.count_videos():
             avg_time = schedule_config.target_length / self.queue.count_videos()
