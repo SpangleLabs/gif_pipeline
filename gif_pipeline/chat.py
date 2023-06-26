@@ -218,15 +218,16 @@ class Channel(Chat):
     def est_queue_length(self) -> Optional[int]:
         if self.config.queue is None or self.config.queue.schedule is None:
             return None
-        avg_time = schedule_config.avg_time
         schedule_config = self.config.queue.schedule
+        avg_time = schedule_config.avg_time
         if self.config.queue.schedule.target_length and self.queue.count_videos():
             avg_time = schedule_config.target_length / self.queue.count_videos()
+            variability = schedule_config.schedule_variability_percent
             if schedule_config.max_time:
-                variable_max = max_time / ((100 - schedule_config.schedule_variability_percent) / 100)
+                variable_max = schedule_config.max_time / ((100 - variability) / 100)
                 if avg_time > variable_max:
                     avg_time = variable_max
-            variable_min = min_time / ((100 + schedule_config.schedule_variability_percent) / 100)
+            variable_min = schedule_config.min_time / ((100 + variability) / 100)
             if avg_time < variable_min:
                 avg_time = variable_min
         return avg_time.total_seconds() * self.queue.count_videos()
