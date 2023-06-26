@@ -47,6 +47,11 @@ queue_duration = Gauge(
     "Estimated duration of queue, based on schedule and videos in queue",
     labelnames=["chat_title"]
 )
+queue_target = Gauge(
+    "gif_pipeline_queue_target_duration_seconds",
+    "The target duration of the given queue, if specified in config",
+    labelnames=["chat_title"]
+)
 queue_length = Gauge(
     "gif_pipeline_queue_video_count",
     "Number of videos remaining in a queue",
@@ -178,6 +183,7 @@ class Channel(Chat):
         # Set up queue duration metrics
         self.queue_duration = None
         self.queue_length = None
+        self.queue_target = None
         if self.config.queue is not None and self.config.queue.schedule is not None:
             self.queue_duration = queue_duration.labels(
                 chat_title=self.chat_data.title,
@@ -185,6 +191,10 @@ class Channel(Chat):
             self.queue_length = queue_length.labels(
                 chat_title=self.chat_data.title,
             ).set_function(lambda: self.queue.count_videos())
+            if self.config.queue.schedule.target_length:
+                self.queue_target = queue_target.labels(
+                    chat_title=self.chat_data.title,
+                ).set(self.config.queue.schedule.target_length.total_seconds())
         # Set up latest post metrics
         self.latest_post = channel_latest_post.labels(
             chat_title=self.chat_data.title,
