@@ -181,7 +181,7 @@ class Channel(Chat):
         if self.config.queue is not None and self.config.queue.schedule is not None:
             self.queue_duration = queue_duration.labels(
                 chat_title=self.chat_data.title,
-            ).set_function(lambda: self.config.queue.schedule.avg_time.total_seconds() * self.queue.count_videos())
+            ).set_function(lambda: self.est_queue_length())
             self.queue_length = queue_length.labels(
                 chat_title=self.chat_data.title,
             ).set_function(lambda: self.queue.count_videos())
@@ -204,6 +204,22 @@ class Channel(Chat):
         sub_count = await self.client.get_subscriber_count(self.chat_data)
         logger.info(f"Subscribers: {sub_count}")
         self.sub_count.set(sub_count)
+
+    def est_queue_length(self) -> Optional[int]:
+        if self.config.queue is None or self.config.queue.schedule is None:
+            return None
+        avg_time = schedule_config.avg_time.
+        schedule_config = self.config.queue.schedule
+        if self.config.queue.schedule.target_length and self.queue.count_videos():
+            avg_time = schedule_config.target_length / self.queue.count_videos()
+            if schedule_config.max_time:
+                variable_max = max_time / ((100 - schedule_config.schedule_variability_percent) / 100)
+                if avg_time > variable_max:
+                    avg_time = variable_max
+            variable_min = min_time / ((100 + schedule_config.schedule_variability_percent) / 100)
+            if avg_time < variable_min:
+                avg_time = variable_min
+        return avg_time.total_seconds() * self.queue.count_videos()
 
     @property
     def has_queue(self) -> bool:
