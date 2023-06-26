@@ -60,7 +60,7 @@ class DelayRange:
 
 
 def next_delay_for_channel_with_target(channel: 'Channel') -> timedelta:
-    queue_length = channel.queue.count_videos
+    queue_length = channel.queue.count_videos()
     if queue_length == 0:
         return channel.schedule_config.min_time
     required_delay = channel.schedule_config.target_length / queue_length

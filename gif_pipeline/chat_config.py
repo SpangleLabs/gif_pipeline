@@ -58,7 +58,7 @@ class ScheduleConfig:
     def avg_time(self) -> timedelta:
         if self.max_time is None:
             return self.min_time
-        return (self.max_time + self.min_time) / 2 # TODO
+        return (self.max_time + self.min_time) / 2
 
     @staticmethod
     def from_json(json_dict: Dict[str, Any]) -> 'ScheduleConfig':
