@@ -24,24 +24,76 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class DelayRange:
+    min_delay: timedelta
+    max_delay: Optional[timedelta]
+
+    @classmethod
+    def from_midpoint(cls, midpoint: timedelta, variability_parcent: int) -> "DelayRange":
+        min_delay = midpoint * ((100 - variability_parcent) / 100)
+        max_delay = midpoint * ((100 + variability_parcent) / 100)
+        return cls(min_delay, max_delay)
+    
+    def cap_min(self, min_delay: timedelta, variability_parcent: int) -> "DelayRange":
+        if self.min_delay > min_delay:
+            return self
+        return DelayRange(
+            min_delay,
+            min_delay * ((100 + variability_parcent) / (100 - variability_parcent)),
+        )
+    
+    def cap_max(self, max_delay: timedelta, variability_parcent: int) -> "DelayRange":
+        if self.max_delay < max_delay:
+            return self
+        return DelayRange(
+            max_delay * ((100 - variability_parcent) / (100 + variability_parcent)),
+            max_delay,
+        )
+    
+    def next_delay(self) -> timedelta:
+        if not self.max_delay:
+            return self.min_delay
+        min_seconds = self.min_delay.total_seconds()
+        max_seconds = self.max_delay.total_seconds()
+        return timedelta(seconds=random.uniform(min_seconds, max_seconds))
+
+
+def next_delay_for_channel_with_target(channel: 'Channel') -> timedelta:
+    queue_length = channel.queue.count_videos()
+    if queue_length == 0:
+        return channel.schedule_config.min_time
+    required_delay = channel.schedule_config.target_length / queue_length
+    variability = channel.schedule_config.schedule_variability_percent
+    delay_range = DelayRange.from_midpoint(required_delay, variability)
+    delay_range = delay_range.cap_max(channel.schedule_config.max_time, variability)
+    delay_range = delay_range.cap_min(channel.schedule_config.min_time, variability)
+    return delay_range.next_delay()
+
+
+def next_delay_for_channel(channel: 'Channel') -> timedelta:
+    if channel.schedule_config.target_length:
+        return next_delay_for_channel_with_target(channel)
+    delay_range = DelayRange(
+        channel.schedule_config.min_time,
+        channel.schedule_config.max_time,
+    )
+    return delay_range.next_delay()
+
+
 def next_post_time_for_channel(channel: 'Channel') -> datetime:
-    time_delay = channel.schedule_config.min_time
-    if channel.schedule_config.max_time:
-        min_seconds = channel.schedule_config.min_time.total_seconds()
-        max_seconds = channel.schedule_config.max_time.total_seconds()
-        time_delay = timedelta(seconds=random.uniform(min_seconds, max_seconds))
+    time_delay = next_delay_for_channel(channel)
     last_post = channel.latest_message().message_data.datetime
     next_post_time = last_post + time_delay
     now = datetime.now(timezone.utc)
     if next_post_time < now:
-        # TODO: Maybe always use this?
         next_post_time = now + time_delay
     return next_post_time
 
 
 def next_video_for_channel(channel: 'Channel') -> Optional['Message']:
     messages = []
-    queue_messages = channel.queue.messages
+    queue_messages = channel.queue.video_messages()
     if channel.schedule_config.order == ScheduleOrder.OLDEST_FIRST:
         messages = sorted(queue_messages, key=lambda msg: msg.message_data.datetime, reverse=False)
     if channel.schedule_config.order == ScheduleOrder.NEWEST_FIRST:

@@ -47,6 +47,11 @@ queue_duration = Gauge(
     "Estimated duration of queue, based on schedule and videos in queue",
     labelnames=["chat_title"]
 )
+queue_target = Gauge(
+    "gif_pipeline_queue_target_duration_seconds",
+    "The target duration of the given queue, if specified in config",
+    labelnames=["chat_title"]
+)
 queue_length = Gauge(
     "gif_pipeline_queue_video_count",
     "Number of videos remaining in a queue",
@@ -127,9 +132,12 @@ class Chat(ABC):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.chat_data.title})"
+    
+    def video_messages(self) -> List[Message]:
+        return [msg for msg in self.messages if msg.has_video]
 
     def count_videos(self) -> int:
-        return len([True for msg in self.messages if msg.has_video])
+        return len(self.video_messages())
 
     def sum_file_size(self) -> int:
         return sum([msg.message_data.file_size for msg in self.messages if msg.message_data.has_file])
@@ -175,13 +183,18 @@ class Channel(Chat):
         # Set up queue duration metrics
         self.queue_duration = None
         self.queue_length = None
+        self.queue_target = None
         if self.config.queue is not None and self.config.queue.schedule is not None:
             self.queue_duration = queue_duration.labels(
                 chat_title=self.chat_data.title,
-            ).set_function(lambda: self.config.queue.schedule.avg_time.total_seconds() * self.queue.count_videos())
+            ).set_function(lambda: self.est_queue_length())
             self.queue_length = queue_length.labels(
                 chat_title=self.chat_data.title,
             ).set_function(lambda: self.queue.count_videos())
+            if self.config.queue.schedule.target_length:
+                self.queue_target = queue_target.labels(
+                    chat_title=self.chat_data.title,
+                ).set(self.config.queue.schedule.target_length.total_seconds())
         # Set up latest post metrics
         self.latest_post = channel_latest_post.labels(
             chat_title=self.chat_data.title,
@@ -201,6 +214,23 @@ class Channel(Chat):
         sub_count = await self.client.get_subscriber_count(self.chat_data)
         logger.info(f"Subscribers: {sub_count}")
         self.sub_count.set(sub_count)
+
+    def est_queue_length(self) -> Optional[float]:
+        if self.config.queue is None or self.config.queue.schedule is None:
+            return None
+        schedule_config = self.config.queue.schedule
+        avg_time = schedule_config.avg_time
+        if self.config.queue.schedule.target_length and self.queue.count_videos():
+            avg_time = schedule_config.target_length / self.queue.count_videos()
+            variability = schedule_config.schedule_variability_percent
+            if schedule_config.max_time:
+                variable_max = schedule_config.max_time / ((100 - variability) / 100)
+                if avg_time > variable_max:
+                    avg_time = variable_max
+            variable_min = schedule_config.min_time / ((100 + variability) / 100)
+            if avg_time < variable_min:
+                avg_time = variable_min
+        return avg_time.total_seconds() * self.queue.count_videos()
 
     @property
     def has_queue(self) -> bool:
