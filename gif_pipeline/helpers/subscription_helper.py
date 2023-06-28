@@ -142,7 +142,7 @@ class SubscriptionHelper(Helper):
                 subscription.failures += 1
                 self.save_subscription(subscription)
             else:
-                for item in new_items:
+                for item in new_items[::-1]:
                     try:
                         await self.post_item(item, subscription)
                     except Exception as e:

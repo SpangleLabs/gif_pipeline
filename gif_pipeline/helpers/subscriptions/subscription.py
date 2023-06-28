@@ -46,6 +46,9 @@ class Subscription(ABC):
 
     @abstractmethod
     async def check_for_new_items(self) -> List["Item"]:
+        """
+        Checks for new items, and returns any new ones, in order from newest to oldest
+        """
         raise NotImplementedError
 
     @classmethod
