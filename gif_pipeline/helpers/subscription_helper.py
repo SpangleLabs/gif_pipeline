@@ -282,9 +282,11 @@ class SubscriptionHelper(Helper):
         new_sub = subscription.subscription_id is None
         current_sub_ids = [sub.subscription_id for sub in self.subscriptions]
         if not new_sub and subscription.subscription_id not in current_sub_ids:
-            return
+            logger.debug(f"Skipping saving subscription ID: {subscription.subscription_id}")
+            return  # TODO Need to save the IDs though?
         saved_data = self.database.save_subscription(subscription.to_data(), subscription.seen_item_ids)
         if new_sub:
+            logger.debug(f"Saved new subscription to {subscription.feed_url}, ID: {saved_data.subscription_id}")
             subscription.subscription_id = saved_data.subscription_id
 
 
