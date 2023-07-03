@@ -1,3 +1,4 @@
+import logging
 import sqlite3
 from collections import defaultdict
 from contextlib import contextmanager
@@ -19,6 +20,8 @@ chat_types = {
 }
 chat_types_inv = {v: k for k, v in chat_types.items()}
 T = TypeVar("T", bound=ChatData)
+
+logger = logging.getLogger(__name__)
 
 
 def message_data_from_row(row: sqlite3.Row) -> MessageData:
@@ -495,6 +498,17 @@ class Database:
                     "INSERT INTO subscription_items (subscription_id, item_id) VALUES (?, ?)"
                     " ON CONFLICT (subscription_id, item_id) DO NOTHING",
                     (subscription.subscription_id, seen_item_id)
+                )
+            with self._execute(
+                "DELETE FROM subscription_items"
+                " WHERE subscription_id = ?"
+                f" AND item_id NOT IN ({','.join('?' * len(seen_item_ids))})",
+                (subscription.subscription_id, *seen_item_ids)
+            ) as cursor:
+                logger.debug(
+                    "Deleted %s subscription item rows for subscription ID: %s",
+                    cursor.rowcount,
+                    subscription.subscription_id,
                 )
         return subscription
 
