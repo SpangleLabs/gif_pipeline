@@ -295,15 +295,16 @@ class Pipeline:
         return helper
 
     def watch_workshop(self) -> None:
-        # Start prometheus server
+        # Set status to running
         self.startup_monitor.set_running()
-        logger.info("Watching workshop")
+        logger.info("Registering handlers")
         # Set up handlers
         self.client.add_message_handler(self.on_new_message, self.all_chat_ids)
         self.client.add_public_message_handler(self.pass_message_to_public_handlers)
         self.client.add_edit_handler(self.on_edit_message, self.all_chat_ids)
         self.client.add_delete_handler(self.on_deleted_message)
         self.client.add_callback_query_handler(self.on_callback_query)
+        logger.info("Handlers registered, watching workshops")
         self.client.client.run_until_disconnected()
 
     async def on_edit_message(self, event: events.MessageEdited.Event):
