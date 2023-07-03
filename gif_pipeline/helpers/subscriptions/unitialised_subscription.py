@@ -21,6 +21,7 @@ class UninitialisedSubscription(Subscription):
     VALIDATE_MAX = 2
 
     def __init__(self, feed_url: str, chat_id: int, helper: "SubscriptionHelper", **kwargs):
+        self._seen_item_ids = []
         super().__init__(feed_url, chat_id, helper, **kwargs)
         self.found_sub = None
 
@@ -63,3 +64,13 @@ class UninitialisedSubscription(Subscription):
         if self.found_sub is None:
             return isinstance(self, cls)
         return isinstance(self.found_sub, cls)
+
+    @property
+    def seen_item_ids(self) -> List[str]:
+        if self.found_sub is None:
+            return self._seen_item_ids
+        return self.found_sub.seen_item_ids
+
+    @seen_item_ids.setter
+    def seen_item_ids(self, new_items: List[str]) -> None:
+        self._seen_item_ids = new_items
