@@ -149,6 +149,22 @@ class TwitterConfig:
         )
 
 
+class WebsiteConfig:
+
+    def __init__(self, enabled: bool, publicly_listed: bool) -> None:
+        self.enabled = enabled
+        self.publicly_listed = publicly_listed
+
+    @classmethod
+    def from_json(cls, json_dict: Optional[Dict]) -> "WebsiteConfig":
+        if json_dict is None:
+            return cls(False, False)
+        return cls(
+            json_dict.get("enabled", True),
+            json_dict.get("publicly_listed", False),
+        )
+
+
 class ChatConfig(ABC):
     def __init__(
             self,
@@ -185,7 +201,8 @@ class ChannelConfig(ChatConfig):
             note_time: bool = False,
             tags: Optional[Dict[str, TagConfig]] = None,
             twitter_config: Optional[TwitterConfig] = None,
-            caption: str = ""
+            caption: str = "",
+            website_config: WebsiteConfig = None,
     ):
         super().__init__(handle)
         self.queue = queue
@@ -195,6 +212,7 @@ class ChannelConfig(ChatConfig):
         self.tags = tags or {}
         self.twitter_config = twitter_config
         self.caption_format = TextFormatter(caption)
+        self.website_config = website_config
 
     @staticmethod
     def from_json(json_dict) -> 'ChannelConfig':
@@ -219,7 +237,8 @@ class ChannelConfig(ChatConfig):
             note_time=json_dict.get("note_time", False),
             tags=tags,
             twitter_config=twitter_config,
-            caption=json_dict.get("caption", "")
+            caption=json_dict.get("caption", ""),
+            website_config=WebsiteConfig.from_json(json_dict.get("website")),
         )
 
 
