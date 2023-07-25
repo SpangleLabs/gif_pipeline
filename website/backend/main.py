@@ -1,6 +1,6 @@
 import json
 import os.path
-from typing import Optional, Union
+from typing import Optional, Union, Dict
 
 import flask
 from flask import Flask, Response
@@ -31,17 +31,40 @@ def _get_chat_config_for_handle(handle: Union[str, int]) -> Optional[ChannelConf
             return channel_config
 
 
+def _config_to_json(chat_config: ChannelConfig) -> Dict:
+    tags_config = None
+    if chat_config.tags:
+        tags_config = {
+            name: {
+                "type": config.type.value,
+            } for name, config in chat_config.tags.items()
+        }
+    return {
+        "handle": chat_config.handle,
+        "read_only": chat_config.read_only,
+        "tag_config": tags_config,
+    }
+
+
+def _data_to_json(chat_data: ChannelData) -> Dict:
+    return {
+        "chat_id": chat_data.chat_id,
+        "username": chat_data.username,
+        "title": chat_data.title,
+    }
+
+
 @app.route("/chats/<chat_id>.json")
 def api_channel_tags(chat_id: str) -> Response:
     chat_data = _get_chat_data_for_handle(chat_id)
     chat_config = _get_chat_config_for_handle(chat_id)
     if chat_data is None or chat_config is None or not chat_config.website_config.enabled:
-        return flask.jsonify({"error": "Chat not found"}), 404
+        return flask.jsonify({"error": "Chat not found"}, 404)
     messages = database.list_messages_for_chat(chat_data)
-    message_data = []
+    message_list = []
     for message in messages:
         tags = database.get_tags_for_message(message)
-        message_data.append({
+        message_list.append({
             "msg_id": message.message_id,
             "chat_id": message.chat_id,
             "tags": [
@@ -51,29 +74,26 @@ def api_channel_tags(chat_id: str) -> Response:
                 } for tag in tags
             ]
         })
-    return flask.jsonify(message_data)
+    return flask.jsonify({
+        "config": _config_to_json(chat_config),
+        "data": _data_to_json(chat_data),
+        "messages": message_list,
+    })
 
 
 @app.route("/chats.json")
 def api_chat_list() -> Response:
-    channels = [channel for channel in pipeline_conf.channels if channel.website_config.publicly_listed]
-    channel_data = []
-    for channel in channels:
-        tags_config = None
-        if channel.tags:
-            tags_config = {
-                name: {
-                    "type": config.type.value,
-                } for name, config in channel.tags.items()
-            }
-        channel_data.append({
-            "handle": channel.handle,
-            "read_only": channel.read_only,
-            "tag_config": tags_config,
+    channel_configs = [channel for channel in pipeline_conf.channels if channel.website_config.publicly_listed]
+    channel_list = []
+    for channel_config in channel_configs:
+        channel_data = _get_chat_data_for_handle(channel_config.handle)
+        channel_list.append({
+            "config": _config_to_json(channel_config),
+            "data": _data_to_json(channel_data),
         })
-    return {
-        "channels": channel_data,
-    }
+    return flask.jsonify({
+        "channels": channel_list,
+    })
 
 
 if __name__ == '__main__':
