@@ -14,9 +14,9 @@ def view_channel_page(chat_id: str) -> Response:
     data = requests.get(f"{API_ROOT}/chats/{chat_id}.json").json()
     chat_title = data["data"]["title"]
     handle = data["config"]["handle"]
-    tag_config_str = json.dumps(data["config"]["tags"])
+    tag_config_str = json.dumps(data["config"]["tag_config"], indent=2)
     response = f"""<html>
-    <head><title>{chat_title}<title></head>
+    <head><title>{chat_title}</title></head>
     <body>
     <h1>{chat_title}</h1>
     <b>Handle:</b> {handle}</br>
