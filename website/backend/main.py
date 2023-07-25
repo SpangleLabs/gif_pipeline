@@ -7,7 +7,7 @@ from gif_pipeline.database import Database
 from gif_pipeline.pipeline import PipelineConfig
 
 app = Flask(__name__)
-with open("../config.json", "r") as c:
+with open("../../config.json", "r") as c:
     CONF = json.load(c)
 pipeline_conf = PipelineConfig(CONF)
 database = Database()
