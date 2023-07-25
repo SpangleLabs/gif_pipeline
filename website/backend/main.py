@@ -63,6 +63,8 @@ def api_channel_tags(chat_id: str) -> Response:
     messages = database.list_messages_for_chat(chat_data)
     message_list = []
     for message in messages:
+        if not message.has_video:
+            continue
         tags = database.get_tags_for_message(message)
         message_list.append({
             "msg_id": message.message_id,
