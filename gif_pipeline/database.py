@@ -72,8 +72,8 @@ class SubscriptionData:
 class Database:
     DB_FILE = "pipeline.sqlite"
 
-    def __init__(self) -> None:
-        self.conn = sqlite3.connect(self.DB_FILE, check_same_thread=False)
+    def __init__(self, *, filename: str = DB_FILE) -> None:
+        self.conn = sqlite3.connect(filename, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self._lock = RLock()
         self._create_db()
