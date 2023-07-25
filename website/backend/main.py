@@ -35,7 +35,7 @@ def _get_chat_config_for_handle(handle: Union[str, int]) -> Optional[ChannelConf
 def api_channel_tags(chat_id: str) -> Response:
     chat_data = _get_chat_data_for_handle(chat_id)
     chat_config = _get_chat_config_for_handle(chat_id)
-    if chat_data is None or chat_config is None:
+    if chat_data is None or chat_config is None or not chat_config.website_config.enabled:
         return flask.jsonify({"error": "Chat not found"}), 404
     messages = database.list_messages_for_chat(chat_data)
     message_data = []
