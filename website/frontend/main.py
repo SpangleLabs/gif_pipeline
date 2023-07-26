@@ -80,13 +80,18 @@ class ChannelTags:
         tags_dict = {}
         for tag_entry in msg_data["tags"]:
             tag_name = tag_entry["name"]
+            tag_value = tag_entry["value"]
+            # Clean up gnostic tags
             if tag_name.endswith("__rejected"):
                 continue
             tag_name = tag_name.removesuffix("__confirmed")
-            tag_value = tag_entry["value"]
+            # Note tag value for name
             if tag_name not in tags_dict:
                 tags_dict[tag_name] = []
             tags_dict[tag_name].append(tag_value)
+        # Sort dict
+        channel_tags = [tag.name for tag in self.list_channel_tags()]
+        tags_dict = dict(sorted(tags_dict.items(), key=lambda k: channel_tags.index(k[0])))
         return tags_dict
 
     def tag_names_in_config(self) -> List[str]:
