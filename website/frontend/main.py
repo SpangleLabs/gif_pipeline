@@ -7,7 +7,7 @@ import requests
 from flask import Flask, Response
 
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates/")
 
 API_ROOT = "http://localhost:3000/"
 
@@ -80,11 +80,20 @@ class ChannelTags:
         tags_dict = {}
         for tag_entry in msg_data["tags"]:
             tag_name = tag_entry["name"]
+            if tag_name.endswith("__rejected"):
+                continue
+            tag_name = tag_name.removesuffix("__confirmed")
             tag_value = tag_entry["value"]
             if tag_name not in tags_dict:
                 tags_dict[tag_name] = []
             tags_dict[tag_name].append(tag_value)
         return tags_dict
+
+    def tag_names_in_config(self) -> List[str]:
+        channel_tags = self.list_channel_tags()
+        return [
+            channel_tag.name for channel_tag in channel_tags if channel_tag.in_config
+        ]
 
 
 @app.route("/<chat_id>")
@@ -93,56 +102,13 @@ def view_channel_page(chat_id: str) -> Response:
     chat_title = data["data"]["title"]
     handle = data["config"]["handle"]
     channel_tag_data = ChannelTags(data)
-    response = f"""<html>
-    <head>
-    <title>{chat_title}</title>
-    <style>
-    th {{
-        background-color: #FDFD96;
-    }}
-    table {{
-        border: 2px solid black;
-        border-collapse: collapse;
-        margin: 10px;
-    }}
-    td {{
-        border: 1px solid grey;
-    }}
-    body {{
-        font-family: sans-serif;
-    }}
-    </style>
-    </head>
-    <body>
-    <h1>{chat_title}</h1>
-    <b>Handle:</b> {handle}</br>
-    <b>Telegram link:</b> https://t.me/{handle}</br>
-    <b>Tag config:</b></br>
-    <table><tr><th>Name</th><th>Type</th><th>In config?</th><th>Message count</th></tr>"""
-    for channel_tag in channel_tag_data.list_channel_tags():
-        official_str = "Y" if channel_tag.in_config else "N"
-        name_str = channel_tag.name
-        if channel_tag.in_config:
-            name_str = f"<b>{channel_tag.name}</b>"
-        response += f"""<tr><td>{name_str}</td><td>{channel_tag.tag_type}</td><td>{official_str}</td><td>{channel_tag.message_count}</tr>"""
-    response += f"""</table>
-    <h2>Messages:</h2><div id="messages">"""
-    for message in data["messages"][::-1][:10]:
-        msg_id = message["msg_id"]
-        response += "<table>"
-        response += f"""<tr><td colspan=2><script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-post="{handle}/{msg_id}" data-width="100%"></script></td></tr>"""
-        tags_dict = channel_tag_data.table_dict_for_msg(message)
-        for tag_name, tag_values in tags_dict.items():
-            if tag_name.endswith("__rejected"):
-                continue
-            display_name = tag_name.removesuffix("__confirmed")
-            name_cell = f"<td>{display_name}</td>"
-            if display_name in data["config"]["tag_config"]:
-                name_cell = f"<td><b>{display_name}</b></td>"
-            response += f"<tr>{name_cell}<td>{', '.join(tag_values)}</td></tr>"
-        response += "</table>"
-    response += "</div></body></html>"
-    return flask.make_response(response)
+    return Response(flask.render_template(
+        "chat_page.html.jinja2",
+        chat_title=chat_title,
+        handle=handle,
+        channel_tag_data=channel_tag_data,
+        message_list=data["messages"][::-1][:10]
+    ))
 
 
 @app.route("/")
