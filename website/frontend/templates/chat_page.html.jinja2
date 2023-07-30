@@ -8,16 +8,35 @@
     table {
         border: 2px solid black;
         border-collapse: collapse;
-        margin: 10px;
     }
-    td {
+    td, th {
         border: 1px solid grey;
     }
-    td.tag_in_config {
+    th.tag_in_config {
         font-weight: bold;
     }
     body {
         font-family: sans-serif;
+    }
+    #messages {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, 400px);
+        gap: 10px;
+    }
+    .message_container {
+        padding: 10px;
+        background: #cfc;
+        border: 3px solid #8f8;
+        border-radius: 6px;
+    }
+    .video_embed {
+        width: 100%;
+        align-content: center;
+        margin: auto;
+    }
+    .tags_table {
+        height: 100%;
+        vertical-align: bottom;
     }
 </style>
 </head>
@@ -45,19 +64,21 @@
     <h2>Messages:</h2>
     <div id="messages">
         {% for message in message_list %}
-        <table>
-            <tr>
-                <td colspan="2">
-                    <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-post="{{ handle }}/{{ message['msg_id'] }}" data-width="100%"></script>
-                </td>
-            </tr>
-            {% for tag_name, tag_values in channel_tag_data.table_dict_for_msg(message).items() %}
-                <tr>
-                <td class="{{ "tag_in_config" if tag_name in channel_tag_data.tag_names_in_config() else "" }}">{{ tag_name }}</td>
-                <td>{{ tag_values|join(", ") }}</td>
-                </tr>
-            {% endfor %}
-        </table>
+        <div class="message_container">
+            <div class="video_embed">
+                <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-post="{{ handle }}/{{ message['msg_id'] }}" data-width="70%"></script>
+            </div>
+            <div class="tags_table">
+                <table>
+                    {% for tag_name, tag_values in channel_tag_data.table_dict_for_msg(message).items() %}
+                        <tr>
+                        <th class="{{ "tag_in_config" if tag_name in channel_tag_data.tag_names_in_config() else "" }}">{{ tag_name }}</th>
+                        <td>{{ tag_values|join(", ") }}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
         {% endfor %}
     </div>
 </body>
