@@ -90,7 +90,7 @@ def cleanup_file(file_path: str) -> None:
 
 class Helper(ABC):
     VIDEO_EXTENSIONS = ["mp4", "mov", "mkv", "webm", "avi", "wmv", "ogg", "vob", "flv", "gifv", "mpeg"]
-    AUDIO_EXTENSIONS = ["mp3", "wav"]
+    AUDIO_EXTENSIONS = ["mp3", "wav", "ogg", "flac"]
 
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         self.database = database
