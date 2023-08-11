@@ -208,6 +208,25 @@ class Database:
                 ))
         return entries
 
+    def get_tags_for_chat(self, chat_data: ChatData, is_scheduled: bool = False) -> Dict[int, List[TagEntry]]:
+        results = {}
+        with self._execute(
+            "SELECT msg.message_id, tags.tag_name, tags.tag_value "
+            "FROM video_tags tags "
+            "LEFT JOIN messages msg ON tags.entry_id = msg.entry_id "
+            "WHERE msg.chat_id = ? AND is_scheduled = ?",
+            (chat_data.chat_id, is_scheduled)
+        ) as result:
+            for row in result:
+                msg_id = row["message_id"]
+                if msg_id not in result:
+                    results[msg_id] = []
+                results[msg_id].append(TagEntry(
+                    row["tag_name"],
+                    row["tag_value"]
+                ))
+        return results
+
     def list_tag_values(self, tag_name: str, chat_ids: List[int]) -> List[str]:
         with self._execute(
             "SELECT vt.tag_value "

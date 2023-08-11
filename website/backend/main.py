@@ -62,10 +62,11 @@ def api_channel_tags(chat_id: str) -> Response:
         return flask.jsonify({"error": "Chat not found"}, 404)
     messages = database.list_messages_for_chat(chat_data)
     message_list = []
+    all_tags = database.get_tags_for_chat(chat_data)
     for message in messages:
         if not message.has_video:
             continue
-        tags = database.get_tags_for_message(message)
+        tags = all_tags.get(message.message_id, [])
         message_list.append({
             "msg_id": message.message_id,
             "chat_id": message.chat_id,
