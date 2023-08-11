@@ -1,12 +1,9 @@
-import os
 from typing import Optional, List
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.helpers import Helper, find_video_for_message, random_sandbox_video_path
-from gif_pipeline.helpers.telegram_gif_helper import GifSettings
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
-from gif_pipeline.tasks.ffmprobe_task import FFprobeTask
 
 
 class AudioHelper(Helper):
@@ -23,9 +20,13 @@ class AudioHelper(Helper):
             return [await self.send_text_reply(chat, message, "I'm not sure which video you want to audio.")]
         # Convert video to audio
         voice_note = text_clean in self.CMD_VOICE
-        output_path = random_sandbox_video_path("ogg" if voice_note else "mp3")
         async with self.progress_message(chat, message, "Converting video into audio"):
-            tasks = video_to_audio(video.message_data.file_path, output_path)
+            if voice_note:
+                output_path = random_sandbox_video_path("ogg")
+                tasks = video_to_voice_note(video.message_data.file_path, output_path)
+            else:
+                output_path = random_sandbox_video_path("mp3")
+                tasks = video_to_mp3(video.message_data.file_path, output_path)
             for task in tasks:
                 await self.worker.await_task(task)
             return [await self.send_message(
@@ -37,8 +38,15 @@ class AudioHelper(Helper):
             )]
 
 
-def video_to_audio(input_path: str, output_path: str) -> List[FfmpegTask]:
+def video_to_mp3(input_path: str, output_path: str) -> List[FfmpegTask]:
     return [FfmpegTask(
         inputs={input_path: None},
         outputs={output_path: "-q:a 0 -map a"}
+    )]
+
+
+def video_to_voice_note(input_path: str, output_path: str) -> List[FfmpegTask]:
+    return [FfmpegTask(
+        inputs={input_path: None},
+        outputs={output_path: "-q:a 0 -map a -c:a libopus"}
     )]
