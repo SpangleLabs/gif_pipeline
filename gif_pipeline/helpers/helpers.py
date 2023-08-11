@@ -10,7 +10,7 @@ from typing import Optional, List, Set, Callable, TypeVar, Awaitable
 from async_generator import asynccontextmanager
 from prometheus_client import Counter
 from telethon import Button
-from telethon.tl.types import DocumentAttributeVideo
+from telethon.tl.types import DocumentAttributeAudio, DocumentAttributeVideo
 
 from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat
@@ -138,6 +138,7 @@ class Helper(ABC):
             buttons: Optional[List[List[Button]]] = None,
             tags: Optional[VideoTags] = None,
             video_hashes: Optional[Set[str]] = None,
+            voice_note: bool = False,
     ) -> Message:
         reply_id = None
         if reply_to_msg is not None:
@@ -166,6 +167,8 @@ class Helper(ABC):
                 if video_metadata:
                     extra_attributes.append(video_metadata)
                 thumb = await self._create_video_thumbnail(video_path)
+            if voice_note:
+                extra_attributes.append(DocumentAttributeAudio(voice_note, filename, None, None))
             msg = await self.client.send_video_message(
                 chat.chat_data,
                 video_path,
