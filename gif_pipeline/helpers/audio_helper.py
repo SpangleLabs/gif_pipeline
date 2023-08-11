@@ -22,7 +22,8 @@ class AudioHelper(Helper):
         if video is None:
             return [await self.send_text_reply(chat, message, "I'm not sure which video you want to audio.")]
         # Convert video to audio
-        output_path = random_sandbox_video_path("mp3")
+        voice_note = text_clean in self.CMD_VOICE
+        output_path = random_sandbox_video_path("ogg" if voice_note else "mp3")
         async with self.progress_message(chat, message, "Converting video into audio"):
             tasks = video_to_audio(video.message_data.file_path, output_path)
             for task in tasks:
@@ -32,7 +33,7 @@ class AudioHelper(Helper):
                 reply_to_msg=message,
                 video_path=output_path,
                 tags=video.tags(self.database),
-                voice_note=text_clean in self.CMD_VOICE,
+                voice_note=voice_note,
             )]
 
 
