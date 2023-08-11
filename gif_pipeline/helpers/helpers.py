@@ -90,6 +90,7 @@ def cleanup_file(file_path: str) -> None:
 
 class Helper(ABC):
     VIDEO_EXTENSIONS = ["mp4", "mov", "mkv", "webm", "avi", "wmv", "ogg", "vob", "flv", "gifv", "mpeg"]
+    AUDIO_EXTENSIONS = ["mp3", "wav"]
 
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         self.database = database
@@ -167,8 +168,14 @@ class Helper(ABC):
                 if video_metadata:
                     extra_attributes.append(video_metadata)
                 thumb = await self._create_video_thumbnail(video_path)
-            if voice_note:
-                extra_attributes.append(DocumentAttributeAudio(voice_note, filename, None, None))
+            if file_ext.lower() in self.AUDIO_EXTENSIONS:
+                duration = await self._get_duration(video_path)
+                duration_int = 0
+                if duration:
+                    duration_int = int(duration)
+                extra_attributes.append(
+                    DocumentAttributeAudio(duration_int, voice_note, filename, "Gif Pipeline", None)
+                )
             msg = await self.client.send_video_message(
                 chat.chat_data,
                 video_path,
@@ -283,6 +290,16 @@ class Helper(ABC):
                 width = video_streams[0].get("width", 0)
                 height = video_streams[0].get("height", 0)
             return DocumentAttributeVideo(int(duration), width, height)
+        except Exception:
+            return None
+    
+    async def _get_duration(self, video_path: str) -> Optional[float]:
+        try:
+            probe_task = FFprobeTask(
+                global_options=["-v error"],
+                inputs={video_path: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
+            )
+            return float(await self.worker.await_task(probe_task))
         except Exception:
             return None
 
