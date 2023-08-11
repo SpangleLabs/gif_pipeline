@@ -96,6 +96,9 @@ This section stores various API keys or other details for third party services. 
 The pipeline has many "helpers", which are classes which handle different types of user requests in workshop groups. These are used to edit videos, and manage tags, and such.
 As a general rule, commands should be posted as a reply to the video they are referring to, and will then reply to the command with their results.
 
+### Audio helper
+Converts a video to audio. Use the command `audio` to convert the video to mp3 (for music), or use the command `voice` to send the audio as a voice note.
+
 ### Channel forward tag helper
 Just sets the source tag for any videos forwarded from a public channel.
 
