@@ -1,3 +1,4 @@
+import datetime
 import logging
 import sqlite3
 from collections import defaultdict
@@ -534,6 +535,16 @@ class Database:
     def remove_subscription(self, sub: SubscriptionData) -> None:
         self._just_execute("DELETE FROM subscription_items WHERE subscription_id = ?", (sub.subscription_id,))
         self._just_execute("DELETE FROM subscriptions WHERE subscription_id = ?", (sub.subscription_id,))
+
+    def save_thumbnail(self, message_data: MessageData, thumb_data: bytes, thumbnail_ts: float, generation_ts: datetime.datetime):
+        entry_id = self.get_entry_id_for_message(message_data)
+        self._just_execute(
+            "INSERT INTO video_thumbnails (entry_id, thumbnail, thumbnail_timestamp, creation_time)"
+            " VALUES (?, ?, ?, ?)"
+            " ON CONFLICT (entry_id) DO UPDATE SET thumbnail=excluded.thumbnail,"
+            " thumbnail_timestamp=excluded.thumbnail_timestamp, creation_time=excluded.creation_time",
+            (entry_id, thumb_data, thumbnail_ts, generation_ts)
+        )
 
 
 S = TypeVar('S')

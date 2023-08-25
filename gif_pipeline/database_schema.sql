@@ -114,3 +114,15 @@ create table if not exists subscription_items
 
 create unique index if not exists subscription_items_subscription_id_item_id_uindex
 	on subscription_items (subscription_id, item_id);
+
+create table if not exists video_thumbnails
+(
+    entry_id            integer not null
+        constraint video_thumbnails_pk
+            primary key
+        constraint video_thumbnails_messages_entry_id_fk
+            references messages,
+    thumbnail           blob    not null,
+    thumbnail_timestamp real    not null,
+    creation_time       text    not null
+);
