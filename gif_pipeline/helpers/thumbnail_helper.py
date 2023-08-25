@@ -88,7 +88,7 @@ class ThumbnailHelper(Helper):
     async def create_thumbnail(self, video_path: str, thumbnail_ts: float, width: int, height: int) -> Optional[str]:
         resize_filter = f"-vf \"scale='min({width},iw)':'min({height},ih)':force_original_aspect_ratio=decrease\""
         try:
-            thumb_path = random_sandbox_video_path("png")
+            thumb_path = random_sandbox_video_path("jpg")
             thumb_task = FfmpegTask(
                 inputs={
                     video_path: None,
