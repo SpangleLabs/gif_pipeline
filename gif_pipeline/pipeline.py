@@ -34,6 +34,7 @@ from gif_pipeline.helpers.stabilise_helper import StabiliseHelper
 from gif_pipeline.helpers.subscription_helper import SubscriptionHelper
 from gif_pipeline.helpers.tag_helper import TagHelper
 from gif_pipeline.helpers.telegram_gif_helper import TelegramGifHelper
+from gif_pipeline.helpers.thumbnail_helper import ThumbnailHelper
 from gif_pipeline.helpers.update_yt_dl_helper import UpdateYoutubeDlHelper
 from gif_pipeline.helpers.video_crop_helper import VideoCropHelper
 from gif_pipeline.helpers.video_cut_helper import VideoCutHelper
@@ -264,7 +265,8 @@ class Pipeline:
             ChartHelper(self.database, self.client, self.worker, self, tag_manager),
             schedule_helper,
             subscription_helper,
-            FindHelper(self.database, self.client, self.worker, duplicate_helper, download_helper)
+            FindHelper(self.database, self.client, self.worker, duplicate_helper, download_helper),
+            ThumbnailHelper(self.database, self.client, self.worker, self),
         ]
         if "imgur" in self.api_keys:
             helpers.append(
