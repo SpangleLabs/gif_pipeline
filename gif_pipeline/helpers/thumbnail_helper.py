@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class ThumbnailHelper(Helper):
 
-    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, pipeline: "Pipeline"):
+    def __init__(self, database: "Database", client: "TelegramClient", worker: "TaskWorker", pipeline: "Pipeline"):
         super().__init__(database, client, worker)
         self.pipeline = pipeline
 
