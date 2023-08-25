@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Dict, List, Iterator, Optional, Iterable, Union, Tuple
+from typing import Dict, List, Optional, Iterable, Union, Tuple
 
 from prometheus_client import Info, start_http_server
 from telethon import events
@@ -408,7 +408,7 @@ class Pipeline:
             message.delete(self.database)
             chat.remove_message(message.message_data)
 
-    def get_messages_for_delete_event(self, event: events.MessageDeleted.Event) -> Iterator[Message]:
+    def get_messages_for_delete_event(self, event: events.MessageDeleted.Event) -> Iterable[Message]:
         deleted_ids = event.deleted_ids
         if event.chat_id is None:
             return [
