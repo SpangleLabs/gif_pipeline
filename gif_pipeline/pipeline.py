@@ -173,10 +173,7 @@ class Pipeline:
 
     @property
     def all_chats(self) -> List[Chat]:
-        channels = [x for x in self.channels]  # type: List[Chat]
-        for workshop in self.workshops:
-            channels.append(workshop)
-        return channels
+        return [*self.channels, *self.workshops]
 
     @property
     def all_chat_ids(self) -> List[int]:
@@ -188,13 +185,6 @@ class Pipeline:
                 return chat
         return None
 
-    def chat_by_handle(self, name: str) -> Optional[Chat]:
-        name = name.lstrip("@")
-        for chat in self.all_chats:
-            if chat.chat_data.matches_handle(name):
-                return chat
-        return None
-
     def channel_by_handle(self, name: str) -> Optional[Channel]:
         name = name.lstrip("@")
         for chat in self.channels:
@@ -202,12 +192,26 @@ class Pipeline:
                 return chat
         return None
 
+    def get_message_for_handle_and_id(self, handle: Union[int, str], message_id: int) -> Optional[Message]:
+        for chat in self.all_chats:
+            if chat.chat_data.matches_handle(str(handle)):
+                return chat.message_by_id(message_id)
+        return None
+
+    def get_message_for_link(self, link: str) -> Optional[Message]:
+        link_split = link.strip("/").split("/")
+        if len(link_split) < 2:
+            return None
+        message_id = int(link_split[-1])
+        handle = link_split[-2]
+        return self.get_message_for_handle_and_id(handle, message_id)
+
     def initialise_helpers(self) -> None:
         logger.info("Initialising helpers")
         self.startup_monitor.set_state(StartupState.INITIALISING_DUPLICATE_DETECTOR)
         duplicate_helper = self.client.synchronise_async(self.initialise_duplicate_detector())
         self.startup_monitor.set_state(StartupState.INITIALISING_HELPERS)
-        tag_manager = TagManager(self.channels, self.workshops, self.database)
+        tag_manager = TagManager(self.database)
         delete_helper = DeleteHelper(self.database, self.client, self.worker, self.menu_cache)
         menu_helper = MenuHelper(self.database, self.client, self.worker, self, delete_helper, tag_manager)
         twitter_keys = self.api_keys.get("twitter", {})
@@ -254,7 +258,7 @@ class Pipeline:
             ReverseHelper(self.database, self.client, self.worker),
             ffprobe_helper,
             ZipHelper(self.database, self.client, self.worker),
-            TagHelper(self.database, self.client, self.worker, tag_manager),
+            TagHelper(self.database, self.client, self.worker, self),
             ChannelFwdTagHelper(self.database, self.client, self.worker),
             UpdateYoutubeDlHelper(self.database, self.client, self.worker),
             ChartHelper(self.database, self.client, self.worker, self, tag_manager),

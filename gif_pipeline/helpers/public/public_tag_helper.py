@@ -1,24 +1,28 @@
+from typing import TYPE_CHECKING
+
 from telethon.tl.types import Message
 import html
 
 from gif_pipeline.database import Database
 from gif_pipeline.helpers.public.public_helpers import PublicHelper
-from gif_pipeline.tag_manager import TagManager
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
+
+if TYPE_CHECKING:
+    from gif_pipeline.pipeline import Pipeline
 
 
 class PublicTagHelper(PublicHelper):
 
-    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, tag_manager: TagManager):
+    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, pipeline: "Pipeline"):
         super().__init__(database, client, worker)
-        self.tag_manager = tag_manager
+        self.pipeline = pipeline
 
     async def on_new_message(self, message: Message):
         if message.forward and message.forward.channel_post:
             chat_id = message.forward.chat_id
             msg_id = message.forward.channel_post
-            msg = self.tag_manager.get_message_for_ids(chat_id, msg_id)
+            msg = self.pipeline.get_message_for_ids(chat_id, msg_id)
             if msg:
                 tags = msg.tags(self.database)
                 text = f"This post is from {html.escape(msg.chat_data.title)}."

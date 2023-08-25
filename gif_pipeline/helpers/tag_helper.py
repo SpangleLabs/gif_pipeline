@@ -1,20 +1,22 @@
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 import html
 
 from gif_pipeline.chat import Chat
 from gif_pipeline.database import Database
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.message import Message
-from gif_pipeline.tag_manager import TagManager
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
+
+if TYPE_CHECKING:
+    from gif_pipeline.pipeline import Pipeline
 
 
 class TagHelper(Helper):
 
-    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, tag_manager: TagManager):
+    def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker, pipeline: "Pipeline"):
         super().__init__(database, client, worker)
-        self.tag_manager = tag_manager
+        self.pipeline = pipeline
 
     def is_priority(self, chat: Chat, message: Message) -> bool:
         clean_args = message.text.strip().split()
@@ -33,7 +35,7 @@ class TagHelper(Helper):
         if video is None:
             link = next(iter(args), None)
             if link:
-                video = self.tag_manager.get_message_for_link(link)
+                video = self.pipeline.get_message_for_link(link)
                 args = args[1:]
         if not video:
             return [await self.send_text_reply(
