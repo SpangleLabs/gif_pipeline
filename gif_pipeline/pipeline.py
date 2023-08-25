@@ -289,7 +289,7 @@ class Pipeline:
         # Set up public helpers
         self.startup_monitor.set_state(StartupState.INITIALISING_PUBLIC_HELPERS)
         public_helpers = [
-            PublicTagHelper(self.database, self.client, self.worker, tag_manager)
+            PublicTagHelper(self.database, self.client, self.worker, self)
         ]
         for helper in public_helpers:
             self.public_helpers[helper.name] = helper
