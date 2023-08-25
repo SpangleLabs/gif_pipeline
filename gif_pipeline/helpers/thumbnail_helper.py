@@ -42,12 +42,28 @@ class ThumbnailHelper(Helper):
             )]
         # Parse thumbnail timestamp
         thumbnail_ts = 1
-        try:
-            thumbnail_ts = float(clean_args[-1])
-        except ValueError:
-            pass
+        for arg in args[:]:
+            try:
+                thumbnail_ts = float(arg)
+                args.remove(arg)
+                break
+            except ValueError:
+                pass
+        # Parse dimensions
+        width = 500
+        height = 500
+        for arg in args[:]:
+            if arg.count("x") == 1:
+                w_str, h_str = arg.split("x")
+                try:
+                    width = int(w_str)
+                    height = int(h_str)
+                    args.remove(arg)
+                    break
+                except ValueError:
+                    pass
         # Create thumbnail
-        thumb_path = await self.create_thumbnail(video.message_data.file_path, thumbnail_ts)
+        thumb_path = await self.create_thumbnail(video.message_data.file_path, thumbnail_ts, width, height)
         # If thumb is not generated return error
         if not thumb_path:
             return [
@@ -69,7 +85,8 @@ class ThumbnailHelper(Helper):
             video_path=thumb_path,
         )]
 
-    async def create_thumbnail(self, video_path: str, thumbnail_ts: float) -> Optional[str]:
+    async def create_thumbnail(self, video_path: str, thumbnail_ts: float, width: int, height: int) -> Optional[str]:
+        resize_filter = f"-vf \"scale='min({width},iw)':'min({height},ih)':force_original_aspect_ratio=decrease\""
         try:
             thumb_path = random_sandbox_video_path("png")
             thumb_task = FfmpegTask(
@@ -77,7 +94,7 @@ class ThumbnailHelper(Helper):
                     video_path: None,
                 },
                 outputs={
-                    thumb_path: f"-ss {thumbnail_ts} -vframes 1"
+                    thumb_path: f"-ss {thumbnail_ts} -vframes 1 {resize_filter}"
                 }
             )
             await self.worker.await_task(thumb_task)
