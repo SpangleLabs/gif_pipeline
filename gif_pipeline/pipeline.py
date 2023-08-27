@@ -279,9 +279,6 @@ class Pipeline:
         # Load menus from database
         self.startup_monitor.set_state(StartupState.LOADING_MENUS)
         self.client.synchronise_async(menu_helper.refresh_from_database())
-        # Load schedule helper and subscription helper
-        self.startup_monitor.set_state(StartupState.INITIALISING_SCHEDULES)
-        self.client.synchronise_async(schedule_helper.initialise())
         # Do all helper pre-startup initialisation
         for helper in self.helpers:
             self.client.synchronise_async(helper.init_pre_startup())

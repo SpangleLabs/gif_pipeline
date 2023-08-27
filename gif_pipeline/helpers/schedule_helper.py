@@ -181,7 +181,7 @@ class ScheduleHelper(Helper):
                 schedule_menus[menu_entry.chat_id] = ScheduleReminderSentMenu(sent_menu.menu, sent_menu.msg)
         return schedule_menus
 
-    async def initialise(self) -> Optional[List['Message']]:
+    async def init_post_startup(self) -> None:
         reminder_menus = self.reminder_menus()
         new_menus = []
         for channel in self.channels:
@@ -193,7 +193,7 @@ class ScheduleHelper(Helper):
             if menu_msg is not None:
                 new_menus.append(menu_msg)
         asyncio.get_event_loop().create_task(self.scheduler())
-        return new_menus
+        await super().init_post_startup()
 
     async def initialise_channel(self, channel: 'Channel') -> Optional['Message']:
         if not channel.schedule_config:

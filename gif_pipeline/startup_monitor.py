@@ -26,7 +26,6 @@ class StartupState(enum.Enum):
     INITIALISING_HELPERS = "22_initialising_helpers"
     INSTALLING_YT_DL = "23_install_yt_dl"
     LOADING_MENUS = "24_load_menus"
-    INITIALISING_SCHEDULES = "25_initialise_schedules"
     INITIALISING_PUBLIC_HELPERS = "27_initialise_public_helpers"
     RUNNING = "30_running"
 
