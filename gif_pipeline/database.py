@@ -546,6 +546,17 @@ class Database:
             (entry_id, thumb_data, thumbnail_ts, generation_ts)
         )
 
+    def get_thumbnail_data(self, message_data: MessageData) -> Optional[bytes]:
+        entry_id = self.get_entry_id_for_message(message_data)
+        with self._execute(
+            "SELECT thumbnail FROM video_thumbnails WHERE entry_id = ?",
+            (entry_id,)
+        ) as result:
+            row = next(result, None)
+            if row is None:
+                return
+            return row["thumbnail"]
+
 
 S = TypeVar('S')
 
