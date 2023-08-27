@@ -282,8 +282,6 @@ class Pipeline:
         # Load schedule helper and subscription helper
         self.startup_monitor.set_state(StartupState.INITIALISING_SCHEDULES)
         self.client.synchronise_async(schedule_helper.initialise())
-        self.startup_monitor.set_state(StartupState.INITIALISING_SUBSCRIPTIONS)
-        self.client.synchronise_async(subscription_helper.initialise())
         # Do all helper pre-startup initialisation
         for helper in self.helpers:
             self.client.synchronise_async(helper.init_pre_startup())

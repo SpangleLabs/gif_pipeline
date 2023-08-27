@@ -82,6 +82,7 @@ class SubscriptionHelper(Helper):
         self.download_helper = download_helper
         self.api_keys = api_keys
         self.subscriptions: List[Subscription] = []
+        # Setup subscription classes list
         self.sub_classes: List[Type[Subscription]] = []
         if "imgur" in self.api_keys:
             self.sub_classes.append(ImgurSearchSubscription)
@@ -112,12 +113,13 @@ class SubscriptionHelper(Helper):
                     ])
                 )
 
-    async def initialise(self) -> None:
+    async def init_post_startup(self) -> None:
         logger.debug("Loading subscriptions")
         self.subscriptions = await load_subs_from_database(self.database, self)
         logger.debug("Loaded all subscriptions")
         asyncio.get_event_loop().create_task(self.sub_checker())
         logger.debug("Started subscription checker task")
+        await super().init_post_startup()
 
     async def sub_checker(self) -> None:
         while True:
@@ -223,6 +225,7 @@ class SubscriptionHelper(Helper):
         self.usage_counter.inc()
         if len(split_text) < 2:
             return [await self.send_text_reply(chat, message, "Please specify a feed link to subscribe to.")]
+        await self.await_post_startup_complete(chat, message)
         if split_text[1] in ["list"]:
             msg = "List of subscriptions currently posting to this chat are:\n"
             lines = []

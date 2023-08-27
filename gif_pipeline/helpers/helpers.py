@@ -105,9 +105,12 @@ class Helper(ABC):
     async def init_post_startup(self) -> None:
         self.post_startup_init_complete = True
 
-    async def await_post_startup_complete(self) -> None:
-        while not self.post_startup_init_complete:
-            await asyncio.sleep(0.3)
+    async def await_post_startup_complete(self, chat: Chat, message: Message) -> None:
+        if not self.post_startup_init_complete:
+            return
+        async with self.progress_message(chat, message, "Awaiting helper startup"):
+            while not self.post_startup_init_complete:
+                await asyncio.sleep(0.3)
 
     async def send_text_reply(
             self,
