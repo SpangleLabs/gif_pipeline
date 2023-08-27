@@ -97,6 +97,17 @@ class Helper(ABC):
         self.client = client
         self.worker = worker
         self.usage_counter = usage_counter.labels(class_name=self.__class__.__name__)
+        self.post_startup_init_complete = False
+
+    async def init_pre_startup(self) -> None:
+        pass
+
+    async def init_post_startup(self) -> None:
+        self.post_startup_init_complete = True
+
+    async def await_post_startup_complete(self) -> None:
+        while not self.post_startup_init_complete:
+            await asyncio.sleep(0.3)
 
     async def send_text_reply(
             self,

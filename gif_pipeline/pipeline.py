@@ -284,6 +284,13 @@ class Pipeline:
         self.client.synchronise_async(schedule_helper.initialise())
         self.startup_monitor.set_state(StartupState.INITIALISING_SUBSCRIPTIONS)
         self.client.synchronise_async(subscription_helper.initialise())
+        # Do all helper pre-startup initialisation
+        for helper in self.helpers:
+            self.client.synchronise_async(helper.init_pre_startup())
+        # Trigger helper post-startup initialisation
+        loop = asyncio.get_event_loop()
+        for helper in self.helpers:
+            loop.create_task(helper.init_post_startup())
         # Helpers complete
         logger.info(f"Initialised {len(self.helpers)} helpers")
         # Set up public helpers
