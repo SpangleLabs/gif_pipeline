@@ -1,3 +1,4 @@
+import base64
 import json
 import os.path
 from typing import Optional, Union, Dict
@@ -11,7 +12,7 @@ from gif_pipeline.database import Database
 from gif_pipeline.pipeline import PipelineConfig
 
 
-ROOT_DIR = f"{os.path.dirname(__file__)}/../../live/2023-07-25/"
+ROOT_DIR = f"{os.path.dirname(__file__)}/../../"
 app = Flask(__name__)
 with open(f"{ROOT_DIR}/config.json", "r") as c:
     CONF = json.load(c)
@@ -67,6 +68,10 @@ def api_channel_tags(chat_id: str) -> Response:
         if not message.has_video:
             continue
         tags = all_tags.get(message.message_id, [])
+        thumbnail_str = None
+        thumbnail = database.get_thumbnail_data(message)
+        if thumbnail:
+            thumbnail_str = base64.b64encode(thumbnail).decode()
         message_list.append({
             "msg_id": message.message_id,
             "chat_id": message.chat_id,
@@ -75,7 +80,8 @@ def api_channel_tags(chat_id: str) -> Response:
                     "name": tag.tag_name,
                     "value": tag.tag_value,
                 } for tag in tags
-            ]
+            ],
+            "thumbnail": thumbnail_str
         })
     return flask.jsonify({
         "config": _config_to_json(chat_config),
