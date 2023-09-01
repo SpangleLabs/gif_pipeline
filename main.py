@@ -6,8 +6,12 @@ import os
 import sys
 
 import tqdm
+from prometheus_client import start_http_server
 
 from gif_pipeline.pipeline import PipelineConfig
+
+
+PROM_PORT = 7180
 
 
 class TqdmLoggingHandler(logging.Handler):
@@ -59,6 +63,7 @@ if __name__ == "__main__":
     setup_logging()
     with open("config.json", "r") as c:
         CONF = json.load(c)
+    start_http_server(PROM_PORT)
     pipeline_conf = PipelineConfig(CONF)
     pipeline = pipeline_conf.initialise_pipeline()
     pipeline.initialise_helpers()

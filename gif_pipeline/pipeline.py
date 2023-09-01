@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Dict, List, Optional, Iterable, Union, Tuple
 
-from prometheus_client import Info, start_http_server
+from prometheus_client import Info
 from telethon import events
 from tqdm import tqdm
 
@@ -56,13 +56,10 @@ version_info = Info(
     "Version of gif pipeline currently running"
 )
 
-PROM_PORT = 7180
-
 
 class PipelineConfig:
 
     def __init__(self, config: Dict):
-        start_http_server(PROM_PORT)
         version_info.info({
             "version": _version.__VERSION__
         })
