@@ -280,11 +280,11 @@ class Pipeline:
         self.startup_monitor.set_state(StartupState.LOADING_MENUS)
         self.client.synchronise_async(menu_helper.refresh_from_database())
         # Do all helper pre-startup initialisation
-        for helper in self.helpers:
+        for helper in self.helpers.values():
             self.client.synchronise_async(helper.init_pre_startup())
         # Trigger helper post-startup initialisation
         loop = asyncio.get_event_loop()
-        for helper in self.helpers:
+        for helper in self.helpers.values():
             loop.create_task(helper.init_post_startup())
         # Helpers complete
         logger.info(f"Initialised {len(self.helpers)} helpers")
