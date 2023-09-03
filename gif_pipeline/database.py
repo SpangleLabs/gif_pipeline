@@ -228,6 +228,21 @@ class Database:
                 ))
         return results
 
+    def get_thumbnails_for_chat(self, chat_data: ChatData, is_scheduled: bool = False) -> Dict[int, bytes]:
+        results = {}
+        with self._execute(
+            "SELECT msg.message_id, thumbs.thumbnail "
+            "FROM video_thumbnails thumbs "
+            "LEFT JOIN messages msg ON thumbs.entry_id = msg.entry_id "
+            "WHERE msg.chat_id = ? AND is_scheduled = ?",
+            (chat_data.chat_id, is_scheduled)
+        ) as result:
+            for row in result:
+                msg_id = row["message_id"]
+                thumb_data = row["thumbnail"]
+                results[msg_id] = thumb_data
+        return results
+
     def list_tag_values(self, tag_name: str, chat_ids: List[int]) -> List[str]:
         with self._execute(
             "SELECT vt.tag_value "

@@ -66,12 +66,13 @@ def api_channel_tags(chat_id: str) -> Response:
     messages = database.list_messages_for_chat(chat_data)
     message_list = []
     all_tags = database.get_tags_for_chat(chat_data)
+    all_thumbs = database.get_thumbnails_for_chat(chat_data)
     for message in messages:
         if not message.has_video:
             continue
         tags = all_tags.get(message.message_id, [])
         thumbnail_str = None
-        thumbnail = database.get_thumbnail_data(message)
+        thumbnail = all_thumbs.get(message.message_id)
         if thumbnail:
             thumbnail_str = base64.b64encode(thumbnail).decode()
         message_list.append({
