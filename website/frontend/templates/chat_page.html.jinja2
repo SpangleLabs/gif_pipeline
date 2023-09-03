@@ -45,6 +45,15 @@
         height: 100%;
         vertical-align: bottom;
     }
+    figure {
+        position: relative;
+    }
+    figcaption {
+        position: absolute;
+        padding: 5px 10px;
+        top: 20px;
+        background-color: rgba(240, 240, 240, 0.6);
+    }
 </style>
 </head>
 <body>
@@ -73,7 +82,10 @@
         {% for message in message_list %}
         <div class="message_container" data-telegram-handle="{{ handle }}/{{ message['msg_id'] }}">
             <div class="video_thumbnail">
-                <img src="data:image/jpg;base64, {{ message['thumbnail'] }}" alt="Thumbnail for video in message ID {{ message['msg_id'] }}" />
+                <figure>
+                    <img src="data:image/jpg;base64, {{ message['thumbnail'] }}" alt="Thumbnail for video in message ID {{ message['msg_id'] }}" />
+                    <figcaption>Post #{{ message['msg_id'] }}. Click to display video</figcaption>
+                </figure>
             </div>
             <div class="video_embed" style="display: none;">
                 <div class="video_embed_close">
