@@ -104,6 +104,8 @@ class ChannelTags:
 @app.route("/<chat_id>")
 def view_channel_page(chat_id: str) -> Response:
     data = requests.get(f"{API_ROOT}/chats/{chat_id}.json").json()
+    if "error" in data:
+        return Response(f"Error: {data['error']}", 500)
     chat_title = data["data"]["title"]
     handle = data["config"]["handle"]
     channel_tag_data = ChannelTags(data)
