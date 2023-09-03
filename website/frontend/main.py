@@ -112,7 +112,7 @@ def view_channel_page(chat_id: str) -> Response:
         chat_title=chat_title,
         handle=handle,
         channel_tag_data=channel_tag_data,
-        message_list=data["messages"][::-1][:12]
+        message_list=data["messages"][::-1]
     ))
 
 
