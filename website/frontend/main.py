@@ -40,7 +40,7 @@ class ChannelTag:
 class ChannelTags:
     def __init__(self, chat_data: Dict) -> None:
         self.chat_data = chat_data
-        self.tag_config = chat_data["config"]["tag_config"]
+        self.tag_config = chat_data["config"]["tag_config"] or {}
         self._channel_tags: Optional[List[ChannelTag]] = None
 
     def list_channel_tags(self) -> List[ChannelTag]:
