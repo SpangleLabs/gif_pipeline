@@ -115,6 +115,8 @@ class ThumbnailHelper(Helper):
     async def create_and_save_thumbnail(self, msg: Message) -> None:
         video_path = msg.message_data.file_path
         thumb_path = await self.create_thumbnail(video_path, self.DEFAULT_TS, self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT)
+        if not thumb_path:
+            thumb_path = await self.create_thumbnail(video_path, 0, self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT)
         now = datetime.datetime.now(datetime.timezone.utc)
         if thumb_path:
             with open(thumb_path, "rb") as f:
