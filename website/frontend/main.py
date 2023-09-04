@@ -122,7 +122,8 @@ class ChannelTags:
                     False,
                 )
                 channel_tags.append(channel_tag)
-                tags_by_name[tag_name] = channel_tag
+                for name in channel_tag.tag_names():
+                    tags_by_name[name] = channel_tag
                 channel_tag.add_message(msg["msg_id"], tag_entry["value"])
         self._channel_tags = channel_tags
         return channel_tags
