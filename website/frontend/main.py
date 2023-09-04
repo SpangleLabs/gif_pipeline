@@ -17,7 +17,7 @@ pipeline_conf = PipelineConfig(CONF)
 API_ROOT = pipeline_conf.backend_url
 
 
-def link_text(link: ParseResult) -> str:
+def link_text(parsed: ParseResult) -> str:
     hostname = parsed.hostname.lower()
     split_path = parsed.path.lstrip("/").split("/")
     if hostname in ["twitter.com", "www.twitter.com", "vxtwitter.com", "fxtwitter.com", "x.com"]:
