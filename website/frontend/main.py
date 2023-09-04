@@ -12,6 +12,45 @@ app = Flask(__name__, template_folder="templates/")
 API_ROOT = "http://localhost:47507/"
 
 
+def link_text(link: ParseResult) -> str:
+    hostname = parsed.hostname.lower()
+    split_path = parsed.path.lstrip("/").split("/")
+    if hostname in ["twitter.com", "www.twitter.com", "vxtwitter.com", "fxtwitter.com", "x.com"]:
+        if split_path:
+            username = split_path[0]
+            return f"Twitter: {username}"
+        return "Twitter link"
+    if hostname in ["youtube.com", "youtu.be", "www.youtube.com"]:
+        return f"Youtube link"
+    if hostname in ["www.reddit.com", "reddit.com", "redd.it"]:
+        if len(split_path) >= 2 and split_path[0] == "r":
+            subreddit = split_path[1]
+            return f"Reddit: r/{subreddit}"
+        return "Reddit link"
+    if hostname in ["tiktok.com", "www.tiktok.com"]:
+        if split_path:
+            username = split_path[0]
+            return f"Tiktok: {username}"
+        return "Tiktok link"
+    if hostname in ["t.me"]:
+        if split_path:
+            username = split_path[0]
+            if username == "c":
+                return "Private telegram channel"
+            return f"Telegram: @{username}"
+        return "Telegram link"
+    return "Link"
+
+
+def format_tag_value(tag_value: str) -> str:
+    if not tag_value.lower().startswith("http"):
+        return tag_value
+    parsed = urlparse(tag_value)
+    if parsed.scheme.lower() not in ["http", "https"]:
+        return tag_value
+    return f"<a href=\"{tag_value}\">{link_text(parsed)}</a>"
+
+
 @dataclasses.dataclass
 class ChannelTag:
     name: str
@@ -114,7 +153,8 @@ def view_channel_page(chat_id: str) -> Response:
         chat_title=chat_title,
         handle=handle,
         channel_tag_data=channel_tag_data,
-        message_list=data["messages"][::-1]
+        message_list=data["messages"][::-1],
+        format_tag_value=format_tag_value,
     ))
 
 
