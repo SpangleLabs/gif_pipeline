@@ -9,7 +9,7 @@ from flask import Flask, Response
 
 app = Flask(__name__, template_folder="templates/")
 
-API_ROOT = "http://localhost:3000/"
+API_ROOT = "http://localhost:47507/"
 
 
 @dataclasses.dataclass
