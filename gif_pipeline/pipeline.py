@@ -57,6 +57,23 @@ version_info = Info(
 )
 
 
+class WebsiteConfig:
+
+    def __init__(self, backend_port: int, frontend_port: int, backend_url: str) -> None:
+        self.backend_port = backend_port
+        self.frontend_port = frontend_port
+        self.backend_url = backend_url
+
+    @classmethod
+    def from_json(cls, config: Dict) -> "WebsiteConfig":
+        backend_port = config.get("backend_port", 3000)
+        return cls(
+            backend_port,
+            config.get("frontend_port", 3100),
+            config.get("backend_url", "http://localhost:{backend_port}"),
+        )
+
+
 class PipelineConfig:
 
     def __init__(self, config: Dict):
@@ -76,6 +93,8 @@ class PipelineConfig:
         self.public_bot_token = config.get("public_bot_token")
         # API keys for external services
         self.api_keys = config.get("api_keys", {})
+        # Website configuration
+        self.website_config = WebsiteConfig.from_json(config.get("website", {}))
 
     def initialise_pipeline(self) -> 'Pipeline':
         self.startup_monitor.set_state(StartupState.CREATING_DATABASE)

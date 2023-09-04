@@ -22,6 +22,7 @@ At the base level of the config file are these keys:
 - `channels`: `list[Channel]`, A list of channel configurations, further detailed below
 - `workshop_groups`: `list[Workshop]`, A list of workshop configurations, further detailed below
 - `api_keys`: `dict`, A dictionary of API keys to various services, as detailed below
+- `website`: `WebsiteConfig`, A dictionary of website configuration information, for the backend and frontend deployments
 
 ### Channel configuration
 Each channel is a dictionary in the base `channels` list. They have these keys:
@@ -97,6 +98,12 @@ This section stores various API keys or other details for third party services. 
   - `twitter.consumer_secret`: (`str`) Used by twitter posting, consumer_secret as required by `scripts/get_twitter_token.py` in the same was as the consumer_key above.
 - `instagram`
   - `instagram.bibliogram_url`: (`str`) This us used by the instagram subscription type. It should be the URL of a bibliogram instance with RSS enabled.
+
+### Website configuration
+This section stores configuration values for the backend API and the frontend website.
+- `backend_port`: `int` (optional, default: 3000) Which port the backend API should be listening on for connections
+- `backend_url`: `str` (optional, default: "http://localhost:3000") The URL that the frontend should use to connect to the backend
+- `frontend_port`: `int` (optional, default: 3100) Which port the frontend should be listening on for connections
 
 ## Helpers
 The pipeline has many "helpers", which are classes which handle different types of user requests in workshop groups. These are used to edit videos, and manage tags, and such.

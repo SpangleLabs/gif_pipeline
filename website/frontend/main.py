@@ -9,8 +9,12 @@ from flask import Flask, Response
 
 
 app = Flask(__name__, template_folder="templates/")
+ROOT_DIR = f"{os.path.dirname(__file__)}/../../"
+with open(f"{ROOT_DIR}/config.json", "r") as c:
+    CONF = json.load(c)
+pipeline_conf = PipelineConfig(CONF)
 
-API_ROOT = "http://localhost:47507/"
+API_ROOT = pipeline_conf.backend_url
 
 
 def link_text(link: ParseResult) -> str:
@@ -173,4 +177,4 @@ def api_chat_list() -> Response:
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=3100)
+    app.run(host="0.0.0.0", port=pipeline_conf.frontend_port)

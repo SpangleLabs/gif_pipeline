@@ -34,5 +34,10 @@
     {
       "handle": 1177921461
     }
-  ]
+  ],
+  "website": {
+    "backend_port": 3000,
+    "backend_url": "http://localhost:3000",
+    "frontend_port": 3100
+  }
 }
