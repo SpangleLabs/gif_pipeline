@@ -124,7 +124,8 @@ class ChannelTags:
             # Clean up gnostic tags
             if tag_name.endswith("__rejected"):
                 continue
-            tag_name = tag_name.removesuffix("__confirmed")
+            if tag_name.endswith("__confirmed"):
+                tag_name = tag_name[:-len("__confirmed")]
             # Note tag value for name
             if tag_name not in tags_dict:
                 tags_dict[tag_name] = []
