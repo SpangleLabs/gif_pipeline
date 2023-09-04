@@ -109,8 +109,7 @@
                         <th class="{{ "tag_in_config" if tag_name in channel_tag_data.tag_names_in_config() else "" }}">{{ tag_name }}</th>
                         <td>
                         {% for tag_value in tag_values %}
-                            {{ format_tag_value(tag_value) }}
-                            {{ ", " if not loop.last else "" }}
+                            {{ format_tag_value(tag_value) }}{{ ", " if not loop.last else "" }}
                         {% endfor %}
                         </td>
                         </tr>
