@@ -8,6 +8,8 @@ import flask
 import requests
 from flask import Flask, Response
 
+from gif_pipeline.pipeline import PipelineConfig
+
 
 app = Flask(__name__, template_folder="templates/")
 ROOT_DIR = f"{os.path.dirname(__file__)}/../../"
