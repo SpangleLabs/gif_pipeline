@@ -215,12 +215,12 @@ class Database:
             "SELECT msg.message_id, tags.tag_name, tags.tag_value "
             "FROM video_tags tags "
             "LEFT JOIN messages msg ON tags.entry_id = msg.entry_id "
-            "WHERE msg.chat_id = ? AND is_scheduled = ?",
+            "WHERE msg.chat_id = ? AND msg.is_scheduled = ?",
             (chat_data.chat_id, is_scheduled)
         ) as result:
             for row in result:
                 msg_id = row["message_id"]
-                if msg_id not in result:
+                if msg_id not in results:
                     results[msg_id] = []
                 results[msg_id].append(TagEntry(
                     row["tag_name"],
@@ -234,7 +234,7 @@ class Database:
             "SELECT msg.message_id, thumbs.thumbnail "
             "FROM video_thumbnails thumbs "
             "LEFT JOIN messages msg ON thumbs.entry_id = msg.entry_id "
-            "WHERE msg.chat_id = ? AND is_scheduled = ?",
+            "WHERE msg.chat_id = ? AND msg.is_scheduled = ?",
             (chat_data.chat_id, is_scheduled)
         ) as result:
             for row in result:
