@@ -109,4 +109,4 @@ def api_chat_list() -> Response:
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=pipeline_conf.backend_port)
+    app.run(host="0.0.0.0", port=pipeline_conf.website_config.backend_port)
