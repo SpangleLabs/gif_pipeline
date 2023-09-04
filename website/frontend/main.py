@@ -8,16 +8,13 @@ import flask
 import requests
 from flask import Flask, Response
 
-from gif_pipeline.pipeline import PipelineConfig
-
 
 app = Flask(__name__, template_folder="templates/")
 ROOT_DIR = f"{os.path.dirname(__file__)}/../../"
 with open(f"{ROOT_DIR}/config.json", "r") as c:
     CONF = json.load(c)
-pipeline_conf = PipelineConfig(CONF)
 
-API_ROOT = pipeline_conf.backend_url
+API_ROOT = CONF.get("website", {}).get("backend_url", "http://localhost:3000")
 
 
 def link_text(parsed: ParseResult) -> str:
@@ -180,4 +177,4 @@ def api_chat_list() -> Response:
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=pipeline_conf.frontend_port)
+    app.run(host="0.0.0.0", port=CONF.get("website", {}).get("frontend_port", 3100))
