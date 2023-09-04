@@ -108,15 +108,22 @@ class ChannelTags:
                 tag_name = tag_entry["name"]
                 if tag_name in tags_by_name:
                     tags_by_name[tag_name].add_message(msg["msg_id"], tag_entry["value"])
-                else:
-                    channel_tag = ChannelTag(
-                        tag_name,
-                        "unknown",
-                        False,
-                    )
-                    channel_tags.append(channel_tag)
-                    tags_by_name[tag_name] = channel_tag
-                    channel_tag.add_message(msg["msg_id"], tag_entry["value"])
+                    continue
+                tag_type = "unknown"
+                if tag_name.endswith("__rejected"):
+                    tag_name = tag_name[:-len("__rejected")]
+                    tag_type = "gnostic"
+                if tag_name.endswith("__confirmed"):
+                    tag_name = tag_name[:-len("__confirmed")]
+                    tag_type = "gnostic"
+                channel_tag = ChannelTag(
+                    tag_name,
+                    tag_type,
+                    False,
+                )
+                channel_tags.append(channel_tag)
+                tags_by_name[tag_name] = channel_tag
+                channel_tag.add_message(msg["msg_id"], tag_entry["value"])
         self._channel_tags = channel_tags
         return channel_tags
 
