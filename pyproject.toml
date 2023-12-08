@@ -6,7 +6,7 @@ authors = ["Joshua Coales <joshua@coales.co.uk>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-Telethon = "^1.23.0"
+Telethon = "^1.33.1"
 tqdm = "^4.62.3"
 ImageHash = "^4.2.1"
 Pillow = "^9"
