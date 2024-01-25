@@ -207,3 +207,6 @@ class DuplicateHelper(Helper):
 
     async def on_deleted_message(self, chat: Chat, message: Message):
         self.database.remove_message_hashes(message.message_data)
+
+    def can_handle(self, chat: Chat, message: Message) -> bool:
+        return True
