@@ -373,18 +373,22 @@ class Pipeline:
         if chat is None:
             chat = self.chat_by_id(new_message.chat_data.chat_id)
         # If any helpers say that a message is priority, send only to those helpers
-        priority = any(helper.is_priority(chat, new_message) for helper in self.helpers.values())
-        helpers = {key: val for key, val in self.helpers.items() if not priority or val.is_priority(chat, new_message)}
+        priority_helpers = [helper for helper in self.helpers.values() if helper.is_priority(chat, new_message)]
+        if priority_helpers:
+            helpers = priority_helpers
+        else:
+            # Send only to helpers which can handle the message
+            helpers = [helper for helper in self.helpers.values() if helper.can_handle(chat, new_message)]
         # Call the helpers
         helper_results: Iterable[Union[BaseException, Optional[List[Message]]]] = await asyncio.gather(
-            *(helper.on_new_message(chat, new_message) for helper in helpers.values()),
+            *(helper.on_new_message(chat, new_message) for helper in helpers),
             return_exceptions=True
         )
         # Handle helper results
-        for helper, result in zip(helpers.keys(), helper_results):
+        for helper, result in zip(helpers, helper_results):
             if isinstance(result, BaseException):
                 logger.error(
-                    f"Helper {helper} threw an exception trying to handle message {new_message}.",
+                    f"Helper {helper.name} threw an exception trying to handle message {new_message}.",
                     exc_info=result
                 )
             elif result:
