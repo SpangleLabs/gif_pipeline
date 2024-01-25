@@ -13,7 +13,7 @@ from telethon import Button
 from telethon.tl.types import DocumentAttributeAudio, DocumentAttributeVideo
 
 from gif_pipeline.database import Database
-from gif_pipeline.chat import Chat
+from gif_pipeline.chat import Chat, WorkshopGroup
 from gif_pipeline.menu_cache import SentMenu
 from gif_pipeline.message import Message
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
@@ -281,6 +281,9 @@ class Helper(ABC):
 
     def is_priority(self, chat: Chat, message: Message) -> bool:
         return False
+
+    def can_handle(self, chat: Chat, message: Message) -> bool:
+        return isinstance(chat, WorkshopGroup)
 
     @property
     def name(self) -> str:
