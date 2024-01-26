@@ -26,6 +26,7 @@ from gif_pipeline.helpers.menu_helper import MenuHelper
 from gif_pipeline.helpers.merge_helper import MergeHelper
 from gif_pipeline.helpers.msg_helper import MSGHelper
 from gif_pipeline.helpers.public.public_tag_helper import PublicTagHelper
+from gif_pipeline.helpers.qr_helper import QRCodeReaderHelper
 from gif_pipeline.helpers.reverse_helper import ReverseHelper
 from gif_pipeline.helpers.scene_split_helper import SceneSplitHelper
 from gif_pipeline.helpers.schedule_helper import ScheduleHelper
@@ -283,6 +284,7 @@ class Pipeline:
             subscription_helper,
             FindHelper(self.database, self.client, self.worker, duplicate_helper, download_helper),
             ThumbnailHelper(self.database, self.client, self.worker, self),
+            QRCodeReaderHelper(self.database, self.client, self.worker),
         ]
         if "imgur" in self.api_keys:
             helpers.append(
