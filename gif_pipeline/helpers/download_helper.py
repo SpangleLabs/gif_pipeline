@@ -76,7 +76,9 @@ class DownloadHelper(Helper):
             "furaffinity.net/view/",  # Handled FAHelper
             "reddit.com/user/", "reddit.com/u/",  # Ignored, tends to just download 12 second clips
         ]
-        return not link.endswith(".gif") and all(exclude not in link for exclude in exclude_list)
+        if link.endswith(".gif") or ".gif?" in link:
+            return False
+        return all(exclude not in link for exclude in exclude_list)
 
     async def handle_link(self, chat: Chat, message: Message, link: str) -> Message:
         try:
