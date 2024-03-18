@@ -111,7 +111,7 @@ class TelegramGifHelper(Helper):
 
     async def on_new_message(self, chat: Chat, message: Message) -> Optional[List[Message]]:
         # If message has text which is a link to a gif, download it, then convert it
-        gif_links = re.findall(r"[^\s]+\.gif", message.text, re.IGNORECASE)
+        gif_links = re.findall(r"[^\s]+\.gif(\?[^\s]*)?", message.text, re.IGNORECASE)
         if gif_links:
             self.usage_counter.inc()
             async with self.progress_message(chat, message, "Processing gif links in message"):
