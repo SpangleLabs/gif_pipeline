@@ -12,7 +12,7 @@ ImageHash = "^4.2.1"
 Pillow = "^9"
 cryptg = "^0.2.post4"
 ffmpy3 = {git = "https://github.com/wchill/ffmpy3.git", rev = "master"}
-requests = "^2.31.0"
+requests = "^2.32.0"
 async_generator = "^1.10"
 python-dateutil = "^2.8.2"
 scenedetect = {extras = ["opencv", "progress_bar"], version = "^0.5.6"}
