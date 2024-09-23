@@ -10,6 +10,7 @@ from prometheus_client import Counter, Gauge
 from telethon import Button
 
 from gif_pipeline.chat import Chat
+from gif_pipeline.helpers.ffprobe_helper import FFProbeHelper
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
 from gif_pipeline.helpers.subscriptions.imgur_subscription import ImgurSearchSubscription
 from gif_pipeline.helpers.subscriptions.instagram_subscription import InstagramSubscription
@@ -65,6 +66,7 @@ class SubscriptionException(Exception):
 class SubscriptionHelper(Helper):
     CHECK_DELAY = 60
     NAMES = ["subscribe", "sub", "subs", "subscription", "subscriptions"]
+    MAX_AUTO_HASH_LENGTH_SECONDS = 60 * 30
 
     def __init__(
             self,
@@ -74,12 +76,14 @@ class SubscriptionHelper(Helper):
             pipeline: "Pipeline",
             duplicate_helper: "DuplicateHelper",
             download_helper: "DownloadHelper",
+            ffprobe_helper: "FFProbeHelper",
             api_keys: Dict[str, Dict[str, str]]
     ):
         super().__init__(database, client, worker)
         self.pipeline = pipeline
         self.duplicate_helper = duplicate_helper
         self.download_helper = download_helper
+        self.ffprobe_helper = ffprobe_helper
         self.api_keys = api_keys
         self.subscriptions: List[Subscription] = []
         # Setup subscription classes list
@@ -180,7 +184,7 @@ class SubscriptionHelper(Helper):
             f"<a href=\"{item.source_link}\">{title}</a>\n\n"
             f"Feed: {html.escape(subscription.feed_url)}"
         )
-        # If item has video and chat has duplicate detection
+        # Download the item
         hash_set = None
         file_path = await subscription.download_item(item)
         # Only post videos
@@ -194,10 +198,15 @@ class SubscriptionHelper(Helper):
         file_path = output_path
         # Check duplicate warnings
         if chat.config.duplicate_detection:
-            hash_set = await self.get_item_hash_set(file_path, item.item_id, subscription)
-            warnings = await self.check_item_duplicate(hash_set)
-            if warnings:
-                caption += "\n\n" + "\n".join(warnings)
+            # Check video length
+            video_length = await self.ffprobe_helper.duration_video(file_path)
+            if video_length > self.MAX_AUTO_HASH_LENGTH_SECONDS:
+                caption += "\n\nThis video is too long to automatically check for duplicates"
+            else:
+                hash_set = await self.get_item_hash_set(file_path, item.item_id, subscription)
+                warnings = await self.check_item_duplicate(hash_set)
+                if warnings:
+                    caption += "\n\n" + "\n".join(warnings)
         # Build tags
         tags = VideoTags()
         tags.add_tag_value(VideoTags.source, item.tag_source_link)

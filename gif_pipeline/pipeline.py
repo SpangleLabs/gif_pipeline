@@ -245,6 +245,7 @@ class Pipeline:
             tag_manager
         )
         download_helper = DownloadHelper(self.database, self.client, self.worker)
+        ffprobe_helper = FFProbeHelper(self.database, self.client, self.worker)
         subscription_helper = SubscriptionHelper(
             self.database,
             self.client,
@@ -252,9 +253,9 @@ class Pipeline:
             self,
             duplicate_helper,
             download_helper,
-            self.api_keys
+            ffprobe_helper,
+            self.api_keys,
         )
-        ffprobe_helper = FFProbeHelper(self.database, self.client, self.worker)
         helpers = [
             duplicate_helper,
             menu_helper,
