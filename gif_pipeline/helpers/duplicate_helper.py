@@ -1,7 +1,9 @@
+import asyncio
 import glob
 import logging
 import os
 import shutil
+from concurrent.futures.thread import ThreadPoolExecutor
 from multiprocessing.pool import ThreadPool
 from typing import Optional, List, Set, Dict
 
@@ -33,6 +35,7 @@ class DuplicateHelper(Helper):
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
         self.hash_pool = ThreadPool(os.cpu_count())
+        self.hash_pool_executor = ThreadPoolExecutor(os.cpu_count())
 
     async def initialise_hashes(self, workshops: List[WorkshopGroup]):
         # Initialise, get all channels, get all videos, decompose all, add to the master hash
@@ -95,7 +98,10 @@ class DuplicateHelper(Helper):
         await self.decompose_video(video_path, decompose_path)
         # Hash the images
         image_files = glob.glob(f"{decompose_path}/*.png")
-        hash_list = self.hash_pool.map(hash_image, image_files)
+        loop = asyncio.get_running_loop()
+        hash_list = await asyncio.gather(
+            *[loop.run_in_executor(self.hash_pool_executor, lambda: hash_image(image_file)) for image_file in image_files]
+        )
         hash_set = set(hash_list)
         # Delete the images
         try:
