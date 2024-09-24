@@ -12,7 +12,6 @@ from telethon import Button
 from gif_pipeline.chat import Chat
 from gif_pipeline.helpers.ffprobe_helper import FFProbeHelper
 from gif_pipeline.helpers.helpers import Helper, random_sandbox_video_path
-from gif_pipeline.helpers.subscriptions.imgur_subscription import ImgurSearchSubscription
 from gif_pipeline.helpers.subscriptions.instagram_subscription import InstagramSubscription
 from gif_pipeline.helpers.subscriptions.reddit_subscription import RedditSubscription
 from gif_pipeline.helpers.subscriptions.rss_subscription import RSSSubscription
@@ -88,8 +87,6 @@ class SubscriptionHelper(Helper):
         self.subscriptions: List[Subscription] = []
         # Setup subscription classes list
         self.sub_classes: List[Type[Subscription]] = []
-        if "imgur" in self.api_keys:
-            self.sub_classes.append(ImgurSearchSubscription)
         if "reddit" in self.api_keys:
             self.sub_classes.append(RedditSubscription)
         if "twitter" in self.api_keys and "nitter_url" in self.api_keys["twitter"]:
