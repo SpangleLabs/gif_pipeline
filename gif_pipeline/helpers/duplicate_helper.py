@@ -15,6 +15,7 @@ from gif_pipeline.chat import WorkshopGroup, Chat
 from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.message import Message, MessageData
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
+from gif_pipeline.tasks.ffmprobe_task import FFprobeTask
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
 from gif_pipeline.utils import tqdm_gather
@@ -31,6 +32,7 @@ def hash_image(image_file: str) -> str:
 
 class DuplicateHelper(Helper):
     blank_frame_hash = "0000000000000000"
+    MAX_AUTO_HASH_LENGTH_SECONDS = 60 * 30
 
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
@@ -51,6 +53,14 @@ class DuplicateHelper(Helper):
         workshop = workshop_dict.get(message_data.chat_id)
         if workshop is not None and not workshop.config.duplicate_detection:
             return
+        # Skip if the video is over the max length
+        length_task = FFprobeTask(
+            global_options=["-v error"],
+            inputs={message_data.file_path: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
+        )
+        video_length = float(await self.worker.await_task(length_task))
+        if video_length > self.MAX_AUTO_HASH_LENGTH_SECONDS:
+            logger.info("Skipping initialising video due to length: %s", message_data)
         # Create hashes for message
         try:
             new_hashes = await self.create_message_hashes(message_data)
