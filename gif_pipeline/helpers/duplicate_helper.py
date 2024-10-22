@@ -1,14 +1,9 @@
-import asyncio
-import glob
 import logging
 import os
 import shutil
-from concurrent.futures.thread import ThreadPoolExecutor
+from concurrent.futures.process import ProcessPoolExecutor
 from multiprocessing.pool import ThreadPool
 from typing import Optional, List, Set, Dict
-
-import imagehash
-from PIL import Image
 
 from gif_pipeline.database import Database
 from gif_pipeline.chat import WorkshopGroup, Chat
@@ -16,18 +11,13 @@ from gif_pipeline.helpers.helpers import Helper
 from gif_pipeline.message import Message, MessageData
 from gif_pipeline.tasks.ffmpeg_task import FfmpegTask
 from gif_pipeline.tasks.ffmprobe_task import FFprobeTask
+from gif_pipeline.tasks.hash_dir_task import HashDirectoryTask
 from gif_pipeline.tasks.task_worker import TaskWorker
 from gif_pipeline.telegram_client import TelegramClient
 from gif_pipeline.utils import tqdm_gather
 
 
 logger = logging.getLogger(__name__)
-
-
-def hash_image(image_file: str) -> str:
-    image = Image.open(image_file)
-    image_hash = str(imagehash.dhash(image))
-    return image_hash
 
 
 class DuplicateHelper(Helper):
@@ -37,7 +27,7 @@ class DuplicateHelper(Helper):
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)
         self.hash_pool = ThreadPool(os.cpu_count())
-        self.hash_pool_executor = ThreadPoolExecutor(os.cpu_count())
+        self.hash_pool_executor = ProcessPoolExecutor(os.cpu_count())
 
     async def initialise_hashes(self, workshops: List[WorkshopGroup]):
         # Initialise, get all channels, get all videos, decompose all, add to the master hash
@@ -103,22 +93,20 @@ class DuplicateHelper(Helper):
         return hash_set
 
     async def create_message_hashes_in_dir(self, video_path: str, decompose_path: str) -> Set[str]:
-        # Decompose video into images
-        os.makedirs(decompose_path, exist_ok=True)
-        await self.decompose_video(video_path, decompose_path)
-        # Hash the images
-        image_files = glob.glob(f"{decompose_path}/*.png")
-        loop = asyncio.get_running_loop()
-        hash_list = await asyncio.gather(
-            *[loop.run_in_executor(self.hash_pool_executor, lambda: hash_image(image_file)) for image_file in image_files]
-        )
-        hash_set = set(hash_list)
-        # Delete the images
         try:
-            shutil.rmtree(decompose_path)
-        except FileNotFoundError:
-            pass
-        return hash_set
+            # Decompose video into images
+            os.makedirs(decompose_path, exist_ok=True)
+            await self.decompose_video(video_path, decompose_path)
+            # Hash the images
+            hash_task = HashDirectoryTask(decompose_path, self.hash_pool_executor)
+            hash_set = await self.worker.await_task(hash_task)
+            return hash_set
+        finally:
+            # Delete the images
+            try:
+                shutil.rmtree(decompose_path)
+            except FileNotFoundError:
+                pass
 
     async def check_hash_in_store(
             self,
@@ -167,15 +155,6 @@ class DuplicateHelper(Helper):
     ) -> Message:
         warning_messages = self.get_duplicate_warnings(potential_matches, has_blank_frame)
         return await self.send_text_reply(chat, new_message, "\n".join(warning_messages))
-
-    @staticmethod
-    def get_image_hashes(decompose_directory: str):
-        hashes = []
-        for image_file in glob.glob(f"{decompose_directory}/*.png"):
-            image = Image.open(image_file)
-            image_hash = str(imagehash.average_hash(image))
-            hashes.append(image_hash)
-        return hashes
 
     async def decompose_video(self, video_path: str, decompose_dir_path: str):
         task = FfmpegTask(
