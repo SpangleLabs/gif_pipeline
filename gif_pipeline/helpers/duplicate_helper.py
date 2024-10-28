@@ -48,9 +48,14 @@ class DuplicateHelper(Helper):
             global_options=["-v error"],
             inputs={message_data.file_path: "-show_entries format=duration -of default=noprint_wrappers=1:nokey=1"}
         )
-        video_length = float(await self.worker.await_task(length_task))
+        try:
+            video_length = float(await self.worker.await_task(length_task))
+        except:
+            logger.warning("Could not get video length for hash check: %s", message_data)
+            return
         if video_length > self.MAX_AUTO_HASH_LENGTH_SECONDS:
             logger.info("Skipping initialising video due to length: %s", message_data)
+            return
         # Create hashes for message
         try:
             new_hashes = await self.create_message_hashes(message_data)
