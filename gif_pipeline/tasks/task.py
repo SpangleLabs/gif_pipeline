@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from abc import ABC, abstractmethod
 from asyncio import StreamReader
@@ -71,6 +72,33 @@ async def run_subprocess(args, timeout: int = DEFAULT_TIMEOUT) -> str:
 
 class Task(ABC, Generic[T]):
 
+    def __init__(self, *, description: str = None) -> None:
+        self.description = description
+
     @abstractmethod
     async def run(self) -> T:
         pass
+
+    @staticmethod
+    def _format_arg(name: str, value: object) -> str:
+        return f"{name}={json.dumps(value)}"
+
+    def _format_args(self, args: dict[str, object]) -> list[str]:
+        return [
+            self._format_arg(k, v) for k, v in args.items()
+        ]
+
+    def _format_non_null_args(self, args: dict[str, Optional[object]]) -> list[str]:
+        return [
+            self._format_arg(k, v) for k, v in args.items() if v is not None
+        ]
+
+    @abstractmethod
+    def _formatted_args(self) -> list[str]:
+        raise NotImplementedError
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        args = self._format_args({"description": self.description}) + self._formatted_args()
+        args_str = ", ".join(args)
+        return f"{class_name}({args_str})"

@@ -16,7 +16,8 @@ def hash_image(image_file: str) -> str:
 
 class HashDirectoryTask(Task[set[str]]):
 
-    def __init__(self, directory: str, executor: Executor) -> None:
+    def __init__(self, directory: str, executor: Executor, description: str = None) -> None:
+        super().__init__(description=description)
         self.directory = directory
         self.executor = executor
 
@@ -27,3 +28,9 @@ class HashDirectoryTask(Task[set[str]]):
             *[loop.run_in_executor(self.executor, hash_image, image_file) for image_file in image_files]
         )
         return set(hash_list)
+
+    def _formatted_args(self) -> list[str]:
+        return self._format_args({
+            "directory": self.directory,
+            "executor": self.executor,
+        })

@@ -27,3 +27,6 @@ class UpdateYoutubeDLTask(Task[str]):
         if yt_up_to_date is not None:
             return f"Already up to date. Version: {yt_up_to_date.group(1)}"
         raise TaskException("Unknown response from pip")
+
+    def _formatted_args(self) -> list[str]:
+        return []
