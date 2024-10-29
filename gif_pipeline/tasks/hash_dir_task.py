@@ -32,5 +32,5 @@ class HashDirectoryTask(Task[set[str]]):
     def _formatted_args(self) -> list[str]:
         return self._format_args({
             "directory": self.directory,
-            "executor": self.executor,
+            "executor": str(self.executor),
         })
