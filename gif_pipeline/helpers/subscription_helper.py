@@ -65,7 +65,8 @@ class SubscriptionException(Exception):
 class SubscriptionHelper(Helper):
     CHECK_DELAY = 60
     NAMES = ["subscribe", "sub", "subs", "subscription", "subscriptions"]
-    MAX_AUTO_HASH_LENGTH_SECONDS = 60 * 30
+    MAX_AUTO_MP4_LENGTH_SECONDS = 60 * 20
+    MAX_AUTO_HASH_LENGTH_SECONDS = 60 * 10
 
     def __init__(
             self,
@@ -187,16 +188,19 @@ class SubscriptionHelper(Helper):
         # Only post videos
         if not file_path or is_static_image(file_path):
             return
+        # Fetch video length
+        video_length = await self.ffprobe_helper.duration_video(file_path)
         # Convert to video
-        output_path = random_sandbox_video_path()
-        tasks = video_to_video(file_path, output_path)
-        for task in tasks:
-            await self.worker.await_task(task)
-        file_path = output_path
+        if video_length < self.MAX_AUTO_MP4_LENGTH_SECONDS:
+            output_path = random_sandbox_video_path()
+            task_desc = f"Auto-converting subscription to mp4 for feed: {subscription.feed_url}"
+            tasks = video_to_video(file_path, output_path, task_description=task_desc)
+            for task in tasks:
+                await self.worker.await_task(task)
+            file_path = output_path
         # Check duplicate warnings
         if chat.config.duplicate_detection:
             # Check video length
-            video_length = await self.ffprobe_helper.duration_video(file_path)
             if video_length > self.MAX_AUTO_HASH_LENGTH_SECONDS:
                 caption += "\n\nThis video is too long to automatically check for duplicates"
             else:
@@ -213,7 +217,12 @@ class SubscriptionHelper(Helper):
     async def get_item_hash_set(self, file_path: str, item_id: str, subscription: "Subscription") -> Set[str]:
         # Hash video
         message_decompose_path = f"sandbox/decompose/subs/{subscription.subscription_id}/{item_id}/"
-        return await self.duplicate_helper.create_message_hashes_in_dir(file_path, message_decompose_path)
+        task_desc = f"Automatically hashing new subscription result from feed: {subscription.feed_url}"
+        return await self.duplicate_helper.create_message_hashes_in_dir(
+            file_path,
+            message_decompose_path,
+            task_description=task_desc,
+        )
 
     async def check_item_duplicate(self, hash_set: Set[str]) -> List[str]:
         # Find duplicates
