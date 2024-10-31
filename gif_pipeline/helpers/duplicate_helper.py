@@ -97,13 +97,18 @@ class DuplicateHelper(Helper):
         # Return hashes
         return hash_set
 
-    async def create_message_hashes_in_dir(self, video_path: str, decompose_path: str) -> Set[str]:
+    async def create_message_hashes_in_dir(
+            self,
+            video_path: str,
+            decompose_path: str,
+            task_description: Optional[str] = None,
+    ) -> Set[str]:
         try:
             # Decompose video into images
             os.makedirs(decompose_path, exist_ok=True)
             await self.decompose_video(video_path, decompose_path)
             # Hash the images
-            hash_task = HashDirectoryTask(decompose_path, self.hash_pool_executor)
+            hash_task = HashDirectoryTask(decompose_path, self.hash_pool_executor, description=task_description)
             hash_set = await self.worker.await_task(hash_task)
             return hash_set
         finally:

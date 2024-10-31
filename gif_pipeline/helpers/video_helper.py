@@ -60,11 +60,17 @@ def add_audio_track_task(input_path: str, output_path: str) -> FfmpegTask:
     )
 
 
-def video_to_video(input_path: str, output_path: str, video_settings: Optional[GifSettings] = None) -> List[FfmpegTask]:
+def video_to_video(
+        input_path: str,
+        output_path: str,
+        video_settings: Optional[GifSettings] = None,
+        task_description: Optional[str] = None
+) -> List[FfmpegTask]:
     if not video_settings:
         return [FfmpegTask(
             inputs={input_path: None},
-            outputs={output_path: "-qscale 0"}
+            outputs={output_path: "-qscale 0"},
+            description=task_description,
         )]
     if video_settings.bitrate:
         tasks = two_pass_convert(input_path, output_path, video_settings)
