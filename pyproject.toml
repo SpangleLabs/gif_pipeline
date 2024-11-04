@@ -11,7 +11,7 @@ tqdm = "^4.62.3"
 ImageHash = "^4.2.1"
 Pillow = "^9"
 cryptg = "^0.2.post4"
-ffmpy3 = {git = "https://github.com/wchill/ffmpy3.git", rev = "master"}
+ffmpy3 = {git = "https://github.com/SpangleLabs/ffmpy3.git", rev = "patch-2"}
 requests = "^2.31.0"
 async_generator = "^1.10"
 python-dateutil = "^2.8.2"

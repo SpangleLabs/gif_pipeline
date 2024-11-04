@@ -671,16 +671,14 @@ version = "0.2.4"
 description = "A simple asynchronous Python wrapper for ffmpeg"
 optional = false
 python-versions = "*"
-files = [
-    ,
-]
+files = []
 develop = false
 
 [package.source]
 type = "git"
-url = "https://github.com/wchill/ffmpy3.git"
-reference = "master"
-resolved_reference = "f4f65468f870e6afaec21a0954ebaaa07b718ca2"
+url = "https://github.com/SpangleLabs/ffmpy3.git"
+reference = "patch-2"
+resolved_reference = "077a247972523a7d2fc1fdbb4a9a90800c319641"
 
 [[package]]
 name = "filelock"
@@ -2926,4 +2924,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "791bd664a7e745af1e5dcfdcc5b67f7a6b1f20c764141e63f499daf4c3af0e92"
+content-hash = "4ae6c25dc3c304737ffc30272bdbebb98f895fdf5551e67c2382638ca1202a0d"
