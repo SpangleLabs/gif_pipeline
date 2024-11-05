@@ -319,7 +319,8 @@ class Database:
                 "m.forwarded_channel_link "
                 "FROM messages m "
                 "LEFT JOIN video_hashes vh ON m.entry_id = vh.entry_id "
-                "WHERE vh.hash IS NULL AND m.file_path IS NOT NULL"
+                "WHERE vh.hash IS NULL AND m.file_path IS NOT NULL " # Messages with files, and without hashes
+                " AND m.file_mime_type <> 'image/jpeg'" # Skip photos
         ) as result:
             for row in result:
                 messages.append(message_data_from_row(row))
