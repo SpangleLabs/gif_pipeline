@@ -5,7 +5,8 @@ import os
 import shutil
 import uuid
 from abc import ABC, abstractmethod
-from typing import Optional, List, Set, Callable, TypeVar, Awaitable
+from contextlib import contextmanager
+from typing import Optional, List, Set, Callable, TypeVar, Awaitable, Generator
 
 from async_generator import asynccontextmanager
 from prometheus_client import Counter
@@ -45,6 +46,15 @@ def find_video_for_message(chat: Chat, message: Message) -> Optional[Message]:
 def random_sandbox_video_path(file_ext: str = "mp4") -> str:
     os.makedirs("sandbox", exist_ok=True)
     return f"sandbox/{uuid.uuid4()}.{file_ext}"
+
+
+@contextmanager
+def random_video_path_with_cleanup(file_ext: str = "mp4") -> Generator[str, None, None]:
+    file_path = random_sandbox_video_path(file_ext)
+    try:
+        yield file_path
+    finally:
+        cleanup_file(file_path)
 
 
 T = TypeVar("T")

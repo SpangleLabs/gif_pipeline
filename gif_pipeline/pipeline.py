@@ -21,6 +21,7 @@ from gif_pipeline.helpers.duplicate_helper import DuplicateHelper
 from gif_pipeline.helpers.fa_helper import FAHelper
 from gif_pipeline.helpers.ffprobe_helper import FFProbeHelper
 from gif_pipeline.helpers.find_helper import FindHelper
+from gif_pipeline.helpers.frigate_helper import FrigateHelper
 from gif_pipeline.helpers.menu_helper import MenuHelper
 from gif_pipeline.helpers.merge_helper import MergeHelper
 from gif_pipeline.helpers.msg_helper import MSGHelper
@@ -286,6 +287,16 @@ class Pipeline:
             ThumbnailHelper(self.database, self.client, self.worker, self),
             QRCodeReaderHelper(self.database, self.client, self.worker),
         ]
+        if "frigate" in self.api_keys:
+            frigate_helper = FrigateHelper(
+                self.database,
+                self.client,
+                self.worker,
+                download_helper,
+                self.api_keys["frigate"]["url"],
+            )
+            helpers.append(frigate_helper)
+        # Store helpers as a dict
         for helper in helpers:
             self.helpers[helper.name] = helper
         # Check yt-dl install
