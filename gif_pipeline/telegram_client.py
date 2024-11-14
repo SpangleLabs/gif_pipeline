@@ -61,15 +61,18 @@ def sender_id_from_telegram(msg: telethon.tl.custom.message.Message) -> int:
 class TelegramClient:
     def __init__(self, api_id: int, api_hash: str, pipeline_bot_token: str = None, public_bot_token: str = None):
         self.client = telethon.TelegramClient('duplicate_checker', api_id, api_hash)
+        logger.info("Connecting to telegram (user account) for data scanning")
         self.client.start()
         self.pipeline_bot_id = None
         self.pipeline_bot_client = self.client
         if pipeline_bot_token:
             self.pipeline_bot_client = telethon.TelegramClient("duplicate_checker_pipeline_bot", api_id, api_hash)
+            logger.info("Connecting to telegram (bot account) for gif pipeline interactions")
             self.pipeline_bot_client.start(bot_token=pipeline_bot_token)
         self.public_bot_client = self.client
         if public_bot_token:
             self.public_bot_client = telethon.TelegramClient('duplicate_checker_public_bot', api_id, api_hash)
+            logger.info("Connecting to telegram (public bot account) for public tag queries and search")
             self.public_bot_client.start(bot_token=public_bot_token)
         self.message_cache = {}
 
