@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class DuplicateHelper(Helper):
     blank_frame_hash = "0000000000000000"
-    MAX_AUTO_HASH_LENGTH_SECONDS = 60 * 30
+    MAX_AUTO_HASH_LENGTH_SECONDS = 60 * 10
 
     def __init__(self, database: Database, client: TelegramClient, worker: TaskWorker):
         super().__init__(database, client, worker)

@@ -66,7 +66,6 @@ class SubscriptionHelper(Helper):
     CHECK_DELAY = 60
     NAMES = ["subscribe", "sub", "subs", "subscription", "subscriptions"]
     MAX_AUTO_MP4_LENGTH_SECONDS = 60 * 20
-    MAX_AUTO_HASH_LENGTH_SECONDS = 60 * 10
 
     def __init__(
             self,
@@ -201,7 +200,7 @@ class SubscriptionHelper(Helper):
         # Check duplicate warnings
         if chat.config.duplicate_detection:
             # Check video length
-            if video_length > self.MAX_AUTO_HASH_LENGTH_SECONDS:
+            if video_length > self.duplicate_helper.MAX_AUTO_HASH_LENGTH_SECONDS:
                 caption += "\n\nThis video is too long to automatically check for duplicates"
             else:
                 hash_set = await self.get_item_hash_set(file_path, item.item_id, subscription)
