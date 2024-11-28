@@ -250,6 +250,10 @@ Rotates or flips video. Takes commands of the form `rotate {direction}` or `flip
 Available rotation directions are: `clockwise`, `anticlockwise`, and `180`. There are aliases such as `right` and `left`.
 Available flip axes are: `horizontal` and `vertical`
 
+### Video speed helper
+Speeds up video. Takes commands of the form `speed {speed}x`.
+To slow down a video, a fraction can be provided, such as `speed 1/2x`.
+
 ### Zip helper
 If a zip file is sent to a workshop, this helper will check the zip file for any video or .gif files, and turn them into videos and post them. This can be useful for importing .gif files into telegram without the telegram client mangling them into a small resolution version.
 

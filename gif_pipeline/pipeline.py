@@ -41,6 +41,7 @@ from gif_pipeline.helpers.video_crop_helper import VideoCropHelper
 from gif_pipeline.helpers.video_cut_helper import VideoCutHelper
 from gif_pipeline.helpers.video_helper import VideoHelper
 from gif_pipeline.helpers.video_rotate_helper import VideoRotateHelper
+from gif_pipeline.helpers.video_speed_helper import VideoSpeedHelper
 from gif_pipeline.helpers.zip_helper import ZipHelper
 from gif_pipeline.menu_cache import MenuCache
 from gif_pipeline.message import Message, MessageData
@@ -263,6 +264,7 @@ class Pipeline:
             VideoRotateHelper(self.database, self.client, self.worker),
             VideoCutHelper(self.database, self.client, self.worker),
             VideoCropHelper(self.database, self.client, self.worker),
+            VideoSpeedHelper(self.database, self.client, self.worker),
             download_helper,
             StabiliseHelper(self.database, self.client, self.worker),
             VideoHelper(self.database, self.client, self.worker),
