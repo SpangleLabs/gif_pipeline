@@ -97,17 +97,18 @@ class FrigateHelper(Helper):
                 logger.warning("Frigate export failed to complete", exc_info=err)
                 return [await self.send_message(chat, reply_to_msg=message, text="Failed to complete export.")]
             # Download the video
-            dl_url = f"{self.frigate_url}" + media_path.removeprefix("/media/frigate")
-            with random_video_path_with_cleanup() as dl_path:
-                async with session.get(dl_url) as resp:
-                    resp.raise_for_status()
-                    with open(dl_path, "wb") as f:
-                        async for chunk in resp.content.iter_chunked(8192):
-                            f.write(chunk)
-                # Create tags object
-                tags = VideoTags({VideoTags.source: {dl_url}})
-                # Upload the video
-                return [await self.send_video_reply(chat, message, dl_path, tags)]
+            async with self.progress_message(chat, message, "Downloading video from Frigate"):
+                dl_url = f"{self.frigate_url}" + media_path.removeprefix("/media/frigate")
+                with random_video_path_with_cleanup() as dl_path:
+                    async with session.get(dl_url) as resp:
+                        resp.raise_for_status()
+                        with open(dl_path, "wb") as f:
+                            async for chunk in resp.content.iter_chunked(8192):
+                                f.write(chunk)
+                    # Create tags object
+                    tags = VideoTags({VideoTags.source: {dl_url}})
+                    # Upload the video
+                    return [await self.send_video_reply(chat, message, dl_path, tags)]
 
     async def wait_until_export_complete(self, session: aiohttp.ClientSession, export_name: str) -> str:
         start_time = datetime.datetime.now(datetime.timezone.utc)
