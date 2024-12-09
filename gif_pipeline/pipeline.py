@@ -12,6 +12,7 @@ from gif_pipeline.database import Database
 from gif_pipeline.chat import Chat, Channel, WorkshopGroup
 from gif_pipeline.chat_config import ChannelConfig, WorkshopConfig
 from gif_pipeline.helpers.audio_helper import AudioHelper
+from gif_pipeline.helpers.caption_helper import CaptionHelper
 from gif_pipeline.helpers.channel_fwd_tag_helper import ChannelFwdTagHelper
 from gif_pipeline.helpers.chart_helper import ChartHelper
 from gif_pipeline.helpers.chunk_split_helper import ChunkSplitHelper
@@ -265,6 +266,7 @@ class Pipeline:
             VideoCutHelper(self.database, self.client, self.worker),
             VideoCropHelper(self.database, self.client, self.worker),
             VideoSpeedHelper(self.database, self.client, self.worker),
+            CaptionHelper(self.database, self.client, self.worker),
             download_helper,
             StabiliseHelper(self.database, self.client, self.worker),
             VideoHelper(self.database, self.client, self.worker),

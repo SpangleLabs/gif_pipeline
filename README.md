@@ -112,6 +112,9 @@ As a general rule, commands should be posted as a reply to the video they are re
 ### Audio helper
 Converts a video to audio. Use the command `audio` to convert the video to mp3 (for music), or use the command `voice` to send the audio as a voice note.
 
+### Caption helper
+Adds a text caption to a video message (for easier forwarding, mostly). Use the command `caption` with your caption, replying to the video you wish to add a message caption to.
+
 ### Channel forward tag helper
 Just sets the source tag for any videos forwarded from a public channel.
 
