@@ -23,3 +23,7 @@ class CaptionHelper(Helper):
             )]
         tags = video.tags(self.database)
         return [await self.send_video_reply(chat, message, video.message_data.file_path, tags, caption)]
+
+    def is_priority(self, chat: Chat, message: Message) -> bool:
+        clean_msg = message.text.strip()
+        return clean_msg[:7].lower() == "caption"
